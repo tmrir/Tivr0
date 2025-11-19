@@ -1,22 +1,58 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Layout } from '../components/Layout';
 import { db } from '../services/db';
-import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
+import { Service, CaseStudy, TeamMember, Package } from '../types';
 
 export const Home = () => {
   const { t, lang, dir } = useApp();
-  const services = db.services.getAll();
-  const cases = db.caseStudies.getAll();
-  const team = db.team.getAll();
-  const packages = db.packages.getAll();
+  const [loading, setLoading] = useState(true);
+  const [services, setServices] = useState<Service[]>([]);
+  const [cases, setCases] = useState<CaseStudy[]>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+        try {
+            // Load all data in parallel
+            const [s, c, tData, p] = await Promise.all([
+                db.services.getAll(),
+                db.caseStudies.getAll(),
+                db.team.getAll(),
+                db.packages.getAll()
+            ]);
+            setServices(s);
+            setCases(c);
+            setTeam(tData);
+            setPackages(p);
+        } catch (e) {
+            console.error("Home Data Load Error", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    loadData();
+  }, []);
 
   const IconComponent = ({ name, className }: { name: string, className?: string }) => {
-    // Safety check: ensure the icon exists in the library, otherwise fallback
+    // Dynamically load icon or fallback to HelpCircle
     const Icon = (Icons as any)[name] ? (Icons as any)[name] : Icons.HelpCircle;
     return <Icon className={className} />;
   };
+
+  if (loading) {
+      return (
+          <Layout>
+             <div className="min-h-[60vh] flex flex-col items-center justify-center text-slate-400">
+                 <Loader2 className="animate-spin mb-4" size={40} />
+                 <p>{lang === 'ar' ? 'جاري تحميل المحتوى...' : 'Loading content...'}</p>
+             </div>
+          </Layout>
+      )
+  }
 
   return (
     <Layout>
@@ -64,25 +100,29 @@ export const Home = () => {
             <div className="w-20 h-1 bg-tivro-primary mx-auto rounded-full"></div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {services.map(s => (
-              <div key={s.id} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition duration-300 group border border-slate-100">
-                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
-                  <IconComponent name={s.iconName} className="w-7 h-7" />
+          {services.length === 0 ? (
+            <p className="text-center text-slate-500">No services added yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {services.map(s => (
+                <div key={s.id} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition duration-300 group border border-slate-100">
+                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+                    <IconComponent name={s.iconName} className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-3">{s.title[lang]}</h3>
+                    <p className="text-slate-600 mb-6 text-sm leading-relaxed">{s.description[lang]}</p>
+                    <ul className="space-y-2">
+                    {s.features.map((f, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-sm text-slate-500">
+                        <CheckCircle size={14} className="text-tivro-primary" />
+                        {f[lang]}
+                        </li>
+                    ))}
+                    </ul>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{s.title[lang]}</h3>
-                <p className="text-slate-600 mb-6 text-sm leading-relaxed">{s.description[lang]}</p>
-                <ul className="space-y-2">
-                  {s.features.map((f, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-sm text-slate-500">
-                      <CheckCircle size={14} className="text-tivro-primary" />
-                      {f[lang]}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+                ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -100,7 +140,7 @@ export const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {cases.map(c => (
               <div key={c.id} className="group relative rounded-2xl overflow-hidden shadow-lg cursor-pointer">
-                <div className="aspect-video overflow-hidden">
+                <div className="aspect-video overflow-hidden bg-slate-200">
                    <img src={c.image} alt={c.title[lang]} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent flex flex-col justify-end p-8">
@@ -118,6 +158,7 @@ export const Home = () => {
                 </div>
               </div>
             ))}
+            {cases.length === 0 && <p>No cases found.</p>}
           </div>
         </div>
       </section>
@@ -173,6 +214,14 @@ export const Home = () => {
              ))}
           </div>
         </div>
+      </section>
+
+      {/* Blog Section (Placeholder) */}
+      <section id="blog" className="py-24 bg-slate-50">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold mb-4">{t('nav.blog')}</h2>
+            <p className="text-slate-500">{lang === 'ar' ? 'مقالات تقنية وتسويقية قريباً...' : 'Tech & Marketing articles coming soon...'}</p>
+          </div>
       </section>
 
       {/* CTA / Contact */}

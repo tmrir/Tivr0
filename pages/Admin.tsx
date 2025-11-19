@@ -1,16 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
+import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, LocalizedString } from '../types';
-import { Plus, Trash2, Edit2, Save, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, FileText, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, FileText, RefreshCw, Loader2 } from 'lucide-react';
 
 export const Admin = () => {
-  const { isAdmin, login, lang, t } = useApp();
-  const [username, setUsername] = useState('');
+  const { isAdmin, lang, t, loading } = useApp();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'settings'>('dashboard');
   const [refresh, setRefresh] = useState(0);
+  const [authError, setAuthError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setAuthError('');
+    
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setAuthError(error.message);
+    }
+    setIsLoggingIn(false);
+  };
+
+  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin"/></div>;
 
   // Redirect or Show Login
   if (!isAdmin) {
@@ -19,26 +40,22 @@ export const Admin = () => {
         <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-slate-900">{t('admin.login')}</h2>
-            <p className="text-slate-500 text-sm mt-2">Demo: admin / admin</p>
+            <p className="text-slate-500 text-sm mt-2">Sign in via Supabase</p>
           </div>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (username === 'admin' && password === 'admin') {
-              login();
-            } else {
-              alert('Invalid credentials');
-            }
-          }}>
+          <form onSubmit={handleLogin}>
             <div className="space-y-4">
+              {authError && <div className="text-red-500 text-sm bg-red-50 p-2 rounded">{authError}</div>}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
-                <input type="text" className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-tivro-primary outline-none" value={username} onChange={e => setUsername(e.target.value)} />
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-tivro-primary outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                <input type="password" className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-tivro-primary outline-none" value={password} onChange={e => setPassword(e.target.value)} />
+                <input type="password" className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-tivro-primary outline-none" value={password} onChange={e => setPassword(e.target.value)} required />
               </div>
-              <button className="w-full bg-tivro-dark text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition">Login</button>
+              <button disabled={isLoggingIn} className="w-full bg-tivro-dark text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition flex justify-center">
+                 {isLoggingIn ? <Loader2 className="animate-spin"/> : 'Login'}
+              </button>
             </div>
           </form>
         </div>
@@ -87,39 +104,29 @@ const SidebarLink = ({ icon, label, active, onClick }: any) => (
 /* --- Sub Components for Admin --- */
 
 const DashboardTab = () => {
+  const [stats, setStats] = useState({ services: 0, team: 0 });
+
+  useEffect(() => {
+      const load = async () => {
+          const s = await db.services.getAll();
+          const t = await db.team.getAll();
+          setStats({ services: s.length, team: t.length });
+      }
+      load();
+  }, []);
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-slate-800">Dashboard Overview</h2>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard title="Total Visits" value="12,450" change="+12%" />
-        <StatCard title="Leads" value="340" change="+5%" />
-        <StatCard title="Conversion Rate" value="2.8%" change="+0.4%" />
-        <StatCard title="Active Services" value={db.services.getAll().length.toString()} />
+        <StatCard title="Total Visits" value="-" change="Pending Analytics" />
+        <StatCard title="Active Services" value={stats.services.toString()} />
+        <StatCard title="Team Members" value={stats.team.toString()} />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-            <h3 className="font-bold mb-4 text-slate-700">Recent Inquiries</h3>
-            <div className="space-y-4">
-               {[1,2,3].map(i => (
-                 <div key={i} className="flex justify-between items-center pb-3 border-b border-slate-50 last:border-0">
-                    <div>
-                       <p className="font-bold text-sm">Company XYZ</p>
-                       <p className="text-xs text-slate-500">Interested in SEO</p>
-                    </div>
-                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">New</span>
-                 </div>
-               ))}
-            </div>
-         </div>
-         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-            <h3 className="font-bold mb-4 text-slate-700">Quick Actions</h3>
-            <div className="flex gap-4">
-               <button onClick={() => db.reset()} className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100">
-                 <RefreshCw size={16} /> Reset Database Data
-               </button>
-            </div>
-         </div>
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+        <h3 className="font-bold mb-4 text-slate-700">System Info</h3>
+        <p className="text-sm text-slate-500">Connected to Supabase Database.</p>
       </div>
     </div>
   );
@@ -136,31 +143,36 @@ const StatCard = ({ title, value, change }: any) => (
 );
 
 const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
-  const [services, setServices] = useState<Service[]>(db.services.getAll());
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Service | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+      db.services.getAll().then((d) => {
+          setServices(d);
+          setLoading(false);
+      });
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
-    
-    const newServices = editing.id === 'new' 
-      ? [...services, { ...editing, id: Date.now().toString() }]
-      : services.map(s => s.id === editing.id ? editing : s);
-      
-    db.services.save(newServices);
-    setServices(newServices);
+    setSaving(true);
+    await db.services.save(editing);
+    setSaving(false);
     setEditing(null);
     onUpdate();
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure?')) {
-      const newServices = services.filter(s => s.id !== id);
-      db.services.save(newServices);
-      setServices(newServices);
+      await db.services.delete(id);
       onUpdate();
     }
   };
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div>
@@ -197,7 +209,9 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
            </div>
            <div className="flex gap-2 justify-end">
              <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 text-slate-500">Cancel</button>
-             <button type="submit" className="px-4 py-2 bg-tivro-dark text-white rounded">Save</button>
+             <button disabled={saving} type="submit" className="px-4 py-2 bg-tivro-dark text-white rounded flex items-center gap-2">
+                 {saving && <Loader2 size={14} className="animate-spin"/>} Save
+             </button>
            </div>
         </form>
       ) : (
@@ -221,6 +235,7 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
                   </td>
                 </tr>
               ))}
+              {services.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-slate-400">No services found.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -230,38 +245,50 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
 };
 
 const TeamManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
-  const [team, setTeam] = useState<TeamMember[]>(db.team.getAll());
-  // Simplified for brevity, similar structure to ServicesManager
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  
+  useEffect(() => {
+      db.team.getAll().then(setTeam);
+  }, []);
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-slate-800 mb-6">Manage Team</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {team.map(member => (
           <div key={member.id} className="bg-white p-4 rounded-lg shadow border flex items-center gap-4">
-            <img src={member.image} className="w-12 h-12 rounded-full bg-slate-200" />
+            <img src={member.image} className="w-12 h-12 rounded-full bg-slate-200 object-cover" />
             <div>
               <p className="font-bold">{member.name['en']}</p>
               <p className="text-xs text-slate-500">{member.role['en']}</p>
             </div>
           </div>
         ))}
-        <button className="border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 p-6 hover:border-tivro-primary hover:text-tivro-primary transition">
-          <Plus />
-          <span className="text-sm font-bold mt-2">Add Member</span>
-        </button>
+        <div className="border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 p-6">
+          <span className="text-sm font-bold mt-2 text-center">For full CRUD, implement similar logic to ServicesManager</span>
+        </div>
       </div>
     </div>
   );
 };
 
 const SettingsManager = () => {
-  const [settings, setSettings] = useState(db.settings.get());
+  const [settings, setSettings] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
 
-  const save = () => {
-    db.settings.save(settings);
+  useEffect(() => {
+      db.settings.get().then(setSettings);
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    await db.settings.save(settings);
+    setSaving(false);
     alert('Settings saved!');
     window.location.reload();
   };
+
+  if (!settings) return <div>Loading...</div>;
 
   return (
     <div className="max-w-2xl">
@@ -279,7 +306,9 @@ const SettingsManager = () => {
             <label className="block text-sm font-bold text-slate-700 mb-1">Contact Email</label>
             <input className="w-full border p-2 rounded" value={settings.contactEmail} onChange={e => setSettings({...settings, contactEmail: e.target.value})} />
           </div>
-          <button onClick={save} className="bg-tivro-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700">Save Changes</button>
+          <button onClick={save} disabled={saving} className="bg-tivro-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2">
+              {saving && <Loader2 className="animate-spin" size={16}/>} Save Changes
+          </button>
        </div>
     </div>
   );

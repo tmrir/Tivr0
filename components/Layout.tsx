@@ -1,19 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter } from 'lucide-react';
 import { db } from '../services/db';
+import { supabase } from '../services/supabase';
+import { SiteSettings, Service } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
   hideFooter?: boolean;
 }
 
+const DEFAULT_SETTINGS: SiteSettings = {
+    siteName: { ar: 'جاري التحميل...', en: 'Loading...' },
+    contactEmail: '',
+    contactPhone: '',
+    address: { ar: '', en: '' },
+    socialLinks: { twitter: '#', linkedin: '#', instagram: '#' }
+};
+
 export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) => {
-  const { t, lang, setLang, isAdmin, logout } = useApp();
+  const { t, lang, setLang, isAdmin } = useApp();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const settings = db.settings.get();
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [footerServices, setFooterServices] = useState<Service[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+        const s = await db.settings.get();
+        setSettings(s);
+        const services = await db.services.getAll();
+        setFooterServices(services.slice(0, 4));
+    };
+    fetchData();
+  }, []);
 
   const toggleLang = () => setLang(lang === 'ar' ? 'en' : 'ar');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.hash = '#';
+    window.location.reload();
+  };
 
   const NavLink = ({ href, label }: { href: string; label: string }) => (
     <a 
@@ -65,7 +91,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                   <LayoutDashboard size={16} />
                   {t('admin.dashboard')}
                 </a>
-                <button onClick={logout} className="text-red-500 p-2 hover:bg-red-50 rounded-full">
+                <button onClick={handleLogout} className="text-red-500 p-2 hover:bg-red-50 rounded-full">
                   <LogOut size={18} />
                 </button>
               </div>
@@ -138,7 +164,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               <div>
                 <h4 className="font-bold text-lg mb-6 text-tivro-primary">{t('nav.services')}</h4>
                 <ul className="space-y-3 text-slate-400">
-                  {db.services.getAll().slice(0, 4).map(s => (
+                  {footerServices.map(s => (
                     <li key={s.id}><a href="#services" className="hover:text-white transition">{s.title[lang]}</a></li>
                   ))}
                 </ul>

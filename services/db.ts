@@ -1,126 +1,114 @@
-import { Service, CaseStudy, Package, TeamMember, BlogPost, SiteSettings } from '../types';
+import { supabase, isSupabaseConfigured } from './supabase';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings } from '../types';
 
-// SEED DATA
-const INITIAL_SERVICES: Service[] = [
+/* --- FALLBACK / SEED DATA --- */
+/* Used when Supabase is not connected or returns errors */
+
+const SEED_SERVICES: Service[] = [
   {
     id: '1',
-    title: { ar: 'إدارة وسائل التواصل', en: 'Social Media Management' },
-    description: { ar: 'نبني مجتمعك الرقمي ونزيد تفاعل جمهورك باستراتيجيات محتوى إبداعية.', en: 'We build your digital community and increase engagement with creative content strategies.' },
-    iconName: 'Share2',
-    features: [{ ar: 'تصاميم إبداعية', en: 'Creative Designs' }, { ar: 'جدولة ونشر', en: 'Scheduling' }, { ar: 'إدارة تعليقات', en: 'Community Mgmt' }]
+    title: { ar: 'تحسين محركات البحث', en: 'SEO Optimization' },
+    description: { ar: 'نساعدك في تصدر نتائج البحث والوصول لجمهورك المستهدف.', en: 'We help you rank higher and reach your target audience.' },
+    iconName: 'Search',
+    features: [{ ar: 'تحليل الكلمات المفتاحية', en: 'Keyword Analysis' }, { ar: 'تحسين تقني', en: 'Technical SEO' }]
   },
   {
     id: '2',
-    title: { ar: 'تحسين محركات البحث (SEO)', en: 'SEO Optimization' },
-    description: { ar: 'تصدر نتائج البحث واجذب عملاء مهتمين بخدماتك بشكل عضوي.', en: 'Rank higher in search results and attract organic traffic to your business.' },
-    iconName: 'Search',
-    features: [{ ar: 'تدقيق شامل', en: 'Full Audit' }, { ar: 'كلمات مفتاحية', en: 'Keywords' }, { ar: 'بناء روابط', en: 'Link Building' }]
+    title: { ar: 'إدارة حملات إعلانية', en: 'PPC Campaigns' },
+    description: { ar: 'حملات مدفوعة على جوجل ومنصات التواصل تحقق أعلى عائد.', en: 'Paid campaigns on Google and Social Media with high ROI.' },
+    iconName: 'BarChart',
+    features: [{ ar: 'استهداف دقيق', en: 'Precise Targeting' }, { ar: 'تقارير أداء', en: 'Performance Reports' }]
   },
   {
     id: '3',
-    title: { ar: 'الحملات الإعلانية الممولة', en: 'Paid Advertising (PPC)' },
-    description: { ar: 'نستهدف عميلك المثالي بدقة لتحقيق أعلى عائد على الاستثمار.', en: 'We target your ideal customer precisely to achieve the highest ROAS.' },
-    iconName: 'Target',
-    features: [{ ar: 'إعلانات جوجل', en: 'Google Ads' }, { ar: 'سوشيال ميديا', en: 'Social Ads' }, { ar: 'تتبع التحويلات', en: 'Conversion Tracking' }]
+    title: { ar: 'إدارة منصات التواصل', en: 'Social Media Management' },
+    description: { ar: 'بناء مجتمع متفاعل حول علامتك التجارية.', en: 'Building an engaged community around your brand.' },
+    iconName: 'Share2',
+    features: [{ ar: 'صناعة محتوى', en: 'Content Creation' }, { ar: 'جدولة منشورات', en: 'Scheduling' }]
   },
   {
     id: '4',
-    title: { ar: 'تصميم وتطوير المتاجر', en: 'E-commerce Development' },
-    description: { ar: 'نطلق متجرك على سلة أو زد بتصميم احترافي وتجهيز كامل.', en: 'We launch your store on Salla or Zid with professional design and full setup.' },
-    iconName: 'ShoppingCart',
-    features: [{ ar: 'تصميم واجهة', en: 'UI Design' }, { ar: 'ربط بوابات الدفع', en: 'Payment Integration' }, { ar: 'تكاملات', en: 'Integrations' }]
+    title: { ar: 'تصميم وتطوير المواقع', en: 'Web Development' },
+    description: { ar: 'مواقع سريعة، متجاوبة، ومصممة للتحويل.', en: 'Fast, responsive, and conversion-optimized websites.' },
+    iconName: 'Code',
+    features: [{ ar: 'واجهة احترافية', en: 'Professional UI' }, { ar: 'سرعة تحميل', en: 'Fast Loading' }]
   }
 ];
 
-const INITIAL_PACKAGES: Package[] = [
+const SEED_PACKAGES: Package[] = [
   {
-    id: 'p1',
-    name: { ar: 'باقة الانطلاق', en: 'Startup Package' },
-    price: '2500 SAR',
-    features: [
-      { ar: 'إدارة منصتين', en: '2 Platforms Management' },
-      { ar: '12 تصميم شهرياً', en: '12 Designs/Month' },
-      { ar: 'تقارير شهرية', en: 'Monthly Reports' }
-    ]
+    id: '1',
+    name: { ar: 'انطلاق', en: 'Startup' },
+    price: '2,500 SAR',
+    features: [{ ar: 'إدارة منصتين', en: '2 Platforms' }, { ar: '12 منشور شهرياً', en: '12 Posts/mo' }],
+    isPopular: false
   },
   {
-    id: 'p2',
-    name: { ar: 'باقة النمو', en: 'Growth Package' },
-    price: '4500 SAR',
-    features: [
-      { ar: 'إدارة 3 منصات', en: '3 Platforms Management' },
-      { ar: '20 تصميم شهرياً', en: '20 Designs/Month' },
-      { ar: 'حملة إعلانية واحدة', en: '1 Ad Campaign' },
-      { ar: 'موديريتور للردود', en: 'Reply Moderator' }
-    ],
+    id: '2',
+    name: { ar: 'نمو', en: 'Growth' },
+    price: '5,000 SAR',
+    features: [{ ar: 'إدارة 4 منصات', en: '4 Platforms' }, { ar: 'حملة إعلانية واحدة', en: '1 Ad Campaign' }, { ar: 'تقارير أسبوعية', en: 'Weekly Reports' }],
     isPopular: true
   },
   {
-    id: 'p3',
-    name: { ar: 'باقة الاحتراف', en: 'Pro Package' },
-    price: '8000 SAR',
-    features: [
-      { ar: 'إدارة شاملة', en: 'Full Management' },
-      { ar: 'فيديو موشن جرافيك', en: 'Motion Graphic Video' },
-      { ar: 'حملات إعلانية مفتوحة', en: 'Unlimited Campaigns' },
-      { ar: 'تحسين SEO', en: 'SEO Optimization' }
-    ]
+    id: '3',
+    name: { ar: 'احتراف', en: 'Pro' },
+    price: '9,500 SAR',
+    features: [{ ar: 'كل المنصات', en: 'All Platforms' }, { ar: 'ميزانية إعلانية مفتوحة', en: 'Open Ad Budget' }, { ar: 'مدير حساب خاص', en: 'Dedicated Manager' }],
+    isPopular: false
   }
 ];
 
-const INITIAL_CASE_STUDIES: CaseStudy[] = [
+const SEED_TEAM: TeamMember[] = [
   {
-    id: 'c1',
-    client: 'مطاعم الذواق',
-    title: { ar: 'زيادة المبيعات بنسبة 150%', en: 'Increasing Sales by 150%' },
-    category: { ar: 'إدارة حملات', en: 'Ad Campaigns' },
-    result: { ar: 'تحقيق عائد 1:5 على الإعلانات', en: 'Achieved 1:5 ROAS' },
-    image: 'https://picsum.photos/800/600?random=1',
-    stats: [{ label: { ar: 'مبيعات', en: 'Sales' }, value: '+150%' }, { label: { ar: 'وصول', en: 'Reach' }, value: '1M+' }]
+    id: '1',
+    name: { ar: 'سارة أحمد', en: 'Sara Ahmed' },
+    role: { ar: 'مديرة التسويق', en: 'Marketing Manager' },
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop',
+    linkedin: '#'
   },
   {
-    id: 'c2',
-    client: 'تطبيق صحتي',
-    title: { ar: 'مليون تحميل في 6 أشهر', en: '1 Million Downloads in 6 Months' },
-    category: { ar: 'تسويق التطبيقات', en: 'App Marketing' },
-    result: { ar: 'تخفيض تكلفة التحميل 40%', en: 'Reduced CPI by 40%' },
-    image: 'https://picsum.photos/800/600?random=2',
-    stats: [{ label: { ar: 'تحميلات', en: 'Downloads' }, value: '1M' }, { label: { ar: 'تكلفة', en: 'CPI' }, value: '$0.5' }]
-  }
-];
-
-const INITIAL_TEAM: TeamMember[] = [
-  { id: 't1', name: { ar: 'سارة العتيبي', en: 'Sarah Al-Otaibi' }, role: { ar: 'مديرة المشاريع', en: 'Project Manager' }, image: 'https://picsum.photos/200/200?random=10' },
-  { id: 't2', name: { ar: 'خالد السديري', en: 'Khaled Al-Sudairi' }, role: { ar: 'كبير المسوقين', en: 'Senior Marketer' }, image: 'https://picsum.photos/200/200?random=11' },
-  { id: 't3', name: { ar: 'عمر فاروق', en: 'Omar Farouk' }, role: { ar: 'مطور ويب', en: 'Web Developer' }, image: 'https://picsum.photos/200/200?random=12' },
-];
-
-const INITIAL_POSTS: BlogPost[] = [
-  {
-    id: 'b1',
-    title: { ar: 'كيف تختار منصة التسويق المناسبة؟', en: 'How to choose the right marketing platform?' },
-    excerpt: { ar: 'دليلك الشامل لاختيار المنصة الأنسب لنشاطك التجاري في السعودية.', en: 'Your comprehensive guide to choosing the best platform for your business in Saudi Arabia.' },
-    content: { ar: 'المحتوى الكامل للمقال هنا...', en: 'Full article content here...' },
-    date: '2023-10-15',
-    image: 'https://picsum.photos/800/400?random=20',
-    author: 'Khaled Al-Sudairi'
+    id: '2',
+    name: { ar: 'خالد الدوسري', en: 'Khaled Al-Dossari' },
+    role: { ar: 'خبير SEO', en: 'SEO Expert' },
+    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
+    linkedin: '#'
   },
   {
-    id: 'b2',
-    title: { ar: 'مستقبل التجارة الإلكترونية 2024', en: 'The Future of E-commerce 2024' },
-    excerpt: { ar: 'أبرز التوجهات التي ستشكل مستقبل التجارة الإلكترونية.', en: 'Key trends shaping the future of e-commerce.' },
-    content: { ar: '...', en: '...' },
-    date: '2023-11-01',
-    image: 'https://picsum.photos/800/400?random=21',
-    author: 'Sarah Al-Otaibi'
+    id: '3',
+    name: { ar: 'نورة العتيبي', en: 'Noura Al-Otaibi' },
+    role: { ar: 'مصممة جرافيك', en: 'Graphic Designer' },
+    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop',
+    linkedin: '#'
   }
 ];
 
-const INITIAL_SETTINGS: SiteSettings = {
+const SEED_CASES: CaseStudy[] = [
+  {
+    id: '1',
+    client: 'TechStore',
+    title: { ar: 'زيادة المبيعات 200%', en: '200% Sales Increase' },
+    category: { ar: 'تجارة إلكترونية', en: 'E-Commerce' },
+    result: { ar: 'تحسين معدل التحويل للمتجر الإلكتروني', en: 'Optimized conversion rate for online store' },
+    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=500&fit=crop',
+    stats: [{ label: { ar: 'عائد', en: 'ROAS' }, value: '5.4x' }]
+  },
+  {
+    id: '2',
+    client: 'HealthyLife',
+    title: { ar: 'إطلاق علامة تجارية', en: 'Brand Launch' },
+    category: { ar: 'صحة', en: 'Health' },
+    result: { ar: 'بناء هوية بصرية كاملة وحملة إطلاق', en: 'Full visual identity and launch campaign' },
+    image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=500&fit=crop',
+    stats: [{ label: { ar: 'وصول', en: 'Reach' }, value: '1M+' }]
+  }
+];
+
+const FALLBACK_SETTINGS: SiteSettings = {
   siteName: { ar: 'تيفرو', en: 'Tivro' },
   contactEmail: 'hello@tivro.sa',
-  contactPhone: '+966 50 000 0000',
-  address: { ar: 'الرياض، طريق الملك فهد', en: 'Riyadh, King Fahd Rd' },
+  contactPhone: '+966 50 123 4567',
+  address: { ar: 'الرياض، المملكة العربية السعودية', en: 'Riyadh, Saudi Arabia' },
   socialLinks: {
     twitter: 'https://twitter.com',
     linkedin: 'https://linkedin.com',
@@ -128,67 +116,115 @@ const INITIAL_SETTINGS: SiteSettings = {
   }
 };
 
-// STORAGE KEYS
-const KEYS = {
-  SERVICES: 'tivro_services',
-  PACKAGES: 'tivro_packages',
-  CASE_STUDIES: 'tivro_cases',
-  TEAM: 'tivro_team',
-  POSTS: 'tivro_posts',
-  SETTINGS: 'tivro_settings'
-};
+/* --- API WRAPPER --- */
 
-// DB HELPER
-const getList = <T>(key: string, defaultData: T[]): T[] => {
-  const stored = localStorage.getItem(key);
-  if (!stored) {
-    localStorage.setItem(key, JSON.stringify(defaultData));
-    return defaultData;
-  }
-  return JSON.parse(stored);
-};
-
-const saveList = <T>(key: string, data: T[]) => {
-  localStorage.setItem(key, JSON.stringify(data));
-};
-
-const getSettings = (): SiteSettings => {
-  const stored = localStorage.getItem(KEYS.SETTINGS);
-  if (!stored) {
-    localStorage.setItem(KEYS.SETTINGS, JSON.stringify(INITIAL_SETTINGS));
-    return INITIAL_SETTINGS;
-  }
-  return JSON.parse(stored);
-};
-
-// EXPORTED API
 export const db = {
   services: {
-    getAll: () => getList<Service>(KEYS.SERVICES, INITIAL_SERVICES),
-    save: (data: Service[]) => saveList(KEYS.SERVICES, data),
+    getAll: async (): Promise<Service[]> => {
+      if (!isSupabaseConfigured) return SEED_SERVICES;
+      const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
+      if (error) { 
+        console.warn('DB Fetch Error (Services), using fallback:', error.message); 
+        return SEED_SERVICES; 
+      }
+      return (data as unknown as Service[]) || [];
+    },
+    save: async (item: Service) => {
+      if (!isSupabaseConfigured) return { error: null, data: [item] };
+      if (item.id === 'new' || !item.id.includes('-')) {
+        const { id, ...rest } = item;
+        return await supabase.from('services').insert([rest]);
+      }
+      return await supabase.from('services').upsert([item]);
+    },
+    delete: async (id: string) => {
+      if (!isSupabaseConfigured) return;
+      return await supabase.from('services').delete().eq('id', id);
+    }
   },
   packages: {
-    getAll: () => getList<Package>(KEYS.PACKAGES, INITIAL_PACKAGES),
-    save: (data: Package[]) => saveList(KEYS.PACKAGES, data),
+    getAll: async (): Promise<Package[]> => {
+      if (!isSupabaseConfigured) return SEED_PACKAGES;
+      const { data, error } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
+      if (error) { 
+        console.warn('DB Fetch Error (Packages), using fallback:', error.message);
+        return SEED_PACKAGES; 
+      }
+      return (data as unknown as Package[]) || [];
+    },
+    save: async (item: Package) => {
+       if (!isSupabaseConfigured) return;
+       if (item.id === 'new' || !item.id.includes('-')) {
+         const { id, ...rest } = item;
+         return await supabase.from('packages').insert([rest]);
+       }
+       return await supabase.from('packages').upsert([item]);
+    }
   },
   caseStudies: {
-    getAll: () => getList<CaseStudy>(KEYS.CASE_STUDIES, INITIAL_CASE_STUDIES),
-    save: (data: CaseStudy[]) => saveList(KEYS.CASE_STUDIES, data),
+    getAll: async (): Promise<CaseStudy[]> => {
+      if (!isSupabaseConfigured) return SEED_CASES;
+      const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
+      if (error) { 
+        console.warn('DB Fetch Error (Cases), using fallback:', error.message);
+        return SEED_CASES; 
+      }
+      return (data as unknown as CaseStudy[]) || [];
+    },
+    save: async (item: CaseStudy) => {
+       if (!isSupabaseConfigured) return;
+       if (item.id === 'new' || !item.id.includes('-')) {
+         const { id, ...rest } = item;
+         return await supabase.from('case_studies').insert([rest]);
+       }
+       return await supabase.from('case_studies').upsert([item]);
+    }
   },
   team: {
-    getAll: () => getList<TeamMember>(KEYS.TEAM, INITIAL_TEAM),
-    save: (data: TeamMember[]) => saveList(KEYS.TEAM, data),
-  },
-  posts: {
-    getAll: () => getList<BlogPost>(KEYS.POSTS, INITIAL_POSTS),
-    save: (data: BlogPost[]) => saveList(KEYS.POSTS, data),
+    getAll: async (): Promise<TeamMember[]> => {
+      if (!isSupabaseConfigured) return SEED_TEAM;
+      const { data, error } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
+      if (error) { 
+        console.warn('DB Fetch Error (Team), using fallback:', error.message);
+        return SEED_TEAM; 
+      }
+      return (data as unknown as TeamMember[]) || [];
+    },
+    save: async (item: TeamMember) => {
+       if (!isSupabaseConfigured) return;
+       if (item.id === 'new' || !item.id.includes('-')) {
+         const { id, ...rest } = item;
+         return await supabase.from('team_members').insert([rest]);
+       }
+       return await supabase.from('team_members').upsert([item]);
+    }
   },
   settings: {
-    get: () => getSettings(),
-    save: (data: SiteSettings) => localStorage.setItem(KEYS.SETTINGS, JSON.stringify(data)),
-  },
-  reset: () => {
-    localStorage.clear();
-    window.location.reload();
+    get: async (): Promise<SiteSettings> => {
+      if (!isSupabaseConfigured) return FALLBACK_SETTINGS;
+      const { data, error } = await supabase.from('site_settings').select('*').single();
+      if (error || !data) {
+        return FALLBACK_SETTINGS; 
+      }
+      return {
+         siteName: data.site_name,
+         contactEmail: data.contact_email,
+         contactPhone: data.contact_phone,
+         address: data.address,
+         socialLinks: data.social_links
+      } as unknown as SiteSettings;
+    },
+    save: async (settings: SiteSettings) => {
+      if (!isSupabaseConfigured) return;
+      const payload = {
+        id: 1,
+        site_name: settings.siteName,
+        contact_email: settings.contactEmail,
+        contact_phone: settings.contactPhone,
+        address: settings.address,
+        social_links: settings.socialLinks
+      };
+      return await supabase.from('site_settings').upsert(payload);
+    }
   }
 };

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Language, Translations } from '../types';
+import { supabase } from '../services/supabase';
 
 interface AppContextProps {
   lang: Language;
@@ -7,8 +8,7 @@ interface AppContextProps {
   t: (key: string) => string;
   dir: 'rtl' | 'ltr';
   isAdmin: boolean;
-  login: () => void;
-  logout: () => void;
+  loading: boolean;
 }
 
 const TRANSLATIONS: Translations = {
@@ -36,13 +36,30 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<Language>('ar');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    // Language Init
     const savedLang = localStorage.getItem('tivro_lang') as Language;
-    if (savedLang) setLangState(savedLang);
-    
-    const auth = localStorage.getItem('tivro_auth');
-    if (auth === 'true') setIsAdmin(true);
+    if (savedLang) {
+        setLangState(savedLang);
+        document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.lang = savedLang;
+    }
+
+    // Auth Init
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAdmin(!!session);
+      setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAdmin(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const setLang = (l: Language) => {
@@ -56,20 +73,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return TRANSLATIONS[key]?.[lang] || key;
   };
 
-  const login = () => {
-    setIsAdmin(true);
-    localStorage.setItem('tivro_auth', 'true');
-  };
-
-  const logout = () => {
-    setIsAdmin(false);
-    localStorage.removeItem('tivro_auth');
-  };
-
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <AppContext.Provider value={{ lang, setLang, t, dir, isAdmin, login, logout }}>
+    <AppContext.Provider value={{ lang, setLang, t, dir, isAdmin, loading }}>
       {children}
     </AppContext.Provider>
   );
