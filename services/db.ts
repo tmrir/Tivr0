@@ -131,11 +131,13 @@ export const db = {
     },
     save: async (item: Service) => {
       if (!isSupabaseConfigured) return { error: null, data: [item] };
-      if (item.id === 'new' || !item.id.includes('-')) {
-        const { id, ...rest } = item;
-        return await supabase.from('services').insert([rest]);
+      const payload = { ...item };
+      if (payload.id === 'new' || !payload.id.includes('-')) {
+        // @ts-ignore
+        delete payload.id;
+        return await supabase.from('services').insert([payload]);
       }
-      return await supabase.from('services').upsert([item]);
+      return await supabase.from('services').upsert([payload]);
     },
     delete: async (id: string) => {
       if (!isSupabaseConfigured) return;
@@ -154,11 +156,17 @@ export const db = {
     },
     save: async (item: Package) => {
        if (!isSupabaseConfigured) return;
-       if (item.id === 'new' || !item.id.includes('-')) {
-         const { id, ...rest } = item;
-         return await supabase.from('packages').insert([rest]);
+       const payload = { ...item };
+       if (payload.id === 'new' || !payload.id.includes('-')) {
+         // @ts-ignore
+         delete payload.id;
+         return await supabase.from('packages').insert([payload]);
        }
-       return await supabase.from('packages').upsert([item]);
+       return await supabase.from('packages').upsert([payload]);
+    },
+    delete: async (id: string) => {
+      if (!isSupabaseConfigured) return;
+      return await supabase.from('packages').delete().eq('id', id);
     }
   },
   caseStudies: {
@@ -173,11 +181,17 @@ export const db = {
     },
     save: async (item: CaseStudy) => {
        if (!isSupabaseConfigured) return;
-       if (item.id === 'new' || !item.id.includes('-')) {
-         const { id, ...rest } = item;
-         return await supabase.from('case_studies').insert([rest]);
+       const payload = { ...item };
+       if (payload.id === 'new' || !payload.id.includes('-')) {
+         // @ts-ignore
+         delete payload.id;
+         return await supabase.from('case_studies').insert([payload]);
        }
-       return await supabase.from('case_studies').upsert([item]);
+       return await supabase.from('case_studies').upsert([payload]);
+    },
+    delete: async (id: string) => {
+      if (!isSupabaseConfigured) return;
+      return await supabase.from('case_studies').delete().eq('id', id);
     }
   },
   team: {
@@ -192,11 +206,17 @@ export const db = {
     },
     save: async (item: TeamMember) => {
        if (!isSupabaseConfigured) return;
-       if (item.id === 'new' || !item.id.includes('-')) {
-         const { id, ...rest } = item;
-         return await supabase.from('team_members').insert([rest]);
+       const payload = { ...item };
+       if (payload.id === 'new' || !payload.id.includes('-')) {
+         // @ts-ignore
+         delete payload.id;
+         return await supabase.from('team_members').insert([payload]);
        }
-       return await supabase.from('team_members').upsert([item]);
+       return await supabase.from('team_members').upsert([payload]);
+    },
+    delete: async (id: string) => {
+      if (!isSupabaseConfigured) return;
+      return await supabase.from('team_members').delete().eq('id', id);
     }
   },
   settings: {
@@ -225,6 +245,32 @@ export const db = {
         social_links: settings.socialLinks
       };
       return await supabase.from('site_settings').upsert(payload);
+    }
+  },
+  // IMPORTANT: Function to Reset DB and Fill with Seed Data
+  seedDatabase: async () => {
+    if (!isSupabaseConfigured) return false;
+    try {
+        // Clear existing data (Optional - be careful in production)
+        // await supabase.from('services').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        // Insert Seed Data
+        // We loop to avoid inserting ID collision if we don't clear first, 
+        // but for simplicity in this demo we just insert without IDs (let Supabase generate UUIDs)
+        
+        const { error: e1 } = await supabase.from('services').insert(SEED_SERVICES.map(({id, ...rest}) => rest));
+        const { error: e2 } = await supabase.from('packages').insert(SEED_PACKAGES.map(({id, ...rest}) => rest));
+        const { error: e3 } = await supabase.from('team_members').insert(SEED_TEAM.map(({id, ...rest}) => rest));
+        const { error: e4 } = await supabase.from('case_studies').insert(SEED_CASES.map(({id, ...rest}) => rest));
+        
+        // Settings
+        await db.settings.save(FALLBACK_SETTINGS);
+
+        if (e1 || e2 || e3 || e4) throw new Error('Some inserts failed');
+        return true;
+    } catch (error) {
+        console.error('Seed Error:', error);
+        return false;
     }
   }
 };
