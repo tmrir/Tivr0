@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Layout } from '../components/Layout';
 import { db } from '../services/db';
-import { ArrowRight, ArrowLeft, CheckCircle, Star, TrendingUp, Users, Award } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp } from 'lucide-react';
 import * as Icons from 'lucide-react';
 
 export const Home = () => {
@@ -13,7 +13,8 @@ export const Home = () => {
   const packages = db.packages.getAll();
 
   const IconComponent = ({ name, className }: { name: string, className?: string }) => {
-    const Icon = (Icons as any)[name] || Icons.HelpCircle;
+    // Safety check: ensure the icon exists in the library, otherwise fallback
+    const Icon = (Icons as any)[name] ? (Icons as any)[name] : Icons.HelpCircle;
     return <Icon className={className} />;
   };
 
