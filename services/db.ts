@@ -117,25 +117,31 @@ const FALLBACK_SETTINGS: SiteSettings = {
 
 /* --- API WRAPPER --- */
 
+interface DBOptions {
+  useFallback?: boolean;
+}
+
 export const db = {
   services: {
-    getAll: async (): Promise<Service[]> => {
+    getAll: async (opts: DBOptions = { useFallback: true }): Promise<Service[]> => {
       if (!isSupabaseConfigured) return SEED_SERVICES;
       try {
         const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
-        // If error occurs, or if data is empty (fresh DB), return SEED data for display
         if (error) throw error;
-        if (!data || data.length === 0) return SEED_SERVICES;
-        return (data as unknown as Service[]);
+        
+        // If DB is empty AND fallback is allowed (Public View), show seed.
+        // If DB is empty AND fallback is false (Admin View), show empty.
+        if ((!data || data.length === 0) && opts.useFallback) return SEED_SERVICES;
+        
+        return (data as unknown as Service[]) || [];
       } catch (error) {
         console.warn('DB Services fallback:', error);
-        return SEED_SERVICES;
+        return opts.useFallback ? SEED_SERVICES : [];
       }
     },
     save: async (item: Service) => {
       if (!isSupabaseConfigured) return { error: null, data: [item] };
       const payload = { ...item };
-      // Convert seed IDs (numeric strings) to new inserts so they get valid UUIDs
       if (payload.id === 'new' || !payload.id.includes('-')) {
         // @ts-ignore
         delete payload.id;
@@ -149,16 +155,15 @@ export const db = {
     }
   },
   packages: {
-    getAll: async (): Promise<Package[]> => {
+    getAll: async (opts: DBOptions = { useFallback: true }): Promise<Package[]> => {
       if (!isSupabaseConfigured) return SEED_PACKAGES;
       try {
         const { data, error } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
         if (error) throw error;
-        if (!data || data.length === 0) return SEED_PACKAGES;
-        return (data as unknown as Package[]);
+        if ((!data || data.length === 0) && opts.useFallback) return SEED_PACKAGES;
+        return (data as unknown as Package[]) || [];
       } catch (error) {
-        console.warn('DB Packages fallback:', error);
-        return SEED_PACKAGES;
+        return opts.useFallback ? SEED_PACKAGES : [];
       }
     },
     save: async (item: Package) => {
@@ -177,16 +182,15 @@ export const db = {
     }
   },
   caseStudies: {
-    getAll: async (): Promise<CaseStudy[]> => {
+    getAll: async (opts: DBOptions = { useFallback: true }): Promise<CaseStudy[]> => {
       if (!isSupabaseConfigured) return SEED_CASES;
       try {
         const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
         if (error) throw error;
-        if (!data || data.length === 0) return SEED_CASES;
-        return (data as unknown as CaseStudy[]);
+        if ((!data || data.length === 0) && opts.useFallback) return SEED_CASES;
+        return (data as unknown as CaseStudy[]) || [];
       } catch (error) {
-        console.warn('DB CaseStudies fallback:', error);
-        return SEED_CASES;
+        return opts.useFallback ? SEED_CASES : [];
       }
     },
     save: async (item: CaseStudy) => {
@@ -205,16 +209,15 @@ export const db = {
     }
   },
   team: {
-    getAll: async (): Promise<TeamMember[]> => {
+    getAll: async (opts: DBOptions = { useFallback: true }): Promise<TeamMember[]> => {
       if (!isSupabaseConfigured) return SEED_TEAM;
       try {
         const { data, error } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
         if (error) throw error;
-        if (!data || data.length === 0) return SEED_TEAM;
-        return (data as unknown as TeamMember[]);
+        if ((!data || data.length === 0) && opts.useFallback) return SEED_TEAM;
+        return (data as unknown as TeamMember[]) || [];
       } catch (error) {
-        console.warn('DB Team fallback:', error);
-        return SEED_TEAM;
+        return opts.useFallback ? SEED_TEAM : [];
       }
     },
     save: async (item: TeamMember) => {
@@ -233,7 +236,7 @@ export const db = {
     }
   },
   settings: {
-    get: async (): Promise<SiteSettings> => {
+    get: async (opts: DBOptions = { useFallback: true }): Promise<SiteSettings> => {
       if (!isSupabaseConfigured) return FALLBACK_SETTINGS;
       try {
         const { data, error } = await supabase.from('site_settings').select('*').single();
@@ -265,13 +268,10 @@ export const db = {
   seedDatabase: async () => {
     if (!isSupabaseConfigured) return false;
     try {
-        // Insert Seed Data (remove IDs to let Supabase generate UUIDs)
         const { error: e1 } = await supabase.from('services').insert(SEED_SERVICES.map(({id, ...rest}) => rest));
         const { error: e2 } = await supabase.from('packages').insert(SEED_PACKAGES.map(({id, ...rest}) => rest));
         const { error: e3 } = await supabase.from('team_members').insert(SEED_TEAM.map(({id, ...rest}) => rest));
         const { error: e4 } = await supabase.from('case_studies').insert(SEED_CASES.map(({id, ...rest}) => rest));
-        
-        // Ensure settings exist
         await db.settings.save(FALLBACK_SETTINGS);
 
         if (e1 || e2 || e3 || e4) throw new Error('Some inserts failed');

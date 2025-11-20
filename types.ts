@@ -61,13 +61,6 @@ export interface SiteSettings {
   };
 }
 
-export interface User {
-  id: string;
-  username: string;
-  role: 'admin' | 'editor';
-}
-
-// Translation Keys
 export interface Translations {
   [key: string]: {
     ar: string;

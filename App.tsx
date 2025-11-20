@@ -1,4 +1,4 @@
-import React, { ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode, useState, useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
 import { Home } from './pages/Home';
 import { Admin } from './pages/Admin';
@@ -13,7 +13,7 @@ interface ErrorBoundaryState {
 }
 
 // Simple Error Boundary to catch rendering errors
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   // Explicitly declare state property to fix TypeScript errors
   public state: ErrorBoundaryState = {
     hasError: false,
@@ -52,9 +52,9 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
 // Simple hash-based router implementation
 const Router = () => {
-  const [route, setRoute] = React.useState(window.location.hash || '#');
+  const [route, setRoute] = useState(window.location.hash || '#');
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleHashChange = () => setRoute(window.location.hash || '#');
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
