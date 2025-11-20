@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { AppProvider } from './context/AppContext';
 import { Home } from './pages/Home';
 import { Admin } from './pages/Admin';
@@ -13,7 +13,7 @@ interface ErrorBoundaryState {
 }
 
 // Simple Error Boundary to catch rendering errors
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   // Explicitly declare state property to fix TypeScript errors
   public state: ErrorBoundaryState = {
     hasError: false,

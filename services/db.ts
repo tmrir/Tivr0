@@ -2,7 +2,6 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings } from '../types';
 
 /* --- FALLBACK / SEED DATA --- */
-/* Used when Supabase is not connected or returns errors */
 
 const SEED_SERVICES: Service[] = [
   {
@@ -122,16 +121,21 @@ export const db = {
   services: {
     getAll: async (): Promise<Service[]> => {
       if (!isSupabaseConfigured) return SEED_SERVICES;
-      const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
-      if (error) { 
-        console.warn('DB Fetch Error (Services), using fallback:', error.message); 
-        return SEED_SERVICES; 
+      try {
+        const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
+        // If error occurs, or if data is empty (fresh DB), return SEED data for display
+        if (error) throw error;
+        if (!data || data.length === 0) return SEED_SERVICES;
+        return (data as unknown as Service[]);
+      } catch (error) {
+        console.warn('DB Services fallback:', error);
+        return SEED_SERVICES;
       }
-      return (data as unknown as Service[]) || [];
     },
     save: async (item: Service) => {
       if (!isSupabaseConfigured) return { error: null, data: [item] };
       const payload = { ...item };
+      // Convert seed IDs (numeric strings) to new inserts so they get valid UUIDs
       if (payload.id === 'new' || !payload.id.includes('-')) {
         // @ts-ignore
         delete payload.id;
@@ -147,12 +151,15 @@ export const db = {
   packages: {
     getAll: async (): Promise<Package[]> => {
       if (!isSupabaseConfigured) return SEED_PACKAGES;
-      const { data, error } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
-      if (error) { 
-        console.warn('DB Fetch Error (Packages), using fallback:', error.message);
-        return SEED_PACKAGES; 
+      try {
+        const { data, error } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
+        if (error) throw error;
+        if (!data || data.length === 0) return SEED_PACKAGES;
+        return (data as unknown as Package[]);
+      } catch (error) {
+        console.warn('DB Packages fallback:', error);
+        return SEED_PACKAGES;
       }
-      return (data as unknown as Package[]) || [];
     },
     save: async (item: Package) => {
        if (!isSupabaseConfigured) return;
@@ -172,12 +179,15 @@ export const db = {
   caseStudies: {
     getAll: async (): Promise<CaseStudy[]> => {
       if (!isSupabaseConfigured) return SEED_CASES;
-      const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
-      if (error) { 
-        console.warn('DB Fetch Error (Cases), using fallback:', error.message);
-        return SEED_CASES; 
+      try {
+        const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
+        if (error) throw error;
+        if (!data || data.length === 0) return SEED_CASES;
+        return (data as unknown as CaseStudy[]);
+      } catch (error) {
+        console.warn('DB CaseStudies fallback:', error);
+        return SEED_CASES;
       }
-      return (data as unknown as CaseStudy[]) || [];
     },
     save: async (item: CaseStudy) => {
        if (!isSupabaseConfigured) return;
@@ -197,12 +207,15 @@ export const db = {
   team: {
     getAll: async (): Promise<TeamMember[]> => {
       if (!isSupabaseConfigured) return SEED_TEAM;
-      const { data, error } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
-      if (error) { 
-        console.warn('DB Fetch Error (Team), using fallback:', error.message);
-        return SEED_TEAM; 
+      try {
+        const { data, error } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
+        if (error) throw error;
+        if (!data || data.length === 0) return SEED_TEAM;
+        return (data as unknown as TeamMember[]);
+      } catch (error) {
+        console.warn('DB Team fallback:', error);
+        return SEED_TEAM;
       }
-      return (data as unknown as TeamMember[]) || [];
     },
     save: async (item: TeamMember) => {
        if (!isSupabaseConfigured) return;
@@ -222,17 +235,19 @@ export const db = {
   settings: {
     get: async (): Promise<SiteSettings> => {
       if (!isSupabaseConfigured) return FALLBACK_SETTINGS;
-      const { data, error } = await supabase.from('site_settings').select('*').single();
-      if (error || !data) {
-        return FALLBACK_SETTINGS; 
+      try {
+        const { data, error } = await supabase.from('site_settings').select('*').single();
+        if (error || !data) return FALLBACK_SETTINGS;
+        return {
+           siteName: data.site_name,
+           contactEmail: data.contact_email,
+           contactPhone: data.contact_phone,
+           address: data.address,
+           socialLinks: data.social_links
+        } as unknown as SiteSettings;
+      } catch (error) {
+        return FALLBACK_SETTINGS;
       }
-      return {
-         siteName: data.site_name,
-         contactEmail: data.contact_email,
-         contactPhone: data.contact_phone,
-         address: data.address,
-         socialLinks: data.social_links
-      } as unknown as SiteSettings;
     },
     save: async (settings: SiteSettings) => {
       if (!isSupabaseConfigured) return;
@@ -247,23 +262,16 @@ export const db = {
       return await supabase.from('site_settings').upsert(payload);
     }
   },
-  // IMPORTANT: Function to Reset DB and Fill with Seed Data
   seedDatabase: async () => {
     if (!isSupabaseConfigured) return false;
     try {
-        // Clear existing data (Optional - be careful in production)
-        // await supabase.from('services').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        
-        // Insert Seed Data
-        // We loop to avoid inserting ID collision if we don't clear first, 
-        // but for simplicity in this demo we just insert without IDs (let Supabase generate UUIDs)
-        
+        // Insert Seed Data (remove IDs to let Supabase generate UUIDs)
         const { error: e1 } = await supabase.from('services').insert(SEED_SERVICES.map(({id, ...rest}) => rest));
         const { error: e2 } = await supabase.from('packages').insert(SEED_PACKAGES.map(({id, ...rest}) => rest));
         const { error: e3 } = await supabase.from('team_members').insert(SEED_TEAM.map(({id, ...rest}) => rest));
         const { error: e4 } = await supabase.from('case_studies').insert(SEED_CASES.map(({id, ...rest}) => rest));
         
-        // Settings
+        // Ensure settings exist
         await db.settings.save(FALLBACK_SETTINGS);
 
         if (e1 || e2 || e3 || e4) throw new Error('Some inserts failed');
