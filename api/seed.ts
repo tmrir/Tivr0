@@ -2,6 +2,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from './utils/supabaseAdmin';
 
+// Seed Data Content
 const SEED_DATA = {
   services: [
     { title: { ar: 'تحسين محركات البحث', en: 'SEO Optimization' }, description: { ar: 'نساعدك في تصدر نتائج البحث.', en: 'Rank higher in search results.' }, icon_name: 'Search', features: [{ ar: 'تحليل', en: 'Analysis' }] },
@@ -34,35 +35,39 @@ const SEED_DATA = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-
   try {
     console.log('🌱 Starting Server-Side Seed...');
-
-    // 1. Seed Services
-    const { error: err1 } = await supabaseAdmin.from('services').insert(SEED_DATA.services);
+    
+    // 1. Clear and Insert Services
+    // Note: Using upsert or delete+insert depends on strategy. Here we allow appending/updating.
+    // For a fresh seed, you might want to clean up first, but be careful with production data.
+    
+    const { error: err1 } = await supabaseAdmin.from('services').upsert(SEED_DATA.services, { onConflict: 'title' });
     if (err1) console.error('Services Error:', err1);
 
-    // 2. Seed Packages
-    const { error: err2 } = await supabaseAdmin.from('packages').insert(SEED_DATA.packages);
+    const { error: err2 } = await supabaseAdmin.from('packages').upsert(SEED_DATA.packages, { onConflict: 'name' });
     if (err2) console.error('Packages Error:', err2);
 
-    // 3. Seed Team
-    const { error: err3 } = await supabaseAdmin.from('team_members').insert(SEED_DATA.team);
+    const { error: err3 } = await supabaseAdmin.from('team_members').upsert(SEED_DATA.team, { onConflict: 'name' });
     if (err3) console.error('Team Error:', err3);
 
-    // 4. Seed Cases
-    const { error: err4 } = await supabaseAdmin.from('case_studies').insert(SEED_DATA.cases);
+    const { error: err4 } = await supabaseAdmin.from('case_studies').upsert(SEED_DATA.cases, { onConflict: 'client' });
     if (err4) console.error('Cases Error:', err4);
 
-    // 5. Seed Settings
     const { error: err5 } = await supabaseAdmin.from('site_settings').upsert(SEED_DATA.settings);
     if (err5) console.error('Settings Error:', err5);
 
-    return res.status(200).json({ success: true, message: 'Database seeded successfully' });
+    if (err1 || err2 || err3 || err4 || err5) {
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Partial failure in seeding. Check logs.', 
+            errors: { services: err1, packages: err2, team: err3, cases: err4, settings: err5 } 
+        });
+    }
+
+    return res.status(200).json({ success: true, message: 'Database seeded successfully with Service Role.' });
   } catch (error: any) {
-    console.error('❌ Seed Failed:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('❌ Seed Fatal Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 }

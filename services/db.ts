@@ -70,15 +70,17 @@ const triggerServerSeed = async () => {
 };
 
 /* --- DB SERVICE --- */
-// IMPORTANT: This service relies on correct RLS policies in Supabase:
-// 1. Public READ (Select)
-// 2. Authenticated WRITE (Insert/Update/Delete) -> Allows Admin to save
+// The "CRUD" operations here use the Client Supabase SDK.
+// For them to work, you MUST execute the 'supabase_rls_setup.sql' script to allow Authenticated Users to write.
+// The "Seed" operations are delegated to the Server API to bypass RLS when the DB is empty.
 export const db = {
   services: {
     getAll: async (): Promise<Service[]> => {
       const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
-      // If empty, trigger seed
+      
+      // If empty or RLS blocked reading (rare if public read is on), try seeding
       if (!error && (!data || data.length === 0)) {
+         console.log("Empty Services table detected. Attempting to seed via Server API...");
          await triggerServerSeed();
          const { data: retry } = await supabase.from('services').select('*').order('created_at', { ascending: true });
          return retry?.map(mapServiceFromDB) || [];
@@ -151,7 +153,6 @@ export const db = {
     get: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase.from('site_settings').select('*').single();
       if (!data || error) {
-          // Seed happens via API, try fetching once more after small delay if needed or rely on defaults
           await triggerServerSeed(); 
           const { data: retry } = await supabase.from('site_settings').select('*').single();
           return mapSettingsFromDB(retry || {});
@@ -159,6 +160,7 @@ export const db = {
       return mapSettingsFromDB(data);
     },
     save: async (settings: SiteSettings) => {
+      // Always use ID 1 for singleton settings
       const payload = { id: 1, ...mapSettingsToDB(settings) };
       return await supabase.from('site_settings').upsert(payload);
     }
