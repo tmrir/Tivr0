@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
-import { supabase } from '../services/supabase';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString } from '../types';
 import { Plus, Trash2, Edit2, Save, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, Database, RefreshCw } from 'lucide-react';
@@ -173,10 +173,17 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-      db.services.getAll({ useFallback: false }).then((d) => {
-          setServices(d);
-          setLoading(false);
-      });
+      const init = async () => {
+        let data = await db.services.getAll({ useFallback: false });
+        // Auto Seed if connected but empty
+        if (data.length === 0 && isSupabaseConfigured) {
+            await db.services.seed();
+            data = await db.services.getAll({ useFallback: false });
+        }
+        setServices(data);
+        setLoading(false);
+      };
+      init();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -187,12 +194,16 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     setSaving(false);
     setEditing(null);
     onUpdate();
+    // Reload list
+    const data = await db.services.getAll({ useFallback: false });
+    setServices(data);
   };
 
   const handleDelete = async (id: string) => {
     if (confirm(t('admin.confirm'))) {
       await db.services.delete(id);
       onUpdate();
+      setServices(services.filter(s => s.id !== id));
     }
   };
 
@@ -212,7 +223,7 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
 
       {services.length === 0 && !editing && (
            <div className="bg-yellow-50 p-4 rounded border border-yellow-200 text-yellow-800 mb-4">
-               {t('admin.empty')} {t('admin.seed.desc')}
+               {t('admin.empty')}
            </div>
       )}
 
@@ -266,9 +277,19 @@ const TeamManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     const [team, setTeam] = useState<TeamMember[]>([]);
     const [editing, setEditing] = useState<TeamMember | null>(null);
     const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
   
     useEffect(() => {
-        db.team.getAll({ useFallback: false }).then(setTeam);
+        const init = async () => {
+            let data = await db.team.getAll({ useFallback: false });
+            if (data.length === 0 && isSupabaseConfigured) {
+                await db.team.seed();
+                data = await db.team.getAll({ useFallback: false });
+            }
+            setTeam(data);
+            setLoading(false);
+        };
+        init();
     }, []);
   
     const handleSave = async (e: React.FormEvent) => {
@@ -279,14 +300,19 @@ const TeamManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
       setSaving(false);
       setEditing(null);
       onUpdate();
+      const data = await db.team.getAll({ useFallback: false });
+      setTeam(data);
     };
 
     const handleDelete = async (id: string) => {
         if (confirm(t('admin.confirm'))) {
           await db.team.delete(id);
           onUpdate();
+          setTeam(team.filter(x => x.id !== id));
         }
-      };
+    };
+
+    if (loading) return <div>{t('admin.loading')}</div>;
   
     return (
       <div>
@@ -337,8 +363,20 @@ const PackagesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     const [items, setItems] = useState<Package[]>([]);
     const [editing, setEditing] = useState<Package | null>(null);
     const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => { db.packages.getAll({ useFallback: false }).then(setItems); }, []);
+    useEffect(() => { 
+        const init = async () => {
+            let data = await db.packages.getAll({ useFallback: false });
+            if (data.length === 0 && isSupabaseConfigured) {
+                await db.packages.seed();
+                data = await db.packages.getAll({ useFallback: false });
+            }
+            setItems(data);
+            setLoading(false);
+        };
+        init();
+    }, []);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -348,11 +386,18 @@ const PackagesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
         setSaving(false);
         setEditing(null);
         onUpdate();
+        setItems(await db.packages.getAll({ useFallback: false }));
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm(t('admin.confirm'))) { await db.packages.delete(id); onUpdate(); }
+        if (confirm(t('admin.confirm'))) { 
+            await db.packages.delete(id); 
+            onUpdate();
+            setItems(items.filter(x => x.id !== id));
+        }
     };
+
+    if (loading) return <div>{t('admin.loading')}</div>;
 
     return (
         <div>
@@ -404,8 +449,20 @@ const CaseStudiesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) =>
     const [items, setItems] = useState<CaseStudy[]>([]);
     const [editing, setEditing] = useState<CaseStudy | null>(null);
     const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => { db.caseStudies.getAll({ useFallback: false }).then(setItems); }, []);
+    useEffect(() => { 
+        const init = async () => {
+            let data = await db.caseStudies.getAll({ useFallback: false });
+            if (data.length === 0 && isSupabaseConfigured) {
+                await db.caseStudies.seed();
+                data = await db.caseStudies.getAll({ useFallback: false });
+            }
+            setItems(data);
+            setLoading(false);
+        };
+        init();
+    }, []);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -415,11 +472,18 @@ const CaseStudiesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) =>
         setSaving(false);
         setEditing(null);
         onUpdate();
+        setItems(await db.caseStudies.getAll({ useFallback: false }));
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm(t('admin.confirm'))) { await db.caseStudies.delete(id); onUpdate(); }
+        if (confirm(t('admin.confirm'))) { 
+            await db.caseStudies.delete(id); 
+            onUpdate();
+            setItems(items.filter(x => x.id !== id));
+        }
     };
+
+    if (loading) return <div>{t('admin.loading')}</div>;
 
     return (
         <div>

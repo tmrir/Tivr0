@@ -152,6 +152,12 @@ export const db = {
     delete: async (id: string) => {
       if (!isSupabaseConfigured) return;
       return await supabase.from('services').delete().eq('id', id);
+    },
+    seed: async () => {
+      if (!isSupabaseConfigured) return;
+      // Strip IDs to let Supabase generate new UUIDs
+      const data = SEED_SERVICES.map(({id, ...rest}) => rest);
+      await supabase.from('services').insert(data);
     }
   },
   packages: {
@@ -179,6 +185,11 @@ export const db = {
     delete: async (id: string) => {
       if (!isSupabaseConfigured) return;
       return await supabase.from('packages').delete().eq('id', id);
+    },
+    seed: async () => {
+        if (!isSupabaseConfigured) return;
+        const data = SEED_PACKAGES.map(({id, ...rest}) => rest);
+        await supabase.from('packages').insert(data);
     }
   },
   caseStudies: {
@@ -206,6 +217,11 @@ export const db = {
     delete: async (id: string) => {
       if (!isSupabaseConfigured) return;
       return await supabase.from('case_studies').delete().eq('id', id);
+    },
+    seed: async () => {
+        if (!isSupabaseConfigured) return;
+        const data = SEED_CASES.map(({id, ...rest}) => rest);
+        await supabase.from('case_studies').insert(data);
     }
   },
   team: {
@@ -233,6 +249,11 @@ export const db = {
     delete: async (id: string) => {
       if (!isSupabaseConfigured) return;
       return await supabase.from('team_members').delete().eq('id', id);
+    },
+    seed: async () => {
+        if (!isSupabaseConfigured) return;
+        const data = SEED_TEAM.map(({id, ...rest}) => rest);
+        await supabase.from('team_members').insert(data);
     }
   },
   settings: {
@@ -268,13 +289,11 @@ export const db = {
   seedDatabase: async () => {
     if (!isSupabaseConfigured) return false;
     try {
-        const { error: e1 } = await supabase.from('services').insert(SEED_SERVICES.map(({id, ...rest}) => rest));
-        const { error: e2 } = await supabase.from('packages').insert(SEED_PACKAGES.map(({id, ...rest}) => rest));
-        const { error: e3 } = await supabase.from('team_members').insert(SEED_TEAM.map(({id, ...rest}) => rest));
-        const { error: e4 } = await supabase.from('case_studies').insert(SEED_CASES.map(({id, ...rest}) => rest));
+        await db.services.seed();
+        await db.packages.seed();
+        await db.team.seed();
+        await db.caseStudies.seed();
         await db.settings.save(FALLBACK_SETTINGS);
-
-        if (e1 || e2 || e3 || e4) throw new Error('Some inserts failed');
         return true;
     } catch (error) {
         console.error('Seed Error:', error);
