@@ -4,8 +4,8 @@ import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
-import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle } from 'lucide-react';
+import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, SiteSettings } from '../types';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Globe, Phone, Share2, Type } from 'lucide-react';
 
 interface ManagerProps {
   onUpdate: () => void;
@@ -518,21 +518,123 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 
 const SettingsManager = () => {
   const { t } = useApp();
-  const [settings, setSettings] = useState<any>(null);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [section, setSection] = useState<'general' | 'contact' | 'social' | 'texts' | 'db'>('general');
+
   useEffect(() => { db.settings.get().then(setSettings); }, []);
-  const save = async () => { setSaving(true); await db.settings.save(settings); setSaving(false); alert(t('admin.seed.success')); window.location.reload(); };
+  
+  const save = async () => { 
+      if (!settings) return;
+      setSaving(true); 
+      await db.settings.save(settings); 
+      setSaving(false); 
+      alert(t('admin.seed.success')); 
+      window.location.reload(); 
+  };
+
   if (!settings) return <div>{t('admin.loading')}</div>;
+
   return (
-    <div className="max-w-2xl space-y-8">
-       <div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('admin.settings.general')}</h2>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
-                <div><label className="block text-sm font-bold text-slate-700 mb-1">Site Name (EN)</label><input className="w-full border p-2 rounded" value={settings.siteName.en} onChange={e => setSettings({...settings, siteName: {...settings.siteName, en: e.target.value}})} /></div>
-                <div><label className="block text-sm font-bold text-slate-700 mb-1">Site Name (AR)</label><input className="w-full border p-2 rounded" value={settings.siteName.ar} onChange={e => setSettings({...settings, siteName: {...settings.siteName, ar: e.target.value}})} /></div>
-                <button onClick={save} disabled={saving} className="bg-tivro-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2">{saving && <Loader2 className="animate-spin" size={16}/>} {t('admin.btn.save')}</button>
+    <div className="max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('admin.tab.settings')}</h2>
+        
+        <div className="flex flex-col md:flex-row gap-8">
+            <div className="w-full md:w-64 flex-shrink-0 space-y-2">
+                <button onClick={() => setSection('general')} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${section === 'general' ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+                    <Globe size={18}/> {t('admin.settings.general')}
+                </button>
+                <button onClick={() => setSection('contact')} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${section === 'contact' ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+                    <Phone size={18}/> {t('admin.settings.contact')}
+                </button>
+                <button onClick={() => setSection('social')} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${section === 'social' ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+                    <Share2 size={18}/> {t('admin.settings.social')}
+                </button>
+                <button onClick={() => setSection('texts')} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${section === 'texts' ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+                    <Type size={18}/> {t('admin.settings.sections')}
+                </button>
+                 <button onClick={() => setSection('db')} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${section === 'db' ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+                    <SettingsIcon size={18}/> {t('admin.settings.db')}
+                </button>
             </div>
-       </div>
+
+            <div className="flex-1 bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+                {section === 'general' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.general')}</h3>
+                        <div><label className="block text-sm font-bold text-slate-700 mb-1">Site Name (EN)</label><input className="w-full border p-3 rounded-lg" value={settings.siteName.en} onChange={e => setSettings({...settings, siteName: {...settings.siteName, en: e.target.value}})} /></div>
+                        <div><label className="block text-sm font-bold text-slate-700 mb-1">Site Name (AR)</label><input className="w-full border p-3 rounded-lg" value={settings.siteName.ar} onChange={e => setSettings({...settings, siteName: {...settings.siteName, ar: e.target.value}})} /></div>
+                    </div>
+                )}
+
+                {section === 'contact' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.contact')}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label className="block text-sm font-bold text-slate-700 mb-1">{t('admin.set.email')}</label><input className="w-full border p-3 rounded-lg" value={settings.contactEmail} onChange={e => setSettings({...settings, contactEmail: e.target.value})} /></div>
+                            <div><label className="block text-sm font-bold text-slate-700 mb-1">{t('admin.set.phone')}</label><input className="w-full border p-3 rounded-lg" value={settings.contactPhone} onChange={e => setSettings({...settings, contactPhone: e.target.value})} /></div>
+                        </div>
+                        <LocalizedInput label={t('admin.set.address_ar')} value={settings.address} onChange={v => setSettings({...settings, address: v})} />
+                    </div>
+                )}
+
+                {section === 'social' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.social')}</h3>
+                        <div><label className="block text-sm font-bold text-slate-700 mb-1">Twitter URL</label><input className="w-full border p-3 rounded-lg" value={settings.socialLinks.twitter} onChange={e => setSettings({...settings, socialLinks: {...settings.socialLinks, twitter: e.target.value}})} /></div>
+                        <div><label className="block text-sm font-bold text-slate-700 mb-1">LinkedIn URL</label><input className="w-full border p-3 rounded-lg" value={settings.socialLinks.linkedin} onChange={e => setSettings({...settings, socialLinks: {...settings.socialLinks, linkedin: e.target.value}})} /></div>
+                        <div><label className="block text-sm font-bold text-slate-700 mb-1">Instagram URL</label><input className="w-full border p-3 rounded-lg" value={settings.socialLinks.instagram} onChange={e => setSettings({...settings, socialLinks: {...settings.socialLinks, instagram: e.target.value}})} /></div>
+                    </div>
+                )}
+
+                {section === 'texts' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.sections')}</h3>
+                        <LocalizedInput 
+                            label={t('admin.set.work_title_ar')} 
+                            value={settings.sectionTexts?.workTitle || {ar:'', en:''}} 
+                            onChange={v => setSettings({...settings, sectionTexts: {...(settings.sectionTexts || {workSubtitle: {ar:'',en:''}}), workTitle: v}})} 
+                        />
+                        <LocalizedInput 
+                            label={t('admin.set.work_sub_ar')} 
+                            value={settings.sectionTexts?.workSubtitle || {ar:'', en:''}} 
+                            onChange={v => setSettings({...settings, sectionTexts: {...(settings.sectionTexts || {workTitle: {ar:'',en:''}}), workSubtitle: v}})} 
+                        />
+                    </div>
+                )}
+
+                {section === 'db' && (
+                    <div className="space-y-6 animate-fade-in">
+                         <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.db')}</h3>
+                         <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-6">
+                             <p className="text-sm text-amber-800">{t('admin.seed.desc')}</p>
+                         </div>
+                         <button 
+                             onClick={async () => {
+                                 if(confirm(t('admin.seed.warning'))) {
+                                     const res = await fetch('/api/seed', { method: 'POST' });
+                                     const json = await res.json();
+                                     if(res.ok) alert(t('admin.seed.success'));
+                                     else alert('Error: ' + JSON.stringify(json));
+                                 }
+                             }} 
+                             className="bg-slate-800 text-white px-6 py-3 rounded-lg font-bold hover:bg-slate-900 transition w-full flex justify-center"
+                         >
+                             {t('admin.seed.btn')}
+                         </button>
+                    </div>
+                )}
+
+                {section !== 'db' && (
+                     <div className="pt-6 mt-6 border-t flex justify-end">
+                        <button onClick={save} disabled={saving} className="bg-tivro-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-tivro-primary/20">
+                            {saving && <Loader2 className="animate-spin" size={18}/>} 
+                            {t('admin.btn.save')}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
     </div>
   );
 };

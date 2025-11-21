@@ -67,6 +67,10 @@ export interface SiteSettings {
     linkedin: string;
     instagram: string;
   };
+  sectionTexts: {
+    workTitle: LocalizedString;
+    workSubtitle: LocalizedString;
+  };
 }
 
 export interface Translations {

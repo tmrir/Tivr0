@@ -64,9 +64,20 @@ const mapSettingsFromDB = (row: any): SiteSettings => ({
   contactEmail: row.contact_email || '',
   contactPhone: row.contact_phone || '',
   address: row.address || { ar: '', en: '' },
-  socialLinks: row.social_links || { twitter: '', linkedin: '', instagram: '' }
+  socialLinks: row.social_links || { twitter: '', linkedin: '', instagram: '' },
+  sectionTexts: row.section_texts || { 
+    workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
+    workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
+  }
 });
-const mapSettingsToDB = (item: SiteSettings) => ({ site_name: item.siteName, contact_email: item.contactEmail, contact_phone: item.contactPhone, address: item.address, social_links: item.socialLinks });
+const mapSettingsToDB = (item: SiteSettings) => ({ 
+  site_name: item.siteName, 
+  contact_email: item.contactEmail, 
+  contact_phone: item.contactPhone, 
+  address: item.address, 
+  social_links: item.socialLinks,
+  section_texts: item.sectionTexts
+});
 
 /* --- SERVER SEED TRIGGER --- */
 const triggerServerSeed = async () => {

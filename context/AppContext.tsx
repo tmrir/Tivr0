@@ -93,11 +93,24 @@ const TRANSLATIONS: Translations = {
 
   // Admin Settings & Seed
   'admin.settings.general': { ar: 'الإعدادات العامة', en: 'General Settings' },
+  'admin.settings.contact': { ar: 'بيانات التواصل', en: 'Contact Info' },
+  'admin.settings.social': { ar: 'التواصل الاجتماعي', en: 'Social Media' },
+  'admin.settings.sections': { ar: 'نصوص الأقسام', en: 'Section Texts' },
   'admin.settings.db': { ar: 'إجراءات قاعدة البيانات', en: 'Database Actions' },
   'admin.seed.desc': { ar: 'إذا كانت قاعدة البيانات فارغة، يمكنك استعادة المحتوى الافتراضي بضغطة زر.', en: 'If database is empty, you can restore default content with one click.' },
   'admin.seed.btn': { ar: 'استعادة البيانات الافتراضية', en: 'Reset & Seed Database' },
   'admin.seed.warning': { ar: 'سيتم إضافة البيانات الافتراضية إلى قاعدة البيانات. هل تود الاستمرار؟', en: 'Default data will be added to DB. Continue?' },
   'admin.seed.success': { ar: 'تمت الاستعادة بنجاح! جاري التحديث...', en: 'Seeding successful! Refreshing...' },
+  
+  // Settings Fields
+  'admin.set.email': { ar: 'البريد الإلكتروني', en: 'Contact Email' },
+  'admin.set.phone': { ar: 'رقم الهاتف', en: 'Phone Number' },
+  'admin.set.address_ar': { ar: 'العنوان (عربي)', en: 'Address (Arabic)' },
+  'admin.set.address_en': { ar: 'العنوان (إنجليزي)', en: 'Address (English)' },
+  'admin.set.work_title_ar': { ar: 'عنوان "أعمالنا" (عربي)', en: 'Work Title (Arabic)' },
+  'admin.set.work_title_en': { ar: 'عنوان "أعمالنا" (إنجليزي)', en: 'Work Title (English)' },
+  'admin.set.work_sub_ar': { ar: 'وصف "أعمالنا" (عربي)', en: 'Work Subtitle (Arabic)' },
+  'admin.set.work_sub_en': { ar: 'وصف "أعمالنا" (إنجليزي)', en: 'Work Subtitle (English)' },
 };
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);

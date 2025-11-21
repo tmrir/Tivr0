@@ -5,7 +5,7 @@ import { Layout } from '../components/Layout';
 import { db } from '../services/db';
 import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { Service, CaseStudy, TeamMember, Package } from '../types';
+import { Service, CaseStudy, TeamMember, Package, SiteSettings } from '../types';
 
 export const Home = () => {
   const { t, lang, dir } = useApp();
@@ -14,6 +14,7 @@ export const Home = () => {
   const [cases, setCases] = useState<CaseStudy[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   
   // Contact Form State
   const [contactName, setContactName] = useState('');
@@ -23,16 +24,18 @@ export const Home = () => {
   useEffect(() => {
     const loadData = async () => {
         try {
-            const [s, c, tData, p] = await Promise.all([
+            const [s, c, tData, p, set] = await Promise.all([
                 db.services.getAll(),
                 db.caseStudies.getAll(),
                 db.team.getAll(),
-                db.packages.getAll()
+                db.packages.getAll(),
+                db.settings.get()
             ]);
             setServices(s);
             setCases(c);
             setTeam(tData);
             setPackages(p);
+            setSettings(set);
         } catch (e) {
             console.error("Home Data Load Error", e);
         } finally {
@@ -147,8 +150,12 @@ export const Home = () => {
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">{t('section.work')}</h2>
-              <p className="text-slate-500">{lang === 'ar' ? 'أرقام تتحدث عن إنجازاتنا' : 'Numbers speaking our achievements'}</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">
+                {settings?.sectionTexts?.workTitle?.[lang] || t('section.work')}
+              </h2>
+              <p className="text-slate-500">
+                {settings?.sectionTexts?.workSubtitle?.[lang] || (lang === 'ar' ? 'أرقام تتحدث عن إنجازاتنا' : 'Numbers speaking our achievements')}
+              </p>
             </div>
             <a href="#" className="text-tivro-primary font-bold hover:underline hidden md:block">{lang === 'ar' ? 'مشاهدة الكل' : 'View All'}</a>
           </div>
@@ -187,7 +194,7 @@ export const Home = () => {
             {packages.map(pkg => (
               <div key={pkg.id} className={`relative bg-white rounded-2xl p-8 ${pkg.isPopular ? 'border-2 border-tivro-primary shadow-xl scale-105 z-10' : 'border border-slate-100 shadow-sm'}`}>
                 {pkg.isPopular && (
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-tivro-primary text-white px-4 py-1 rounded-full text-sm font-bold">
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-tivro-primary text-white px-4 py-1 rounded-full text-sm font-bold">
                     {lang === 'ar' ? 'الأكثر طلباً' : 'Most Popular'}
                   </div>
                 )}
@@ -238,6 +245,10 @@ export const Home = () => {
            <div className="flex flex-col md:flex-row justify-center gap-6">
              <div className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
                <h4 className="text-xl font-bold mb-4 flex items-center gap-2"><TrendingUp className="text-tivro-primary"/> {lang === 'ar' ? 'حجز استشارة' : 'Consultation'}</h4>
+               <div className="mb-4 space-y-1 text-sm text-slate-300">
+                   {settings?.contactEmail && <div className="flex gap-2">📧 {settings.contactEmail}</div>}
+                   {settings?.contactPhone && <div className="flex gap-2">📞 {settings.contactPhone}</div>}
+               </div>
                <form className="space-y-4 w-full md:w-80" onSubmit={handleContactSubmit}>
                  <input 
                     type="text" 

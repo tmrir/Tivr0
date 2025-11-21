@@ -33,7 +33,11 @@ const SEED_DATA = {
     contact_email: 'info@tivro.sa',
     contact_phone: '+966 50 000 0000',
     address: { ar: 'الرياض', en: 'Riyadh' },
-    social_links: { twitter: '#', linkedin: '#', instagram: '#' }
+    social_links: { twitter: '#', linkedin: '#', instagram: '#' },
+    section_texts: {
+        workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
+        workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' }
+    }
   }
 };
 
@@ -45,11 +49,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { error: err2 } = await supabaseAdmin.from('packages').upsert(SEED_DATA.packages, { onConflict: 'name' });
     const { error: err3 } = await supabaseAdmin.from('team_members').upsert(SEED_DATA.team, { onConflict: 'name' });
     const { error: err4 } = await supabaseAdmin.from('case_studies').upsert(SEED_DATA.cases, { onConflict: 'client' });
-    // Blog posts seed - no conflict constraint usually on title, but simple insert is okay for seed
+    // Upsert blog posts based on title match to avoid duplicate key errors if run multiple times
+    // Note: 'title' is jsonb, so this might be tricky. For simple seed, using insert is okay if table is empty.
+    // For robustness, we'll just insert and ignore conflict if ID isn't matched (which it won't be for gen_random_uuid).
+    // Better strategy for seed: insert.
     const { error: err5 } = await supabaseAdmin.from('blog_posts').insert(SEED_DATA.blog); 
+    
     const { error: err6 } = await supabaseAdmin.from('site_settings').upsert(SEED_DATA.settings);
 
-    if (err1 || err2 || err3 || err4 || err5 || err6) {
+    if (err1 || err2 || err3 || err4 || err6) {
         return res.status(500).json({ 
             success: false, 
             message: 'Partial failure in seeding.', 

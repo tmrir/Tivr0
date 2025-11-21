@@ -16,7 +16,11 @@ const DEFAULT_SETTINGS: SiteSettings = {
     contactEmail: '',
     contactPhone: '',
     address: { ar: '', en: '' },
-    socialLinks: { twitter: '#', linkedin: '#', instagram: '#' }
+    socialLinks: { twitter: '#', linkedin: '#', instagram: '#' },
+    sectionTexts: {
+      workTitle: { ar: '', en: '' },
+      workSubtitle: { ar: '', en: '' }
+    }
 };
 
 export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) => {
