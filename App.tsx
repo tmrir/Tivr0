@@ -1,5 +1,4 @@
-
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { Component, ReactNode, useState, useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
 import { Home } from './pages/Home';
 import { Admin } from './pages/Admin';
@@ -14,7 +13,7 @@ interface ErrorBoundaryState {
 }
 
 // Simple Error Boundary to catch rendering errors
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public state: ErrorBoundaryState = {
     hasError: false,
     error: null
