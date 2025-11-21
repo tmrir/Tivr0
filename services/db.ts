@@ -2,8 +2,7 @@
 import { supabase } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings } from '../types';
 
-/* --- DATA MAPPERS (Snake_Case <-> CamelCase) --- */
-// ... (Mappers remain the same as previous version, assuming they are correct)
+/* --- DATA MAPPERS --- */
 const mapServiceFromDB = (row: any): Service => ({
   id: row.id,
   title: row.title || { ar: '', en: '' },
@@ -11,13 +10,7 @@ const mapServiceFromDB = (row: any): Service => ({
   features: row.features || [],
   iconName: row.icon_name || 'HelpCircle'
 });
-
-const mapServiceToDB = (item: Service) => ({
-  title: item.title,
-  description: item.description,
-  features: item.features,
-  icon_name: item.iconName
-});
+const mapServiceToDB = (item: Service) => ({ title: item.title, description: item.description, features: item.features, icon_name: item.iconName });
 
 const mapPackageFromDB = (row: any): Package => ({
   id: row.id,
@@ -26,13 +19,7 @@ const mapPackageFromDB = (row: any): Package => ({
   features: row.features || [],
   isPopular: row.is_popular || false
 });
-
-const mapPackageToDB = (item: Package) => ({
-  name: item.name,
-  price: item.price,
-  features: item.features,
-  is_popular: item.isPopular
-});
+const mapPackageToDB = (item: Package) => ({ name: item.name, price: item.price, features: item.features, is_popular: item.isPopular });
 
 const mapTeamFromDB = (row: any): TeamMember => ({
   id: row.id,
@@ -41,13 +28,7 @@ const mapTeamFromDB = (row: any): TeamMember => ({
   image: row.image || '',
   linkedin: row.linkedin || ''
 });
-
-const mapTeamToDB = (item: TeamMember) => ({
-  name: item.name,
-  role: item.role,
-  image: item.image,
-  linkedin: item.linkedin
-});
+const mapTeamToDB = (item: TeamMember) => ({ name: item.name, role: item.role, image: item.image, linkedin: item.linkedin });
 
 const mapCaseFromDB = (row: any): CaseStudy => ({
   id: row.id,
@@ -58,15 +39,7 @@ const mapCaseFromDB = (row: any): CaseStudy => ({
   image: row.image || '',
   stats: row.stats || []
 });
-
-const mapCaseToDB = (item: CaseStudy) => ({
-  client: item.client,
-  title: item.title,
-  category: item.category,
-  result: item.result,
-  image: item.image,
-  stats: item.stats
-});
+const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, stats: item.stats });
 
 const mapSettingsFromDB = (row: any): SiteSettings => ({
   siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
@@ -75,55 +48,45 @@ const mapSettingsFromDB = (row: any): SiteSettings => ({
   address: row.address || { ar: '', en: '' },
   socialLinks: row.social_links || { twitter: '', linkedin: '', instagram: '' }
 });
+const mapSettingsToDB = (item: SiteSettings) => ({ site_name: item.siteName, contact_email: item.contactEmail, contact_phone: item.contactPhone, address: item.address, social_links: item.socialLinks });
 
-const mapSettingsToDB = (item: SiteSettings) => ({
-  site_name: item.siteName,
-  contact_email: item.contactEmail,
-  contact_phone: item.contactPhone,
-  address: item.address,
-  social_links: item.socialLinks
-});
-
-/* --- HELPER: Call Server-Side Seed --- */
-const callServerSeed = async () => {
+/* --- SERVER SEED TRIGGER --- */
+const triggerServerSeed = async () => {
   try {
-    console.log('🌱 Calling Server-Side Seed API...');
+    console.log('🔄 Triggering Server-Side Seed...');
     const res = await fetch('/api/seed', { method: 'POST' });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Unknown error');
-    console.log('✅ Server Seed Success:', json.message);
-    return true;
-  } catch (error) {
-    console.error('❌ Server Seed Failed:', error);
+    if (res.ok) {
+      console.log('✅ Seed Success:', json);
+      return true;
+    } else {
+      console.error('⚠️ Seed Error:', json);
+      return false;
+    }
+  } catch (e) {
+    console.error('❌ Network Error triggering seed:', e);
     return false;
   }
 };
 
-const cleanIdForSave = (item: any) => {
-  const payload = { ...item };
-  if (payload.id === 'new' || (typeof payload.id === 'string' && payload.id.length < 10)) {
-    delete payload.id;
-  }
-  return payload;
-};
-
-/* --- DB IMPLEMENTATION --- */
+/* --- DB SERVICE --- */
+// IMPORTANT: This service relies on correct RLS policies in Supabase:
+// 1. Public READ (Select)
+// 2. Authenticated WRITE (Insert/Update/Delete) -> Allows Admin to save
 export const db = {
   services: {
     getAll: async (): Promise<Service[]> => {
       const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
-      
-      // If empty, trigger server seed then retry fetch
+      // If empty, trigger seed
       if (!error && (!data || data.length === 0)) {
-         await callServerSeed();
+         await triggerServerSeed();
          const { data: retry } = await supabase.from('services').select('*').order('created_at', { ascending: true });
          return retry?.map(mapServiceFromDB) || [];
       }
-
       return data?.map(mapServiceFromDB) || [];
     },
     save: async (item: Service) => {
-      const payload = cleanIdForSave(mapServiceToDB(item));
+      const payload = mapServiceToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
       return await supabase.from('services').upsert([payload]);
     },
@@ -133,16 +96,15 @@ export const db = {
   packages: {
     getAll: async (): Promise<Package[]> => {
       const { data, error } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
-      
       if (!error && (!data || data.length === 0)) {
-         await callServerSeed();
+         await triggerServerSeed();
          const { data: retry } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
          return retry?.map(mapPackageFromDB) || [];
       }
       return data?.map(mapPackageFromDB) || [];
     },
     save: async (item: Package) => {
-      const payload = cleanIdForSave(mapPackageToDB(item));
+      const payload = mapPackageToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
       return await supabase.from('packages').upsert([payload]);
     },
@@ -152,16 +114,15 @@ export const db = {
   team: {
     getAll: async (): Promise<TeamMember[]> => {
       const { data, error } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
-      
       if (!error && (!data || data.length === 0)) {
-         await callServerSeed();
+         await triggerServerSeed();
          const { data: retry } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
          return retry?.map(mapTeamFromDB) || [];
       }
       return data?.map(mapTeamFromDB) || [];
     },
     save: async (item: TeamMember) => {
-      const payload = cleanIdForSave(mapTeamToDB(item));
+      const payload = mapTeamToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
       return await supabase.from('team_members').upsert([payload]);
     },
@@ -171,16 +132,15 @@ export const db = {
   caseStudies: {
     getAll: async (): Promise<CaseStudy[]> => {
       const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
-      
       if (!error && (!data || data.length === 0)) {
-         await callServerSeed();
+         await triggerServerSeed();
          const { data: retry } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
          return retry?.map(mapCaseFromDB) || [];
       }
       return data?.map(mapCaseFromDB) || [];
     },
     save: async (item: CaseStudy) => {
-      const payload = cleanIdForSave(mapCaseToDB(item));
+      const payload = mapCaseToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
       return await supabase.from('case_studies').upsert([payload]);
     },
@@ -189,17 +149,14 @@ export const db = {
 
   settings: {
     get: async (): Promise<SiteSettings> => {
-      try {
-        const { data, error } = await supabase.from('site_settings').select('*').single();
-        if (error || !data) {
-          await callServerSeed();
+      const { data, error } = await supabase.from('site_settings').select('*').single();
+      if (!data || error) {
+          // Seed happens via API, try fetching once more after small delay if needed or rely on defaults
+          await triggerServerSeed(); 
           const { data: retry } = await supabase.from('site_settings').select('*').single();
           return mapSettingsFromDB(retry || {});
-        }
-        return mapSettingsFromDB(data);
-      } catch (e) {
-        return mapSettingsFromDB({});
       }
+      return mapSettingsFromDB(data);
     },
     save: async (settings: SiteSettings) => {
       const payload = { id: 1, ...mapSettingsToDB(settings) };
