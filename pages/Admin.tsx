@@ -191,52 +191,99 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     }
   };
 
+  // Feature management logic
+  const addFeature = () => {
+      if(!editing) return;
+      const currentFeatures = editing.features || [];
+      setEditing({...editing, features: [...currentFeatures, {ar: '', en: ''}]});
+  };
+  const updateFeature = (idx: number, field: 'ar'|'en', val: string) => {
+      if(!editing) return;
+      const feats = [...(editing.features || [])];
+      feats[idx] = {...feats[idx], [field]: val};
+      setEditing({...editing, features: feats});
+  };
+  const removeFeature = (idx: number) => {
+      if(!editing) return;
+      const feats = (editing.features || []).filter((_, i) => i !== idx);
+      setEditing({...editing, features: feats});
+  };
+
   if (loading) return <div>{t('admin.loading')}</div>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.services')}</h2>
-        <button onClick={() => setEditing({ id: 'new', title: {ar:'', en:''}, description: {ar:'', en:''}, iconName: 'Star', features: [] })} className="bg-tivro-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold"><Plus size={18}/> {t('admin.btn.add')}</button>
+        <button onClick={() => setEditing({ id: 'new', title: {ar:'', en:''}, description: {ar:'', en:''}, iconName: 'Star', features: [{ar:'',en:''}] })} className="bg-tivro-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold shadow-sm hover:bg-emerald-700 transition"><Plus size={18}/> {t('admin.btn.add')}</button>
       </div>
 
       {editing ? (
-        <form onSubmit={handleSave} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-2xl">
-           <h3 className="font-bold mb-4">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
-           <LocalizedInput label={t('admin.form.title_ar')} value={editing.title} onChange={v => setEditing({...editing, title: v})} />
-           <LocalizedInput label={t('admin.form.desc_ar')} value={editing.description} onChange={v => setEditing({...editing, description: v})} />
-           <div className="mb-4">
-               <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.icon')}</label>
-               <input className="w-full border p-2 rounded" value={editing.iconName} onChange={e => setEditing({...editing, iconName: e.target.value})} />
+        <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto animate-fade-in">
+           <h3 className="font-bold text-xl text-slate-800 mb-6 pb-4 border-b">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
+           
+           <div className="mb-6">
+               <LocalizedInput label={t('admin.form.title_ar')} value={editing.title} onChange={v => setEditing({...editing, title: v})} />
+               <LocalizedInput label={t('admin.form.desc_ar')} value={editing.description} onChange={v => setEditing({...editing, description: v})} />
+               <div>
+                   <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.icon')}</label>
+                   <input className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-tivro-primary outline-none" placeholder="e.g. Search, BarChart, Code" value={editing.iconName} onChange={e => setEditing({...editing, iconName: e.target.value})} />
+                   <p className="text-xs text-slate-400 mt-1">Use Lucide icon names.</p>
+               </div>
            </div>
-           <div className="flex gap-2 justify-end">
-             <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 text-slate-500">{t('admin.btn.cancel')}</button>
-             <button disabled={saving} type="submit" className="px-4 py-2 bg-tivro-dark text-white rounded flex items-center gap-2">{saving && <Loader2 size={14} className="animate-spin"/>} {t('admin.btn.save')}</button>
+
+           <div className="mb-8">
+                <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-bold text-slate-700">Features / المميزات</label>
+                    <button type="button" onClick={addFeature} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full flex items-center gap-1 font-bold transition"><Plus size={14}/> Add Feature</button>
+                </div>
+                <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    {(editing.features || []).map((f, i) => (
+                        <div key={i} className="flex gap-3 items-start">
+                            <div className="flex-1 grid grid-cols-2 gap-3">
+                                <input className="border border-slate-200 p-2 rounded text-sm focus:ring-1 focus:ring-tivro-primary outline-none" placeholder="ميزة (عربي)" value={f.ar} onChange={e=>updateFeature(i, 'ar', e.target.value)} required />
+                                <input className="border border-slate-200 p-2 rounded text-sm focus:ring-1 focus:ring-tivro-primary outline-none" placeholder="Feature (English)" value={f.en} onChange={e=>updateFeature(i, 'en', e.target.value)} required />
+                            </div>
+                            <button type="button" onClick={()=>removeFeature(i)} className="text-slate-400 hover:text-red-500 p-2 hover:bg-red-50 rounded transition"><Trash2 size={18}/></button>
+                        </div>
+                    ))}
+                    {(!editing.features || editing.features.length === 0) && <div className="text-center text-slate-400 py-4 text-sm italic">No features added.</div>}
+                </div>
+           </div>
+
+           <div className="flex gap-3 justify-end pt-4 border-t">
+             <button type="button" onClick={() => setEditing(null)} className="px-6 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition">{t('admin.btn.cancel')}</button>
+             <button disabled={saving} type="submit" className="bg-tivro-dark text-white px-8 py-2 rounded-lg font-bold hover:bg-slate-800 transition flex items-center gap-2 shadow-lg shadow-slate-900/20">
+                {saving && <Loader2 size={16} className="animate-spin"/>} {t('admin.btn.save')}
+             </button>
            </div>
         </form>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="p-4 text-sm font-bold text-slate-600">{t('admin.form.title_ar')}</th>
-                <th className="p-4 text-sm font-bold text-slate-600">{t('admin.form.icon')}</th>
-                <th className="p-4 text-right text-sm font-bold text-slate-600">{t('admin.settings.db')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {services.map(s => (
-                <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <td className="p-4 font-medium">{s.title[lang]}</td>
-                  <td className="p-4 text-slate-500">{s.iconName}</td>
-                  <td className="p-4 flex justify-end gap-2">
-                    <button onClick={() => setEditing(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16}/></button>
-                    <button onClick={() => handleDelete(s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {services.map(s => (
+            <div key={s.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 relative group">
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-bold">{s.iconName.charAt(0)}</div>
+                    <h3 className="font-bold text-lg text-slate-800">{s.title[lang]}</h3>
+                </div>
+                <p className="text-slate-500 text-sm mb-4 line-clamp-2">{s.description[lang]}</p>
+                
+                <div className="space-y-1">
+                    {(s.features || []).slice(0, 3).map((f, idx) => (
+                        <div key={idx} className="text-xs text-slate-400 flex items-center gap-2">
+                            <div className="w-1 h-1 bg-tivro-primary rounded-full"></div>
+                            {f[lang]}
+                        </div>
+                    ))}
+                    {(s.features || []).length > 3 && <div className="text-xs text-slate-300 italic">+{s.features.length - 3} more</div>}
+                </div>
+
+                <div className="absolute top-3 right-3 hidden group-hover:flex bg-white/90 backdrop-blur shadow-sm rounded-lg border border-slate-100 p-1 z-10 gap-1">
+                    <button onClick={() => setEditing(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition"><Edit2 size={16}/></button>
+                    <button onClick={() => handleDelete(s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"><Trash2 size={16}/></button>
+                </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -274,24 +321,36 @@ const TeamManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.team')}</h2>
-                <button onClick={() => setEditing({id:'new', name:{ar:'',en:''}, role:{ar:'',en:''}, image:''})} className="bg-tivro-primary text-white px-4 py-2 rounded font-bold flex gap-2"><Plus/>{t('admin.btn.add')}</button>
+                <button onClick={() => setEditing({id:'new', name:{ar:'',en:''}, role:{ar:'',en:''}, image:''})} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 shadow-sm hover:bg-emerald-700 transition"><Plus size={18}/>{t('admin.btn.add')}</button>
             </div>
             {editing ? (
-                <form onSubmit={handleSave} className="bg-white p-6 rounded shadow border">
+                <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto animate-fade-in">
+                     <h3 className="font-bold text-xl text-slate-800 mb-6 pb-4 border-b">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
                      <LocalizedInput label={t('admin.form.name_ar')} value={editing.name} onChange={v => setEditing({...editing, name: v})} />
                      <LocalizedInput label={t('admin.form.role_ar')} value={editing.role} onChange={v => setEditing({...editing, role: v})} />
-                     <input className="w-full border p-2 rounded mb-4" placeholder="Image URL" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} />
-                     <div className="flex gap-2 justify-end"><button type="button" onClick={()=>setEditing(null)}>{t('admin.btn.cancel')}</button><button type="submit" className="bg-tivro-dark text-white px-4 py-2 rounded">{t('admin.btn.save')}</button></div>
+                     <div className="mb-6">
+                         <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label>
+                         <input className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-tivro-primary outline-none" placeholder="Image URL" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} />
+                     </div>
+                     <div className="flex gap-3 justify-end pt-4 border-t">
+                         <button type="button" onClick={()=>setEditing(null)} className="px-6 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition">{t('admin.btn.cancel')}</button>
+                         <button type="submit" disabled={saving} className="bg-tivro-dark text-white px-8 py-2 rounded-lg font-bold hover:bg-slate-800 transition flex items-center gap-2 shadow-lg shadow-slate-900/20">
+                             {saving && <Loader2 size={16} className="animate-spin"/>} {t('admin.btn.save')}
+                         </button>
+                     </div>
                 </form>
             ) : (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {team.map(m => (
-                        <div key={m.id} className="bg-white p-4 rounded shadow text-center relative group">
-                            <img src={m.image} className="w-20 h-20 rounded-full mx-auto mb-2 object-cover"/>
-                            <h3 className="font-bold">{m.name[lang]}</h3>
-                            <div className="absolute top-2 right-2 hidden group-hover:flex bg-white/90 rounded">
-                                <button onClick={()=>setEditing(m)} className="p-1 text-blue-600"><Edit2 size={14}/></button>
-                                <button onClick={()=>handleDelete(m.id)} className="p-1 text-red-600"><Trash2 size={14}/></button>
+                        <div key={m.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center relative group hover:-translate-y-1 transition duration-300">
+                            <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-slate-50 shadow-md">
+                                <img src={m.image} className="w-full h-full object-cover" alt={m.name[lang]} />
+                            </div>
+                            <h3 className="font-bold text-lg text-slate-900">{m.name[lang]}</h3>
+                            <p className="text-tivro-primary text-sm font-medium">{m.role[lang]}</p>
+                            <div className="absolute top-3 right-3 hidden group-hover:flex bg-white/90 backdrop-blur shadow-sm rounded-lg border border-slate-100 p-1 z-10 gap-1">
+                                <button onClick={()=>setEditing(m)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition"><Edit2 size={16}/></button>
+                                <button onClick={()=>handleDelete(m.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"><Trash2 size={16}/></button>
                             </div>
                         </div>
                     ))}
@@ -439,27 +498,39 @@ const CaseStudiesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) =>
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.work')}</h2>
-                <button onClick={() => setEditing({id:'new', title:{ar:'',en:''}, client:'', category:{ar:'',en:''}, result:{ar:'',en:''}, image:'', stats:[]})} className="bg-tivro-primary text-white px-4 py-2 rounded font-bold flex gap-2"><Plus/>{t('admin.btn.add')}</button>
+                <button onClick={() => setEditing({id:'new', title:{ar:'',en:''}, client:'', category:{ar:'',en:''}, result:{ar:'',en:''}, image:'', stats:[]})} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 shadow-sm hover:bg-emerald-700 transition"><Plus size={18}/>{t('admin.btn.add')}</button>
             </div>
             {editing ? (
-                <form onSubmit={handleSave} className="bg-white p-6 rounded shadow border">
-                     <input className="w-full border p-2 rounded mb-4" placeholder="Client" value={editing.client} onChange={e=>setEditing({...editing, client:e.target.value})} />
+                <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto animate-fade-in">
+                     <h3 className="font-bold text-xl text-slate-800 mb-6 pb-4 border-b">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
+                     <input className="w-full border p-3 rounded-lg mb-6 focus:ring-2 focus:ring-tivro-primary outline-none" placeholder="Client Name" value={editing.client} onChange={e=>setEditing({...editing, client:e.target.value})} />
                      <LocalizedInput label={t('admin.form.title_ar')} value={editing.title} onChange={v => setEditing({...editing, title: v})} />
                      <LocalizedInput label={t('admin.form.category_ar')} value={editing.category} onChange={v => setEditing({...editing, category: v})} />
-                     <input className="w-full border p-2 rounded mb-4" placeholder="Image URL" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} />
-                     <div className="flex gap-2 justify-end"><button type="button" onClick={()=>setEditing(null)}>{t('admin.btn.cancel')}</button><button type="submit" className="bg-tivro-dark text-white px-4 py-2 rounded">{t('admin.btn.save')}</button></div>
+                     <div className="mb-6">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label>
+                        <input className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-tivro-primary outline-none" placeholder="Image URL" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} />
+                     </div>
+                     <div className="flex gap-3 justify-end pt-4 border-t">
+                        <button type="button" onClick={()=>setEditing(null)} className="px-6 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition">{t('admin.btn.cancel')}</button>
+                        <button type="submit" disabled={saving} className="bg-tivro-dark text-white px-8 py-2 rounded-lg font-bold hover:bg-slate-800 transition flex items-center gap-2 shadow-lg shadow-slate-900/20">
+                            {saving && <Loader2 size={16} className="animate-spin"/>} {t('admin.btn.save')}
+                        </button>
+                     </div>
                 </form>
             ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {items.map(c => (
-                        <div key={c.id} className="bg-white rounded shadow overflow-hidden group relative">
-                            <img src={c.image} className="h-32 w-full object-cover"/>
-                            <div className="p-2">
-                                <h3 className="font-bold">{c.title[lang]}</h3>
+                        <div key={c.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group relative hover:shadow-md transition duration-300">
+                            <div className="h-40 w-full overflow-hidden">
+                                <img src={c.image} className="w-full h-full object-cover group-hover:scale-110 transition duration-500"/>
                             </div>
-                            <div className="absolute top-2 right-2 hidden group-hover:flex bg-white/90 rounded">
-                                <button onClick={()=>setEditing(c)} className="p-1 text-blue-600"><Edit2 size={14}/></button>
-                                <button onClick={()=>handleDelete(c.id)} className="p-1 text-red-600"><Trash2 size={14}/></button>
+                            <div className="p-4">
+                                <h3 className="font-bold text-slate-800 mb-1">{c.title[lang]}</h3>
+                                <p className="text-sm text-slate-500">{c.category[lang]}</p>
+                            </div>
+                            <div className="absolute top-3 right-3 hidden group-hover:flex bg-white/90 backdrop-blur shadow-sm rounded-lg border border-slate-100 p-1 z-10 gap-1">
+                                <button onClick={()=>setEditing(c)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition"><Edit2 size={16}/></button>
+                                <button onClick={()=>handleDelete(c.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"><Trash2 size={16}/></button>
                             </div>
                         </div>
                     ))}
@@ -509,3 +580,4 @@ const SettingsManager = () => {
     </div>
   );
 };
+    
