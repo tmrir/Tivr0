@@ -3,7 +3,6 @@ import { supabase } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings } from '../types';
 
 /* --- DATA MAPPERS (Snake_Case <-> CamelCase) --- */
-// التحويل ضروري جداً لأن Supabase يستخدم snake_case بينما التطبيق يستخدم camelCase
 
 const mapServiceFromDB = (row: any): Service => ({
   id: row.id,
@@ -85,7 +84,7 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   social_links: item.socialLinks
 });
 
-/* --- SEED DATA (بيانات البداية) --- */
+/* --- SEED DATA (Used for Auto-Seeding) --- */
 const SEED_SERVICES = [
   { title: { ar: 'تحسين محركات البحث', en: 'SEO Optimization' }, description: { ar: 'نساعدك في تصدر نتائج البحث.', en: 'Rank higher in search results.' }, icon_name: 'Search', features: [{ ar: 'تحليل', en: 'Analysis' }] },
   { title: { ar: 'إدارة حملات إعلانية', en: 'PPC Campaigns' }, description: { ar: 'حملات مدفوعة عالية العائد.', en: 'High ROI paid campaigns.' }, icon_name: 'BarChart', features: [{ ar: 'استهداف', en: 'Targeting' }] },
@@ -121,7 +120,7 @@ const DEFAULT_SETTINGS = {
 /* --- HELPERS --- */
 const cleanIdForSave = (item: any) => {
   const payload = { ...item };
-  // If ID is 'new' or just a placeholder string (not a UUID), remove it so DB generates one
+  // Removing ID 'new' lets Supabase generate a real UUID
   if (payload.id === 'new' || (typeof payload.id === 'string' && payload.id.length < 10)) {
     delete payload.id;
   }
@@ -138,7 +137,9 @@ export const db = {
       // 2. Auto-Seed Logic: If valid response but empty array, Insert Seed Data
       if (!error && (!data || data.length === 0)) {
         console.log('🌱 DB Empty: Seeding Services...');
-        await supabase.from('services').insert(SEED_SERVICES);
+        const { error: insertError } = await supabase.from('services').insert(SEED_SERVICES);
+        if (insertError) console.error("Seeding failed:", insertError);
+        
         // 3. Re-Fetch Real Data
         const { data: seeded } = await supabase.from('services').select('*').order('created_at', { ascending: true });
         return seeded?.map(mapServiceFromDB) || [];
@@ -235,16 +236,5 @@ export const db = {
       const payload = { id: 1, ...mapSettingsToDB(settings) };
       return await supabase.from('site_settings').upsert(payload);
     }
-  },
-  
-  // Utility to force a re-seed if needed via Admin
-  seedDatabase: async () => {
-    // This acts as a "Reset" now
-    await db.services.getAll();
-    await db.packages.getAll();
-    await db.team.getAll();
-    await db.caseStudies.getAll();
-    await db.settings.get();
-    return true;
   }
 };

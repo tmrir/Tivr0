@@ -1,19 +1,32 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// استخدام المفاتيح المزودة مباشرة لضمان العمل الفوري
-// في بيئة الإنتاج الحقيقية، يفضل استخدام process.env، لكن لحل المشكلة الحالية سنستخدم القيم المباشرة
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://udxgxfwzpipxptqumxrx.supabase.co';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkeGd4Znd6cGlweHB0cXVteHJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NDYwMDQsImV4cCI6MjA3OTEyMjAwNH0.azCJFR68ThudDE-VTcBG_qetIojIwnqLzYsqkFrCsFE';
+// 1. Fallback Keys: Used if environment variables fail in Vercel (Common in static builds)
+const FALLBACK_URL = 'https://udxgxfwzpipxptqumxrx.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkeGd4Znd6cGlweHB0cXVteHJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NDYwMDQsImV4cCI6MjA3OTEyMjAwNH0.azCJFR68ThudDE-VTcBG_qetIojIwnqLzYsqkFrCsFE';
 
-console.log('🔌 Connecting to Supabase:', SUPABASE_URL);
+// 2. Try to get env vars (Vite uses import.meta.env)
+const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || FALLBACK_URL;
+const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || FALLBACK_KEY;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+console.log('🔌 Initializing Supabase Client...');
+console.log('   URL:', supabaseUrl);
+// Don't log the full key for security, just check existence
+console.log('   Key Present:', !!supabaseAnonKey);
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
   },
 });
 
-// دائماً صحيح لأننا وضعنا المفاتيح يدوياً
-export const isSupabaseConfigured = true;
+// Export a helper to check connection status (simplified)
+export const checkConnection = async () => {
+    try {
+        const { error } = await supabase.from('site_settings').select('count', { count: 'exact', head: true });
+        return !error;
+    } catch (e) {
+        return false;
+    }
+};
