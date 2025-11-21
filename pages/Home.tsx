@@ -18,7 +18,7 @@ export const Home = () => {
   useEffect(() => {
     const loadData = async () => {
         try {
-            // Load all data in parallel. db.getAll() now auto-seeds if empty.
+            // Load all data from Supabase. db.getAll() now implicitly auto-seeds if empty.
             const [s, c, tData, p] = await Promise.all([
                 db.services.getAll(),
                 db.caseStudies.getAll(),
@@ -101,29 +101,25 @@ export const Home = () => {
             <div className="w-20 h-1 bg-tivro-primary mx-auto rounded-full"></div>
           </div>
           
-          {services.length === 0 ? (
-            <p className="text-center text-slate-500">No services added yet.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {services.map(s => (
-                <div key={s.id} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition duration-300 group border border-slate-100">
-                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
-                    <IconComponent name={s.iconName} className="w-7 h-7" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-3">{s.title[lang]}</h3>
-                    <p className="text-slate-600 mb-6 text-sm leading-relaxed">{s.description[lang]}</p>
-                    <ul className="space-y-2">
-                    {s.features.map((f, idx) => (
-                        <li key={idx} className="flex items-center gap-2 text-sm text-slate-500">
-                        <CheckCircle size={14} className="text-tivro-primary" />
-                        {f[lang]}
-                        </li>
-                    ))}
-                    </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {services.map(s => (
+              <div key={s.id} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition duration-300 group border border-slate-100">
+                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+                  <IconComponent name={s.iconName} className="w-7 h-7" />
                 </div>
-                ))}
-            </div>
-          )}
+                <h3 className="text-xl font-bold text-slate-900 mb-3">{s.title[lang]}</h3>
+                <p className="text-slate-600 mb-6 text-sm leading-relaxed">{s.description[lang]}</p>
+                <ul className="space-y-2">
+                  {s.features.map((f, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-sm text-slate-500">
+                      <CheckCircle size={14} className="text-tivro-primary" />
+                      {f[lang]}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -159,7 +155,6 @@ export const Home = () => {
                 </div>
               </div>
             ))}
-            {cases.length === 0 && <p>No cases found.</p>}
           </div>
         </div>
       </section>
@@ -215,14 +210,6 @@ export const Home = () => {
              ))}
           </div>
         </div>
-      </section>
-
-      {/* Blog Section (Placeholder) */}
-      <section id="blog" className="py-24 bg-slate-50">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-4">{t('nav.blog')}</h2>
-            <p className="text-slate-500">{lang === 'ar' ? 'مقالات تقنية وتسويقية قريباً...' : 'Tech & Marketing articles coming soon...'}</p>
-          </div>
       </section>
 
       {/* CTA / Contact */}

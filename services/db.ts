@@ -1,42 +1,76 @@
 
-import { supabase, isSupabaseConfigured } from './supabase';
-import { Service, CaseStudy, Package, TeamMember, SiteSettings, LocalizedString } from '../types';
+import { supabase } from './supabase';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings } from '../types';
 
-/* --- DATA MAPPERS --- */
-// Convert DB (snake_case) to App (camelCase) and vice versa
+/* --- DATA MAPPERS (Snake_Case <-> CamelCase) --- */
+// هذا الجزء ضروري جداً لضمان قراءة وحفظ البيانات بشكل صحيح
 
 const mapServiceFromDB = (row: any): Service => ({
   id: row.id,
-  title: row.title,
-  description: row.description,
-  features: row.features,
-  iconName: row.icon_name || 'HelpCircle' // Map icon_name -> iconName
+  title: row.title || { ar: '', en: '' },
+  description: row.description || { ar: '', en: '' },
+  features: row.features || [],
+  iconName: row.icon_name || 'HelpCircle'
 });
 
 const mapServiceToDB = (item: Service) => ({
   title: item.title,
   description: item.description,
   features: item.features,
-  icon_name: item.iconName // Map iconName -> icon_name
+  icon_name: item.iconName
 });
 
 const mapPackageFromDB = (row: any): Package => ({
   id: row.id,
-  name: row.name,
-  price: row.price,
-  features: row.features,
-  isPopular: row.is_popular // Map is_popular -> isPopular
+  name: row.name || { ar: '', en: '' },
+  price: row.price || '',
+  features: row.features || [],
+  isPopular: row.is_popular || false
 });
 
 const mapPackageToDB = (item: Package) => ({
   name: item.name,
   price: item.price,
   features: item.features,
-  is_popular: item.isPopular // Map isPopular -> is_popular
+  is_popular: item.isPopular
+});
+
+const mapTeamFromDB = (row: any): TeamMember => ({
+  id: row.id,
+  name: row.name || { ar: '', en: '' },
+  role: row.role || { ar: '', en: '' },
+  image: row.image || '',
+  linkedin: row.linkedin || ''
+});
+
+const mapTeamToDB = (item: TeamMember) => ({
+  name: item.name,
+  role: item.role,
+  image: item.image,
+  linkedin: item.linkedin
+});
+
+const mapCaseFromDB = (row: any): CaseStudy => ({
+  id: row.id,
+  client: row.client || '',
+  title: row.title || { ar: '', en: '' },
+  category: row.category || { ar: '', en: '' },
+  result: row.result || { ar: '', en: '' },
+  image: row.image || '',
+  stats: row.stats || []
+});
+
+const mapCaseToDB = (item: CaseStudy) => ({
+  client: item.client,
+  title: item.title,
+  category: item.category,
+  result: item.result,
+  image: item.image,
+  stats: item.stats
 });
 
 const mapSettingsFromDB = (row: any): SiteSettings => ({
-  siteName: row.site_name || { ar: '', en: '' },
+  siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
   contactEmail: row.contact_email || '',
   contactPhone: row.contact_phone || '',
   address: row.address || { ar: '', en: '' },
@@ -51,8 +85,7 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   social_links: item.socialLinks
 });
 
-/* --- SEED DATA --- */
-
+/* --- SEED DATA (للزراعة فقط) --- */
 const SEED_SERVICES = [
   { title: { ar: 'تحسين محركات البحث', en: 'SEO Optimization' }, description: { ar: 'نساعدك في تصدر نتائج البحث.', en: 'Rank higher in search results.' }, icon_name: 'Search', features: [{ ar: 'تحليل', en: 'Analysis' }] },
   { title: { ar: 'إدارة حملات إعلانية', en: 'PPC Campaigns' }, description: { ar: 'حملات مدفوعة عالية العائد.', en: 'High ROI paid campaigns.' }, icon_name: 'BarChart', features: [{ ar: 'استهداف', en: 'Targeting' }] },
@@ -77,7 +110,7 @@ const SEED_CASES = [
   { client: 'HealthApp', title: { ar: 'إطلاق تطبيق', en: 'App Launch' }, category: { ar: 'تطبيق', en: 'App' }, result: { ar: 'مليون تحميل', en: '1M Downloads' }, image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800', stats: [{ label: { ar: 'Users', en: 'Users' }, value: '1M' }] }
 ];
 
-const FALLBACK_SETTINGS = {
+const DEFAULT_SETTINGS = {
   site_name: { ar: 'تيفرو', en: 'Tivro' },
   contact_email: 'info@tivro.sa',
   contact_phone: '+966 50 000 0000',
@@ -85,145 +118,133 @@ const FALLBACK_SETTINGS = {
   social_links: { twitter: '#', linkedin: '#', instagram: '#' }
 };
 
-// Helper to remove ID for new inserts
-const cleanForSave = (item: any) => {
+/* --- HELPERS --- */
+const cleanIdForSave = (item: any) => {
   const payload = { ...item };
-  if (payload.id === 'new' || (typeof payload.id === 'string' && !payload.id.includes('-'))) {
-      delete payload.id;
+  // If ID is 'new' or just a placeholder string (not a UUID), remove it so DB generates one
+  if (payload.id === 'new' || (typeof payload.id === 'string' && payload.id.length < 10)) {
+    delete payload.id;
   }
   return payload;
 };
 
+/* --- DB IMPLEMENTATION --- */
 export const db = {
   services: {
     getAll: async (): Promise<Service[]> => {
-      if (!isSupabaseConfigured) return [];
-      
+      // 1. Try Fetch
       const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
       
-      // Auto-Seed if empty
+      // 2. Auto-Seed Logic: If valid response but empty array, Insert Seed Data
       if (!error && (!data || data.length === 0)) {
-         console.log('🌱 Seeding Services...');
-         const { error: seedError } = await supabase.from('services').insert(SEED_SERVICES);
-         if (!seedError) {
-             const { data: seeded } = await supabase.from('services').select('*').order('created_at', { ascending: true });
-             return seeded?.map(mapServiceFromDB) || [];
-         }
+        console.log('🌱 DB Empty: Seeding Services...');
+        await supabase.from('services').insert(SEED_SERVICES);
+        // 3. Re-Fetch Real Data
+        const { data: seeded } = await supabase.from('services').select('*').order('created_at', { ascending: true });
+        return seeded?.map(mapServiceFromDB) || [];
       }
-      
+
       return data?.map(mapServiceFromDB) || [];
     },
     save: async (item: Service) => {
-      if (!isSupabaseConfigured) return;
-      const payload = cleanForSave(mapServiceToDB(item));
-      // Preserve ID if it exists for updates
+      const payload = cleanIdForSave(mapServiceToDB(item));
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
       return await supabase.from('services').upsert([payload]);
     },
-    delete: async (id: string) => {
-      if (!isSupabaseConfigured) return;
-      return await supabase.from('services').delete().eq('id', id);
-    }
+    delete: async (id: string) => await supabase.from('services').delete().eq('id', id)
   },
 
   packages: {
     getAll: async (): Promise<Package[]> => {
-      if (!isSupabaseConfigured) return [];
       const { data, error } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
       
       if (!error && (!data || data.length === 0)) {
-          console.log('🌱 Seeding Packages...');
-          await supabase.from('packages').insert(SEED_PACKAGES);
-          const { data: seeded } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
-          return seeded?.map(mapPackageFromDB) || [];
+        console.log('🌱 DB Empty: Seeding Packages...');
+        await supabase.from('packages').insert(SEED_PACKAGES);
+        const { data: seeded } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
+        return seeded?.map(mapPackageFromDB) || [];
       }
       return data?.map(mapPackageFromDB) || [];
     },
     save: async (item: Package) => {
-       if (!isSupabaseConfigured) return;
-       const payload = cleanForSave(mapPackageToDB(item));
-       if (item.id && item.id !== 'new') (payload as any).id = item.id;
-       return await supabase.from('packages').upsert([payload]);
+      const payload = cleanIdForSave(mapPackageToDB(item));
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('packages').upsert([payload]);
     },
     delete: async (id: string) => await supabase.from('packages').delete().eq('id', id)
   },
 
   team: {
     getAll: async (): Promise<TeamMember[]> => {
-      if (!isSupabaseConfigured) return [];
       const { data, error } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
       
       if (!error && (!data || data.length === 0)) {
-          console.log('🌱 Seeding Team...');
-          await supabase.from('team_members').insert(SEED_TEAM);
-          const { data: seeded } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
-          return seeded as TeamMember[] || [];
+        console.log('🌱 DB Empty: Seeding Team...');
+        await supabase.from('team_members').insert(SEED_TEAM);
+        const { data: seeded } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
+        return seeded?.map(mapTeamFromDB) || [];
       }
-      return data as TeamMember[] || [];
+      return data?.map(mapTeamFromDB) || [];
     },
     save: async (item: TeamMember) => {
-       if (!isSupabaseConfigured) return;
-       const payload = cleanForSave(item); // No mapping needed for Team currently
-       return await supabase.from('team_members').upsert([payload]);
+      const payload = cleanIdForSave(mapTeamToDB(item));
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('team_members').upsert([payload]);
     },
     delete: async (id: string) => await supabase.from('team_members').delete().eq('id', id)
   },
 
   caseStudies: {
     getAll: async (): Promise<CaseStudy[]> => {
-      if (!isSupabaseConfigured) return [];
       const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
       
       if (!error && (!data || data.length === 0)) {
-          console.log('🌱 Seeding Cases...');
-          await supabase.from('case_studies').insert(SEED_CASES);
-          const { data: seeded } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
-          return seeded as CaseStudy[] || [];
+        console.log('🌱 DB Empty: Seeding Cases...');
+        await supabase.from('case_studies').insert(SEED_CASES);
+        const { data: seeded } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
+        return seeded?.map(mapCaseFromDB) || [];
       }
-      return data as CaseStudy[] || [];
+      return data?.map(mapCaseFromDB) || [];
     },
     save: async (item: CaseStudy) => {
-       if (!isSupabaseConfigured) return;
-       const payload = cleanForSave(item);
-       return await supabase.from('case_studies').upsert([payload]);
+      const payload = cleanIdForSave(mapCaseToDB(item));
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('case_studies').upsert([payload]);
     },
     delete: async (id: string) => await supabase.from('case_studies').delete().eq('id', id)
   },
 
   settings: {
     get: async (): Promise<SiteSettings> => {
-      if (!isSupabaseConfigured) return mapSettingsFromDB(FALLBACK_SETTINGS);
-      
       try {
         const { data, error } = await supabase.from('site_settings').select('*').single();
         
         if (error || !data) {
-             console.log('🌱 Seeding Settings...');
-             const payload = { id: 1, ...FALLBACK_SETTINGS };
-             await supabase.from('site_settings').upsert(payload);
-             return mapSettingsFromDB(payload);
+          console.log('🌱 DB Empty: Seeding Settings...');
+          const payload = { id: 1, ...DEFAULT_SETTINGS };
+          await supabase.from('site_settings').upsert(payload);
+          return mapSettingsFromDB(payload);
         }
-
         return mapSettingsFromDB(data);
-
-      } catch (error) {
-        console.error("Settings fetch error", error);
-        return mapSettingsFromDB(FALLBACK_SETTINGS);
+      } catch (e) {
+        console.error('Error fetching settings, using fallback', e);
+        return mapSettingsFromDB(DEFAULT_SETTINGS);
       }
     },
     save: async (settings: SiteSettings) => {
-      if (!isSupabaseConfigured) return;
       const payload = { id: 1, ...mapSettingsToDB(settings) };
       return await supabase.from('site_settings').upsert(payload);
     }
   },
   
+  // Utility to force a re-seed if needed via Admin
   seedDatabase: async () => {
-      await db.services.getAll();
-      await db.packages.getAll();
-      await db.team.getAll();
-      await db.caseStudies.getAll();
-      await db.settings.get();
-      return true;
+    // This acts as a "Reset" now
+    await db.services.getAll();
+    await db.packages.getAll();
+    await db.team.getAll();
+    await db.caseStudies.getAll();
+    await db.settings.get();
+    return true;
   }
 };

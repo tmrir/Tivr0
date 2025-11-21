@@ -1,6 +1,7 @@
+
 import { createClient } from '@supabase/supabase-js';
 
-// Helper to safely get environment variables
+// 1. محاولة قراءة المتغيرات البيئية بالطرق المختلفة
 const getEnv = (key: string) => {
   try {
     // @ts-ignore
@@ -14,25 +15,20 @@ const getEnv = (key: string) => {
       return process.env[key];
     }
   } catch (e) {
-    // Ignore errors in strict environments
+    return undefined;
   }
-  return '';
+  return undefined;
 };
 
-const rawUrl = getEnv('VITE_SUPABASE_URL');
-const rawKey = getEnv('VITE_SUPABASE_ANON_KEY');
+// 2. استخدام المفاتيح المزودة كاحتياطي استراتيجي (Hard Fallback)
+// هذا يضمن أن التطبيق سيعمل 100% حتى لو فشلت قراءة المتغيرات البيئية في Vercel
+const PROMPT_URL = 'https://udxgxfwzpipxptqumxrx.supabase.co';
+const PROMPT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkeGd4Znd6cGlweHB0cXVteHJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NDYwMDQsImV4cCI6MjA3OTEyMjAwNH0.azCJFR68ThudDE-VTcBG_qetIojIwnqLzYsqkFrCsFE';
 
-// Check if keys are actually present
-export const isSupabaseConfigured = !!rawUrl && !!rawKey && rawUrl.includes('supabase.co');
+const supabaseUrl = getEnv('VITE_SUPABASE_URL') || PROMPT_URL;
+const supabaseKey = getEnv('VITE_SUPABASE_ANON_KEY') || PROMPT_KEY;
 
-// Use valid-looking placeholders if missing to prevent 'createClient' from throwing a syntax error immediately.
-// We will handle the connection error gracefully in db.ts
-const supabaseUrl = isSupabaseConfigured ? rawUrl : 'https://placeholder-project.supabase.co';
-const supabaseKey = isSupabaseConfigured ? rawKey : 'public-anon-key-placeholder';
-
-if (!isSupabaseConfigured) {
-  console.warn('Supabase credentials missing. App will run in Demo Mode with local data.');
-}
+console.log('🔌 Initializing Supabase Connection...');
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -40,3 +36,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     autoRefreshToken: true,
   },
 });
+
+// نلغي التحقق الشرطي، نفترض دائماً أننا متصلون لأننا نملك المفاتيح
+export const isSupabaseConfigured = true;
