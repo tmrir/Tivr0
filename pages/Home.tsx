@@ -14,11 +14,15 @@ export const Home = () => {
   const [cases, setCases] = useState<CaseStudy[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
+  
+  // Contact Form State
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactSending, setContactSending] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
         try {
-            // Load all data from Supabase. db.getAll() now implicitly auto-seeds if empty.
             const [s, c, tData, p] = await Promise.all([
                 db.services.getAll(),
                 db.caseStudies.getAll(),
@@ -38,8 +42,26 @@ export const Home = () => {
     loadData();
   }, []);
 
+  const handleContactSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setContactSending(true);
+      try {
+          const { error } = await db.messages.send(contactName, contactPhone);
+          if (!error) {
+              alert(lang === 'ar' ? 'شكراً لك! سيتم التواصل معك قريباً.' : 'Thank you! We will contact you shortly.');
+              setContactName('');
+              setContactPhone('');
+          } else {
+              alert('Error sending message. Please try again.');
+          }
+      } catch (error) {
+          console.error('Contact error', error);
+      } finally {
+          setContactSending(false);
+      }
+  };
+
   const IconComponent = ({ name, className }: { name: string, className?: string }) => {
-    // Dynamically load icon or fallback to HelpCircle
     const Icon = (Icons as any)[name] ? (Icons as any)[name] : Icons.HelpCircle;
     return <Icon className={className} />;
   };
@@ -82,8 +104,6 @@ export const Home = () => {
             </div>
           </div>
         </div>
-        
-        {/* Stats Ticker */}
         <div className="absolute bottom-0 w-full border-t border-white/10 bg-white/5 backdrop-blur-sm py-6">
           <div className="container mx-auto px-4 flex justify-around text-center">
              <div><div className="text-2xl font-bold text-tivro-primary">+150%</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'متوسط نمو العملاء' : 'Avg Client Growth'}</div></div>
@@ -100,7 +120,6 @@ export const Home = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">{t('section.services')}</h2>
             <div className="w-20 h-1 bg-tivro-primary mx-auto rounded-full"></div>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {services.map(s => (
               <div key={s.id} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition duration-300 group border border-slate-100">
@@ -133,7 +152,6 @@ export const Home = () => {
             </div>
             <a href="#" className="text-tivro-primary font-bold hover:underline hidden md:block">{lang === 'ar' ? 'مشاهدة الكل' : 'View All'}</a>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {cases.map(c => (
               <div key={c.id} className="group relative rounded-2xl overflow-hidden shadow-lg cursor-pointer">
@@ -220,10 +238,27 @@ export const Home = () => {
            <div className="flex flex-col md:flex-row justify-center gap-6">
              <div className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
                <h4 className="text-xl font-bold mb-4 flex items-center gap-2"><TrendingUp className="text-tivro-primary"/> {lang === 'ar' ? 'حجز استشارة' : 'Consultation'}</h4>
-               <form className="space-y-4 w-full md:w-80" onSubmit={(e) => { e.preventDefault(); alert('Thank you! We will contact you shortly.'); }}>
-                 <input type="text" placeholder={lang === 'ar' ? 'الاسم' : 'Name'} className="w-full bg-slate-800 border-none rounded-lg p-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-tivro-primary" required/>
-                 <input type="tel" placeholder={lang === 'ar' ? 'رقم الجوال' : 'Phone'} className="w-full bg-slate-800 border-none rounded-lg p-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-tivro-primary" required/>
-                 <button className="w-full bg-tivro-primary hover:bg-emerald-500 py-3 rounded-lg font-bold transition">{lang === 'ar' ? 'إرسال الطلب' : 'Send Request'}</button>
+               <form className="space-y-4 w-full md:w-80" onSubmit={handleContactSubmit}>
+                 <input 
+                    type="text" 
+                    placeholder={lang === 'ar' ? 'الاسم' : 'Name'} 
+                    className="w-full bg-slate-800 border-none rounded-lg p-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-tivro-primary" 
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    required
+                 />
+                 <input 
+                    type="tel" 
+                    placeholder={lang === 'ar' ? 'رقم الجوال' : 'Phone'} 
+                    className="w-full bg-slate-800 border-none rounded-lg p-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-tivro-primary" 
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    required
+                 />
+                 <button disabled={contactSending} className="w-full bg-tivro-primary hover:bg-emerald-500 py-3 rounded-lg font-bold transition flex items-center justify-center gap-2">
+                    {contactSending && <Loader2 className="animate-spin" size={18}/>}
+                    {lang === 'ar' ? 'إرسال الطلب' : 'Send Request'}
+                 </button>
                </form>
              </div>
            </div>

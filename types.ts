@@ -1,3 +1,4 @@
+
 export type Language = 'ar' | 'en';
 
 export interface LocalizedString {
@@ -47,6 +48,13 @@ export interface BlogPost {
   date: string;
   image: string;
   author: string;
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  phone: string;
+  createdAt: string;
 }
 
 export interface SiteSettings {

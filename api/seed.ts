@@ -24,6 +24,9 @@ const SEED_DATA = {
     { client: 'TechStore', title: { ar: 'زيادة 200%', en: '200% Growth' }, category: { ar: 'تجارة', en: 'E-Com' }, result: { ar: 'تحسين التحويل', en: 'CRO' }, image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800', stats: [{ label: { ar: 'ROI', en: 'ROI' }, value: '5x' }] },
     { client: 'HealthApp', title: { ar: 'إطلاق تطبيق', en: 'App Launch' }, category: { ar: 'تطبيق', en: 'App' }, result: { ar: 'مليون تحميل', en: '1M Downloads' }, image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800', stats: [{ label: { ar: 'Users', en: 'Users' }, value: '1M' }] }
   ],
+  blog: [
+    { title: { ar: '5 نصائح للتسويق في رمضان', en: '5 Tips for Ramadan Marketing' }, excerpt: { ar: 'كيف تستعد لموسم رمضان وتحقق أعلى المبيعات.', en: 'How to prepare for Ramadan season.' }, content: { ar: 'التفاصيل الكاملة هنا...', en: 'Full details here...' }, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800', author: 'Admin', date: '2024-03-01' }
+  ],
   settings: {
     id: 1,
     site_name: { ar: 'تيفرو', en: 'Tivro' },
@@ -38,30 +41,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log('🌱 Starting Server-Side Seed...');
     
-    // 1. Clear and Insert Services
-    // Note: Using upsert or delete+insert depends on strategy. Here we allow appending/updating.
-    // For a fresh seed, you might want to clean up first, but be careful with production data.
-    
     const { error: err1 } = await supabaseAdmin.from('services').upsert(SEED_DATA.services, { onConflict: 'title' });
-    if (err1) console.error('Services Error:', err1);
-
     const { error: err2 } = await supabaseAdmin.from('packages').upsert(SEED_DATA.packages, { onConflict: 'name' });
-    if (err2) console.error('Packages Error:', err2);
-
     const { error: err3 } = await supabaseAdmin.from('team_members').upsert(SEED_DATA.team, { onConflict: 'name' });
-    if (err3) console.error('Team Error:', err3);
-
     const { error: err4 } = await supabaseAdmin.from('case_studies').upsert(SEED_DATA.cases, { onConflict: 'client' });
-    if (err4) console.error('Cases Error:', err4);
+    // Blog posts seed - no conflict constraint usually on title, but simple insert is okay for seed
+    const { error: err5 } = await supabaseAdmin.from('blog_posts').insert(SEED_DATA.blog); 
+    const { error: err6 } = await supabaseAdmin.from('site_settings').upsert(SEED_DATA.settings);
 
-    const { error: err5 } = await supabaseAdmin.from('site_settings').upsert(SEED_DATA.settings);
-    if (err5) console.error('Settings Error:', err5);
-
-    if (err1 || err2 || err3 || err4 || err5) {
+    if (err1 || err2 || err3 || err4 || err5 || err6) {
         return res.status(500).json({ 
             success: false, 
-            message: 'Partial failure in seeding. Check logs.', 
-            errors: { services: err1, packages: err2, team: err3, cases: err4, settings: err5 } 
+            message: 'Partial failure in seeding.', 
+            errors: { services: err1, packages: err2, team: err3, cases: err4, blog: err5, settings: err6 } 
         });
     }
 

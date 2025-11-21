@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { Service, CaseStudy, Package, TeamMember, SiteSettings } from '../types';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage } from '../types';
 
 /* --- DATA MAPPERS --- */
 const mapServiceFromDB = (row: any): Service => ({
@@ -41,6 +41,24 @@ const mapCaseFromDB = (row: any): CaseStudy => ({
 });
 const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, stats: item.stats });
 
+const mapBlogFromDB = (row: any): BlogPost => ({
+  id: row.id,
+  title: row.title || { ar: '', en: '' },
+  excerpt: row.excerpt || { ar: '', en: '' },
+  content: row.content || { ar: '', en: '' },
+  image: row.image || '',
+  author: row.author || '',
+  date: row.date || new Date().toISOString().split('T')[0]
+});
+const mapBlogToDB = (item: BlogPost) => ({ title: item.title, excerpt: item.excerpt, content: item.content, image: item.image, author: item.author, date: item.date });
+
+const mapMessageFromDB = (row: any): ContactMessage => ({
+  id: row.id,
+  name: row.name || '',
+  phone: row.phone || '',
+  createdAt: row.created_at
+});
+
 const mapSettingsFromDB = (row: any): SiteSettings => ({
   siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
   contactEmail: row.contact_email || '',
@@ -70,17 +88,11 @@ const triggerServerSeed = async () => {
 };
 
 /* --- DB SERVICE --- */
-// The "CRUD" operations here use the Client Supabase SDK.
-// For them to work, you MUST execute the 'supabase_rls_setup.sql' script to allow Authenticated Users to write.
-// The "Seed" operations are delegated to the Server API to bypass RLS when the DB is empty.
 export const db = {
   services: {
     getAll: async (): Promise<Service[]> => {
       const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
-      
-      // If empty or RLS blocked reading (rare if public read is on), try seeding
       if (!error && (!data || data.length === 0)) {
-         console.log("Empty Services table detected. Attempting to seed via Server API...");
          await triggerServerSeed();
          const { data: retry } = await supabase.from('services').select('*').order('created_at', { ascending: true });
          return retry?.map(mapServiceFromDB) || [];
@@ -149,6 +161,36 @@ export const db = {
     delete: async (id: string) => await supabase.from('case_studies').delete().eq('id', id)
   },
 
+  blog: {
+    getAll: async (): Promise<BlogPost[]> => {
+      const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+      if (!error && (!data || data.length === 0)) {
+         await triggerServerSeed();
+         const { data: retry } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+         return retry?.map(mapBlogFromDB) || [];
+      }
+      return data?.map(mapBlogFromDB) || [];
+    },
+    save: async (item: BlogPost) => {
+      const payload = mapBlogToDB(item);
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('blog_posts').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('blog_posts').delete().eq('id', id)
+  },
+
+  messages: {
+    getAll: async (): Promise<ContactMessage[]> => {
+        // Admin Only
+        const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+        return data?.map(mapMessageFromDB) || [];
+    },
+    send: async (name: string, phone: string) => {
+        return await supabase.from('contact_messages').insert([{ name, phone }]);
+    },
+    delete: async (id: string) => await supabase.from('contact_messages').delete().eq('id', id)
+  },
+
   settings: {
     get: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase.from('site_settings').select('*').single();
@@ -160,7 +202,6 @@ export const db = {
       return mapSettingsFromDB(data);
     },
     save: async (settings: SiteSettings) => {
-      // Always use ID 1 for singleton settings
       const payload = { id: 1, ...mapSettingsToDB(settings) };
       return await supabase.from('site_settings').upsert(payload);
     }

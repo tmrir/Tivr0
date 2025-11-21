@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Language, Translations } from '../types';
 import { supabase } from '../services/supabase';
@@ -42,6 +43,8 @@ const TRANSLATIONS: Translations = {
   'admin.tab.team': { ar: 'الفريق', en: 'Team' },
   'admin.tab.packages': { ar: 'الباقات', en: 'Packages' },
   'admin.tab.work': { ar: 'أعمالنا', en: 'Case Studies' },
+  'admin.tab.blog': { ar: 'المدونة', en: 'Blog' },
+  'admin.tab.messages': { ar: 'رسائل التواصل', en: 'Contact Messages' },
   'admin.tab.settings': { ar: 'الإعدادات', en: 'Settings' },
 
   // Admin Dashboard
@@ -67,6 +70,12 @@ const TRANSLATIONS: Translations = {
   'admin.form.title_en': { ar: 'العنوان (إنجليزي)', en: 'Title (English)' },
   'admin.form.desc_ar': { ar: 'الوصف (عربي)', en: 'Description (Arabic)' },
   'admin.form.desc_en': { ar: 'الوصف (إنجليزي)', en: 'Description (English)' },
+  'admin.form.content_ar': { ar: 'المحتوى (عربي)', en: 'Content (Arabic)' },
+  'admin.form.content_en': { ar: 'المحتوى (إنجليزي)', en: 'Content (English)' },
+  'admin.form.excerpt_ar': { ar: 'مقتطف (عربي)', en: 'Excerpt (Arabic)' },
+  'admin.form.excerpt_en': { ar: 'مقتطف (إنجليزي)', en: 'Excerpt (English)' },
+  'admin.form.author': { ar: 'الكاتب', en: 'Author' },
+  'admin.form.date': { ar: 'التاريخ', en: 'Date' },
   'admin.form.name_ar': { ar: 'الاسم (عربي)', en: 'Name (Arabic)' },
   'admin.form.name_en': { ar: 'الاسم (إنجليزي)', en: 'Name (English)' },
   'admin.form.role_ar': { ar: 'المسمى الوظيفي (عربي)', en: 'Role (Arabic)' },
@@ -78,6 +87,9 @@ const TRANSLATIONS: Translations = {
   'admin.form.category_en': { ar: 'التصنيف (إنجليزي)', en: 'Category (English)' },
   'admin.form.image': { ar: 'رابط الصورة', en: 'Image URL' },
   'admin.form.icon': { ar: 'اسم الأيقونة (Lucide)', en: 'Icon Name (Lucide)' },
+  'admin.messages.name': { ar: 'الاسم', en: 'Name' },
+  'admin.messages.phone': { ar: 'الجوال', en: 'Phone' },
+  'admin.messages.date': { ar: 'التاريخ', en: 'Date' },
 
   // Admin Settings & Seed
   'admin.settings.general': { ar: 'الإعدادات العامة', en: 'General Settings' },
@@ -96,19 +108,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Language Init
     const savedLang = localStorage.getItem('tivro_lang') as Language;
     if (savedLang) {
         setLangState(savedLang);
         document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
         document.documentElement.lang = savedLang;
     } else {
-        // Default to Arabic
         document.documentElement.dir = 'rtl';
         document.documentElement.lang = 'ar';
     }
 
-    // Auth Init
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAdmin(!!session);
       setLoading(false);
