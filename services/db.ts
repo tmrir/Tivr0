@@ -64,7 +64,7 @@ const mapSettingsFromDB = (row: any): SiteSettings => ({
   contactEmail: row.contact_email || '',
   contactPhone: row.contact_phone || '',
   address: row.address || { ar: '', en: '' },
-  socialLinks: row.social_links || { twitter: '', linkedin: '', instagram: '' },
+  socialLinks: Array.isArray(row.social_links) ? row.social_links : [],
   sectionTexts: row.section_texts || { 
     workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
     workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
@@ -213,6 +213,7 @@ export const db = {
       return mapSettingsFromDB(data);
     },
     save: async (settings: SiteSettings) => {
+      // Ensure ID is 1 for the single row of settings
       const payload = { id: 1, ...mapSettingsToDB(settings) };
       return await supabase.from('site_settings').upsert(payload);
     }

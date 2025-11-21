@@ -249,6 +249,13 @@ export const Home = () => {
                    {settings?.contactEmail && <div className="flex gap-2">📧 {settings.contactEmail}</div>}
                    {settings?.contactPhone && <div className="flex gap-2">📞 {settings.contactPhone}</div>}
                </div>
+               <div className="flex gap-4 mt-4 mb-6">
+                  {settings?.socialLinks?.map((link, idx) => (
+                    <a key={idx} href={link.url} className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition">
+                      <IconComponent name={link.platform} className="w-4 h-4" />
+                    </a>
+                  ))}
+               </div>
                <form className="space-y-4 w-full md:w-80" onSubmit={handleContactSubmit}>
                  <input 
                     type="text" 

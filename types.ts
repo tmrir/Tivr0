@@ -57,16 +57,17 @@ export interface ContactMessage {
   createdAt: string;
 }
 
+export interface SocialLink {
+  platform: string;
+  url: string;
+}
+
 export interface SiteSettings {
   siteName: LocalizedString;
   contactEmail: string;
   contactPhone: string;
   address: LocalizedString;
-  socialLinks: {
-    twitter: string;
-    linkedin: string;
-    instagram: string;
-  };
+  socialLinks: SocialLink[];
   sectionTexts: {
     workTitle: LocalizedString;
     workSubtitle: LocalizedString;

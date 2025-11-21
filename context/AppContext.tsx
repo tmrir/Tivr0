@@ -101,7 +101,8 @@ const TRANSLATIONS: Translations = {
   'admin.seed.btn': { ar: 'استعادة البيانات الافتراضية', en: 'Reset & Seed Database' },
   'admin.seed.warning': { ar: 'سيتم إضافة البيانات الافتراضية إلى قاعدة البيانات. هل تود الاستمرار؟', en: 'Default data will be added to DB. Continue?' },
   'admin.seed.success': { ar: 'تمت الاستعادة بنجاح! جاري التحديث...', en: 'Seeding successful! Refreshing...' },
-  
+  'admin.settings.saved': { ar: 'تم حفظ الإعدادات بنجاح.', en: 'Settings saved successfully.' },
+
   // Settings Fields
   'admin.set.email': { ar: 'البريد الإلكتروني', en: 'Contact Email' },
   'admin.set.phone': { ar: 'رقم الهاتف', en: 'Phone Number' },
@@ -111,6 +112,10 @@ const TRANSLATIONS: Translations = {
   'admin.set.work_title_en': { ar: 'عنوان "أعمالنا" (إنجليزي)', en: 'Work Title (English)' },
   'admin.set.work_sub_ar': { ar: 'وصف "أعمالنا" (عربي)', en: 'Work Subtitle (Arabic)' },
   'admin.set.work_sub_en': { ar: 'وصف "أعمالنا" (إنجليزي)', en: 'Work Subtitle (English)' },
+  'admin.social.platform': { ar: 'اسم المنصة (لأيقونة Lucide)', en: 'Platform Name (for Lucide Icon)' },
+  'admin.social.url': { ar: 'الرابط', en: 'URL' },
+  'admin.social.add': { ar: 'إضافة منصة', en: 'Add Platform' },
+  'admin.section.settings': { ar: 'إعدادات القسم', en: 'Section Settings' },
 };
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);

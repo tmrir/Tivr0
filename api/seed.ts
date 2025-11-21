@@ -33,7 +33,11 @@ const SEED_DATA = {
     contact_email: 'info@tivro.sa',
     contact_phone: '+966 50 000 0000',
     address: { ar: 'الرياض', en: 'Riyadh' },
-    social_links: { twitter: '#', linkedin: '#', instagram: '#' },
+    social_links: [
+        { platform: 'Twitter', url: '#' },
+        { platform: 'Linkedin', url: '#' },
+        { platform: 'Instagram', url: '#' }
+    ],
     section_texts: {
         workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
         workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' }

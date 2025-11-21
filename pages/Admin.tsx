@@ -5,7 +5,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, SiteSettings } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Globe, Phone, Share2, Type } from 'lucide-react';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Globe, Phone, Share2, Type, Save } from 'lucide-react';
 
 interface ManagerProps {
   onUpdate: () => void;
@@ -480,11 +480,42 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const [items, setItems] = useState<CaseStudy[]>([]);
     const [editing, setEditing] = useState<CaseStudy | null>(null);
     const [saving, setSaving] = useState(false);
-    useEffect(() => { db.caseStudies.getAll().then(setItems); }, []);
+    const [sectionSettings, setSectionSettings] = useState<SiteSettings['sectionTexts']>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
+    const [settingsSaving, setSettingsSaving] = useState(false);
+
+    useEffect(() => { 
+        db.caseStudies.getAll().then(setItems); 
+        db.settings.get().then(s => {
+            if(s?.sectionTexts) setSectionSettings(s.sectionTexts);
+        });
+    }, []);
+
     const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.caseStudies.save(editing); setSaving(false); setEditing(null); onUpdate(); setItems(await db.caseStudies.getAll()); };
     const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.caseStudies.delete(id); onUpdate(); setItems(items.filter(x=>x.id!==id)); }};
+    
+    const saveSectionSettings = async () => {
+        setSettingsSaving(true);
+        const currentSettings = await db.settings.get();
+        if(currentSettings) {
+            await db.settings.save({...currentSettings, sectionTexts: sectionSettings});
+            alert(t('admin.settings.saved'));
+        }
+        setSettingsSaving(false);
+    };
+
     return (
         <div>
+             <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2"><Type size={18}/> {t('admin.section.settings')}</h3>
+                    <button onClick={saveSectionSettings} disabled={settingsSaving} className="text-sm bg-slate-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-900 flex items-center gap-2">
+                        {settingsSaving && <Loader2 size={12} className="animate-spin"/>} {t('admin.btn.save')}
+                    </button>
+                </div>
+                <LocalizedInput label={t('admin.set.work_title_ar')} value={sectionSettings.workTitle} onChange={v => setSectionSettings({...sectionSettings, workTitle: v})} />
+                <LocalizedInput label={t('admin.set.work_sub_ar')} value={sectionSettings.workSubtitle} onChange={v => setSectionSettings({...sectionSettings, workSubtitle: v})} />
+            </div>
+
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.work')}</h2>
                 <button onClick={() => setEditing({id:'new', title:{ar:'',en:''}, client:'', category:{ar:'',en:''}, result:{ar:'',en:''}, image:'', stats:[]})} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 shadow-sm hover:bg-emerald-700 transition"><Plus size={18}/>{t('admin.btn.add')}</button>
@@ -520,7 +551,7 @@ const SettingsManager = () => {
   const { t } = useApp();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [saving, setSaving] = useState(false);
-  const [section, setSection] = useState<'general' | 'contact' | 'social' | 'texts' | 'db'>('general');
+  const [section, setSection] = useState<'general' | 'contact' | 'social' | 'db'>('general');
 
   useEffect(() => { db.settings.get().then(setSettings); }, []);
   
@@ -529,8 +560,23 @@ const SettingsManager = () => {
       setSaving(true); 
       await db.settings.save(settings); 
       setSaving(false); 
-      alert(t('admin.seed.success')); 
-      window.location.reload(); 
+      alert(t('admin.settings.saved')); 
+  };
+
+  const addSocial = () => {
+      if(settings) setSettings({...settings, socialLinks: [...settings.socialLinks, { platform: 'Twitter', url: '#' }]});
+  };
+
+  const removeSocial = (idx: number) => {
+      if(settings) setSettings({...settings, socialLinks: settings.socialLinks.filter((_, i) => i !== idx)});
+  };
+
+  const updateSocial = (idx: number, field: 'platform'|'url', val: string) => {
+      if(settings) {
+          const links = [...settings.socialLinks];
+          links[idx] = { ...links[idx], [field]: val };
+          setSettings({...settings, socialLinks: links});
+      }
   };
 
   if (!settings) return <div>{t('admin.loading')}</div>;
@@ -549,9 +595,6 @@ const SettingsManager = () => {
                 </button>
                 <button onClick={() => setSection('social')} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${section === 'social' ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
                     <Share2 size={18}/> {t('admin.settings.social')}
-                </button>
-                <button onClick={() => setSection('texts')} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${section === 'texts' ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
-                    <Type size={18}/> {t('admin.settings.sections')}
                 </button>
                  <button onClick={() => setSection('db')} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${section === 'db' ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
                     <SettingsIcon size={18}/> {t('admin.settings.db')}
@@ -580,26 +623,27 @@ const SettingsManager = () => {
 
                 {section === 'social' && (
                     <div className="space-y-6 animate-fade-in">
-                        <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.social')}</h3>
-                        <div><label className="block text-sm font-bold text-slate-700 mb-1">Twitter URL</label><input className="w-full border p-3 rounded-lg" value={settings.socialLinks.twitter} onChange={e => setSettings({...settings, socialLinks: {...settings.socialLinks, twitter: e.target.value}})} /></div>
-                        <div><label className="block text-sm font-bold text-slate-700 mb-1">LinkedIn URL</label><input className="w-full border p-3 rounded-lg" value={settings.socialLinks.linkedin} onChange={e => setSettings({...settings, socialLinks: {...settings.socialLinks, linkedin: e.target.value}})} /></div>
-                        <div><label className="block text-sm font-bold text-slate-700 mb-1">Instagram URL</label><input className="w-full border p-3 rounded-lg" value={settings.socialLinks.instagram} onChange={e => setSettings({...settings, socialLinks: {...settings.socialLinks, instagram: e.target.value}})} /></div>
-                    </div>
-                )}
-
-                {section === 'texts' && (
-                    <div className="space-y-6 animate-fade-in">
-                        <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.sections')}</h3>
-                        <LocalizedInput 
-                            label={t('admin.set.work_title_ar')} 
-                            value={settings.sectionTexts?.workTitle || {ar:'', en:''}} 
-                            onChange={v => setSettings({...settings, sectionTexts: {...(settings.sectionTexts || {workSubtitle: {ar:'',en:''}}), workTitle: v}})} 
-                        />
-                        <LocalizedInput 
-                            label={t('admin.set.work_sub_ar')} 
-                            value={settings.sectionTexts?.workSubtitle || {ar:'', en:''}} 
-                            onChange={v => setSettings({...settings, sectionTexts: {...(settings.sectionTexts || {workTitle: {ar:'',en:''}}), workSubtitle: v}})} 
-                        />
+                        <div className="flex justify-between items-center mb-4 border-b pb-3">
+                            <h3 className="font-bold text-lg">{t('admin.settings.social')}</h3>
+                            <button onClick={addSocial} className="text-xs bg-slate-100 px-3 py-1 rounded-full flex items-center gap-1 font-bold hover:bg-slate-200"><Plus size={14}/> {t('admin.social.add')}</button>
+                        </div>
+                        <div className="space-y-4">
+                            {settings.socialLinks.map((link, i) => (
+                                <div key={i} className="flex gap-3 items-start bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.social.platform')}</label>
+                                            <input className="w-full border p-2 rounded text-sm" value={link.platform} onChange={e=>updateSocial(i, 'platform', e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.social.url')}</label>
+                                            <input className="w-full border p-2 rounded text-sm" value={link.url} onChange={e=>updateSocial(i, 'url', e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <button onClick={()=>removeSocial(i)} className="mt-6 text-red-500 hover:bg-red-100 p-2 rounded"><Trash2 size={18}/></button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 

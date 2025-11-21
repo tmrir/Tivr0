@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
     contactEmail: '',
     contactPhone: '',
     address: { ar: '', en: '' },
-    socialLinks: { twitter: '#', linkedin: '#', instagram: '#' },
+    socialLinks: [],
     sectionTexts: {
       workTitle: { ar: '', en: '' },
       workSubtitle: { ar: '', en: '' }
@@ -59,6 +59,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       {label}
     </a>
   );
+
+  const getSocialUrl = (platform: string) => {
+      return settings.socialLinks?.find(l => l.platform.toLowerCase() === platform.toLowerCase())?.url || '#';
+  };
 
   return (
     <div className={`min-h-screen flex flex-col bg-white ${lang === 'ar' ? 'font-sans' : ''}`}>
@@ -164,9 +168,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                     : 'A full-service Saudi digital marketing agency helping businesses grow through innovative strategies and advanced tech solutions.'}
                 </p>
                 <div className="flex gap-4">
-                  <a href={settings?.socialLinks?.twitter || '#'} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Twitter size={18}/></a>
-                  <a href={settings?.socialLinks?.linkedin || '#'} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Linkedin size={18}/></a>
-                  <a href={settings?.socialLinks?.instagram || '#'} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Instagram size={18}/></a>
+                  <a href={getSocialUrl('twitter')} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Twitter size={18}/></a>
+                  <a href={getSocialUrl('linkedin')} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Linkedin size={18}/></a>
+                  <a href={getSocialUrl('instagram')} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Instagram size={18}/></a>
                 </div>
               </div>
               
