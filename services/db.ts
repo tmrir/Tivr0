@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings } from '../types';
 
 /* --- DATA MAPPERS (Snake_Case <-> CamelCase) --- */
-// هذا الجزء ضروري جداً لضمان قراءة وحفظ البيانات بشكل صحيح
+// التحويل ضروري جداً لأن Supabase يستخدم snake_case بينما التطبيق يستخدم camelCase
 
 const mapServiceFromDB = (row: any): Service => ({
   id: row.id,
@@ -85,7 +85,7 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   social_links: item.socialLinks
 });
 
-/* --- SEED DATA (للزراعة فقط) --- */
+/* --- SEED DATA (بيانات البداية) --- */
 const SEED_SERVICES = [
   { title: { ar: 'تحسين محركات البحث', en: 'SEO Optimization' }, description: { ar: 'نساعدك في تصدر نتائج البحث.', en: 'Rank higher in search results.' }, icon_name: 'Search', features: [{ ar: 'تحليل', en: 'Analysis' }] },
   { title: { ar: 'إدارة حملات إعلانية', en: 'PPC Campaigns' }, description: { ar: 'حملات مدفوعة عالية العائد.', en: 'High ROI paid campaigns.' }, icon_name: 'BarChart', features: [{ ar: 'استهداف', en: 'Targeting' }] },
