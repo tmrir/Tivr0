@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter } from 'lucide-react';
@@ -11,7 +12,7 @@ interface LayoutProps {
 }
 
 const DEFAULT_SETTINGS: SiteSettings = {
-    siteName: { ar: 'جاري التحميل...', en: 'Loading...' },
+    siteName: { ar: '...', en: '...' },
     contactEmail: '',
     contactPhone: '',
     address: { ar: '', en: '' },
@@ -26,10 +27,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
   useEffect(() => {
     const fetchData = async () => {
-        const s = await db.settings.get();
-        setSettings(s);
-        const services = await db.services.getAll();
-        setFooterServices(services.slice(0, 4));
+        try {
+            const s = await db.settings.get();
+            if (s) setSettings(s);
+            const services = await db.services.getAll();
+            setFooterServices(services.slice(0, 4));
+        } catch(e) {
+            console.error("Layout fetch error", e);
+        }
     };
     fetchData();
   }, []);
@@ -62,7 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               T
             </div>
             <span className="text-2xl font-bold text-tivro-dark tracking-tight">
-              {settings.siteName[lang]}
+              {settings?.siteName?.[lang] || 'Tivro'}
             </span>
           </a>
 
@@ -147,7 +152,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               <div className="col-span-1 md:col-span-2">
                 <div className="flex items-center gap-2 mb-6">
                   <div className="w-8 h-8 bg-tivro-primary rounded flex items-center justify-center text-white font-bold">T</div>
-                  <span className="text-2xl font-bold">{settings.siteName[lang]}</span>
+                  <span className="text-2xl font-bold">{settings?.siteName?.[lang]}</span>
                 </div>
                 <p className="text-slate-400 max-w-md leading-relaxed mb-6">
                   {lang === 'ar' 
@@ -155,9 +160,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                     : 'A full-service Saudi digital marketing agency helping businesses grow through innovative strategies and advanced tech solutions.'}
                 </p>
                 <div className="flex gap-4">
-                  <a href={settings.socialLinks.twitter} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Twitter size={18}/></a>
-                  <a href={settings.socialLinks.linkedin} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Linkedin size={18}/></a>
-                  <a href={settings.socialLinks.instagram} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Instagram size={18}/></a>
+                  <a href={settings?.socialLinks?.twitter || '#'} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Twitter size={18}/></a>
+                  <a href={settings?.socialLinks?.linkedin || '#'} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Linkedin size={18}/></a>
+                  <a href={settings?.socialLinks?.instagram || '#'} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition"><Instagram size={18}/></a>
                 </div>
               </div>
               
@@ -165,7 +170,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                 <h4 className="font-bold text-lg mb-6 text-tivro-primary">{t('nav.services')}</h4>
                 <ul className="space-y-3 text-slate-400">
                   {footerServices.map(s => (
-                    <li key={s.id}><a href="#services" className="hover:text-white transition">{s.title[lang]}</a></li>
+                    <li key={s.id}><a href="#services" className="hover:text-white transition">{s.title?.[lang]}</a></li>
                   ))}
                 </ul>
               </div>
@@ -173,9 +178,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               <div>
                 <h4 className="font-bold text-lg mb-6 text-tivro-primary">{t('nav.contact')}</h4>
                 <ul className="space-y-3 text-slate-400">
-                  <li>{settings.contactPhone}</li>
-                  <li>{settings.contactEmail}</li>
-                  <li>{settings.address[lang]}</li>
+                  <li>{settings?.contactPhone}</li>
+                  <li>{settings?.contactEmail}</li>
+                  <li>{settings?.address?.[lang]}</li>
                 </ul>
               </div>
             </div>

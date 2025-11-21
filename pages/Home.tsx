@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Layout } from '../components/Layout';
@@ -17,7 +18,7 @@ export const Home = () => {
   useEffect(() => {
     const loadData = async () => {
         try {
-            // Load all data in parallel
+            // Load all data in parallel. db.getAll() now auto-seeds if empty.
             const [s, c, tData, p] = await Promise.all([
                 db.services.getAll(),
                 db.caseStudies.getAll(),

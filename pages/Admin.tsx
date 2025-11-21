@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
@@ -112,10 +113,10 @@ const DashboardTab = () => {
 
   useEffect(() => {
       const load = async () => {
-          const s = await db.services.getAll({ useFallback: false });
-          const teamData = await db.team.getAll({ useFallback: false });
-          const c = await db.caseStudies.getAll({ useFallback: false });
-          const p = await db.packages.getAll({ useFallback: false });
+          const s = await db.services.getAll();
+          const teamData = await db.team.getAll();
+          const c = await db.caseStudies.getAll();
+          const p = await db.packages.getAll();
           setStats({ services: s.length, team: teamData.length, cases: c.length, packages: p.length });
       }
       load();
@@ -174,12 +175,8 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
 
   useEffect(() => {
       const init = async () => {
-        let data = await db.services.getAll({ useFallback: false });
-        // Auto Seed if connected but empty
-        if (data.length === 0 && isSupabaseConfigured) {
-            await db.services.seed();
-            data = await db.services.getAll({ useFallback: false });
-        }
+        // Just fetching getAll will trigger auto-seed if needed
+        let data = await db.services.getAll();
         setServices(data);
         setLoading(false);
       };
@@ -194,8 +191,7 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     setSaving(false);
     setEditing(null);
     onUpdate();
-    // Reload list
-    const data = await db.services.getAll({ useFallback: false });
+    const data = await db.services.getAll();
     setServices(data);
   };
 
@@ -281,11 +277,7 @@ const TeamManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
   
     useEffect(() => {
         const init = async () => {
-            let data = await db.team.getAll({ useFallback: false });
-            if (data.length === 0 && isSupabaseConfigured) {
-                await db.team.seed();
-                data = await db.team.getAll({ useFallback: false });
-            }
+            let data = await db.team.getAll();
             setTeam(data);
             setLoading(false);
         };
@@ -300,7 +292,7 @@ const TeamManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
       setSaving(false);
       setEditing(null);
       onUpdate();
-      const data = await db.team.getAll({ useFallback: false });
+      const data = await db.team.getAll();
       setTeam(data);
     };
 
@@ -318,7 +310,7 @@ const TeamManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
       <div>
         <div className="flex justify-between items-center mb-6">
              <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.team')}</h2>
-             <button onClick={() => setEditing({ id: 'new', name: {ar:'', en:''}, role: {ar:'', en:''}, image: 'https://placehold.co/400' })} className="bg-tivro-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold"><Plus size={18}/> {t('admin.btn.add')}</button>
+             <button onClick={() => setEditing({ id: 'new', name: {ar:'', en:''}, role: {ar:'', en:''}, image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop' })} className="bg-tivro-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold"><Plus size={18}/> {t('admin.btn.add')}</button>
         </div>
 
         {team.length === 0 && !editing && <div className="bg-yellow-50 p-4 rounded text-yellow-800 mb-4">{t('admin.empty')}</div>}
@@ -367,11 +359,7 @@ const PackagesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
 
     useEffect(() => { 
         const init = async () => {
-            let data = await db.packages.getAll({ useFallback: false });
-            if (data.length === 0 && isSupabaseConfigured) {
-                await db.packages.seed();
-                data = await db.packages.getAll({ useFallback: false });
-            }
+            let data = await db.packages.getAll();
             setItems(data);
             setLoading(false);
         };
@@ -386,7 +374,7 @@ const PackagesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
         setSaving(false);
         setEditing(null);
         onUpdate();
-        setItems(await db.packages.getAll({ useFallback: false }));
+        setItems(await db.packages.getAll());
     };
 
     const handleDelete = async (id: string) => {
@@ -453,11 +441,7 @@ const CaseStudiesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) =>
 
     useEffect(() => { 
         const init = async () => {
-            let data = await db.caseStudies.getAll({ useFallback: false });
-            if (data.length === 0 && isSupabaseConfigured) {
-                await db.caseStudies.seed();
-                data = await db.caseStudies.getAll({ useFallback: false });
-            }
+            let data = await db.caseStudies.getAll();
             setItems(data);
             setLoading(false);
         };
@@ -472,7 +456,7 @@ const CaseStudiesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) =>
         setSaving(false);
         setEditing(null);
         onUpdate();
-        setItems(await db.caseStudies.getAll({ useFallback: false }));
+        setItems(await db.caseStudies.getAll());
     };
 
     const handleDelete = async (id: string) => {
@@ -489,7 +473,7 @@ const CaseStudiesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) =>
         <div>
              <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.work')}</h2>
-                <button onClick={() => setEditing({ id: 'new', client: '', title: {ar:'', en:''}, category: {ar:'', en:''}, result: {ar:'', en:''}, image: 'https://placehold.co/600x400', stats: [] })} className="bg-tivro-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold"><Plus size={18}/> {t('admin.btn.add')}</button>
+                <button onClick={() => setEditing({ id: 'new', client: '', title: {ar:'', en:''}, category: {ar:'', en:''}, result: {ar:'', en:''}, image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=500&fit=crop', stats: [] })} className="bg-tivro-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 font-bold"><Plus size={18}/> {t('admin.btn.add')}</button>
              </div>
              {items.length === 0 && !editing && <div className="bg-yellow-50 p-4 rounded text-yellow-800 mb-4">{t('admin.empty')}</div>}
              {editing ? (
