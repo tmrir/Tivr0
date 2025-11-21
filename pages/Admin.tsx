@@ -243,8 +243,6 @@ const ServicesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
   );
 };
 
-// ... (Reuse same patterns for TeamManager, PackagesManager, CaseStudiesManager)
-// Due to length, I will implement TeamManager and others similarly concise
 const TeamManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     const { t, lang } = useApp();
     const [team, setTeam] = useState<TeamMember[]>([]);
@@ -318,27 +316,101 @@ const PackagesManager: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
 
     const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.packages.delete(id); onUpdate(); setItems(items.filter(x=>x.id!==id)); }};
 
+    // Feature management
+    const addFeature = () => {
+        if(!editing) return;
+        setEditing({...editing, features: [...editing.features, {ar: '', en: ''}]});
+    };
+    const updateFeature = (idx: number, field: 'ar'|'en', val: string) => {
+        if(!editing) return;
+        const feats = [...editing.features];
+        feats[idx] = {...feats[idx], [field]: val};
+        setEditing({...editing, features: feats});
+    };
+    const removeFeature = (idx: number) => {
+        if(!editing) return;
+        setEditing({...editing, features: editing.features.filter((_, i) => i !== idx)});
+    };
+
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.packages')}</h2>
-                <button onClick={() => setEditing({id:'new', name:{ar:'',en:''}, price:'', features:[]})} className="bg-tivro-primary text-white px-4 py-2 rounded font-bold flex gap-2"><Plus/>{t('admin.btn.add')}</button>
+                <button onClick={() => setEditing({id:'new', name:{ar:'',en:''}, price:'', features:[{ar:'', en:''}], isPopular: false})} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 items-center shadow-sm hover:bg-emerald-700 transition"><Plus size={18}/>{t('admin.btn.add')}</button>
             </div>
             {editing ? (
-                <form onSubmit={handleSave} className="bg-white p-6 rounded shadow border">
-                     <LocalizedInput label={t('admin.form.name_ar')} value={editing.name} onChange={v => setEditing({...editing, name: v})} />
-                     <input className="w-full border p-2 rounded mb-4" placeholder="Price" value={editing.price} onChange={e=>setEditing({...editing, price:e.target.value})} />
-                     <div className="flex gap-2 justify-end"><button type="button" onClick={()=>setEditing(null)}>{t('admin.btn.cancel')}</button><button type="submit" className="bg-tivro-dark text-white px-4 py-2 rounded">{t('admin.btn.save')}</button></div>
+                <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto animate-fade-in">
+                     <div className="flex justify-between items-center mb-6 border-b pb-4">
+                        <h3 className="font-bold text-xl text-slate-800">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
+                        <div className="flex items-center gap-2">
+                            <input type="checkbox" id="isPop" checked={editing.isPopular || false} onChange={e=>setEditing({...editing, isPopular: e.target.checked})} className="w-5 h-5 text-tivro-primary rounded focus:ring-tivro-primary cursor-pointer"/>
+                            <label htmlFor="isPop" className="font-bold text-slate-700 cursor-pointer">{t('admin.form.popular')}</label>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-1 gap-6 mb-6">
+                        <LocalizedInput label={t('admin.form.name_ar')} value={editing.name} onChange={v => setEditing({...editing, name: v})} />
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.price')}</label>
+                            <input className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-tivro-primary outline-none font-bold text-lg" placeholder="e.g. 5,000 SAR" value={editing.price} onChange={e=>setEditing({...editing, price:e.target.value})} required />
+                        </div>
+                     </div>
+
+                     <div className="mb-8">
+                        <div className="flex justify-between items-center mb-3">
+                            <label className="block text-sm font-bold text-slate-700">Features / المميزات</label>
+                            <button type="button" onClick={addFeature} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-full flex items-center gap-1 font-bold transition"><Plus size={14}/> Add Feature</button>
+                        </div>
+                        <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            {editing.features.map((f, i) => (
+                                <div key={i} className="flex gap-3 items-start">
+                                    <div className="flex-1 grid grid-cols-2 gap-3">
+                                        <input className="border border-slate-200 p-2 rounded text-sm focus:ring-1 focus:ring-tivro-primary outline-none" placeholder="ميزة (عربي)" value={f.ar} onChange={e=>updateFeature(i, 'ar', e.target.value)} required />
+                                        <input className="border border-slate-200 p-2 rounded text-sm focus:ring-1 focus:ring-tivro-primary outline-none" placeholder="Feature (English)" value={f.en} onChange={e=>updateFeature(i, 'en', e.target.value)} required />
+                                    </div>
+                                    <button type="button" onClick={()=>removeFeature(i)} className="text-slate-400 hover:text-red-500 p-2 hover:bg-red-50 rounded transition"><Trash2 size={18}/></button>
+                                </div>
+                            ))}
+                            {editing.features.length === 0 && <div className="text-center text-slate-400 py-4 text-sm italic">No features added yet. Click 'Add Feature'.</div>}
+                        </div>
+                     </div>
+
+                     <div className="flex gap-3 justify-end pt-4 border-t">
+                        <button type="button" onClick={()=>setEditing(null)} className="px-6 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition">{t('admin.btn.cancel')}</button>
+                        <button type="submit" disabled={saving} className="bg-tivro-dark text-white px-8 py-2 rounded-lg font-bold hover:bg-slate-800 transition flex items-center gap-2 shadow-lg shadow-slate-900/20">
+                            {saving && <Loader2 className="animate-spin" size={18}/>} {t('admin.btn.save')}
+                        </button>
+                     </div>
                 </form>
             ) : (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {items.map(p => (
-                        <div key={p.id} className="bg-white p-4 rounded shadow relative group">
-                            <h3 className="font-bold">{p.name[lang]}</h3>
-                            <p className="text-tivro-primary font-bold">{p.price}</p>
-                            <div className="absolute top-2 right-2 hidden group-hover:flex bg-white/90 rounded">
-                                <button onClick={()=>setEditing(p)} className="p-1 text-blue-600"><Edit2 size={14}/></button>
-                                <button onClick={()=>handleDelete(p.id)} className="p-1 text-red-600"><Trash2 size={14}/></button>
+                        <div key={p.id} className={`bg-white rounded-xl p-6 relative group transition-all duration-300 hover:-translate-y-1 ${p.isPopular ? 'border-2 border-tivro-primary shadow-xl' : 'border border-slate-200 shadow-sm hover:shadow-md'}`}>
+                            {p.isPopular && (
+                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-tivro-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                                    {t('admin.form.popular')}
+                                </div>
+                            )}
+                            <div className="text-center mb-4 pt-2">
+                                <h3 className="font-bold text-xl text-slate-800 mb-1">{p.name[lang]}</h3>
+                                <div className="text-3xl font-bold text-tivro-dark">{p.price}</div>
+                            </div>
+                            
+                            <div className="bg-slate-50 rounded-lg p-4 mb-4">
+                                <ul className="space-y-2">
+                                    {p.features.slice(0, 4).map((f, i) => (
+                                        <li key={i} className="text-sm text-slate-600 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-tivro-primary"></div>
+                                            {f[lang]}
+                                        </li>
+                                    ))}
+                                    {p.features.length > 4 && <li className="text-xs text-slate-400 italic text-center">+{p.features.length - 4} more</li>}
+                                </ul>
+                            </div>
+
+                            <div className="absolute top-3 right-3 hidden group-hover:flex bg-white/90 backdrop-blur shadow-sm rounded-lg border border-slate-100 p-1 z-10 gap-1">
+                                <button onClick={()=>setEditing(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition" title="Edit"><Edit2 size={16}/></button>
+                                <button onClick={()=>handleDelete(p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-md transition" title="Delete"><Trash2 size={16}/></button>
                             </div>
                         </div>
                     ))}
