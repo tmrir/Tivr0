@@ -12,69 +12,38 @@ export interface SettingsData {
 }
 
 export const useSettings = () => {
-  // الحالة الأولية
   const [settings, setSettings] = useState<SettingsData>({
-    contact_email: '',
-    contact_phone: '',
-    social_facebook: '',
-    social_twitter: '',
-    social_instagram: '',
-    address: '',
-    logo_url: '',
-    icon_url: ''
+    contact_email: '', contact_phone: '', social_facebook: '', 
+    social_twitter: '', social_instagram: '', address: '', 
+    logo_url: '', icon_url: ''
   });
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // دالة جلب البيانات من الـ API
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      // إضافة timestamp لتجاوز أي كاش في المتصفح
       const res = await fetch(`/api/settings/get?t=${Date.now()}`);
       const data = await res.json();
-
-      if (res.ok && data) {
-        setSettings({
-          contact_email: data.contact_email || '',
-          contact_phone: data.contact_phone || '',
-          social_facebook: data.social_facebook || '',
-          social_twitter: data.social_twitter || '',
-          social_instagram: data.social_instagram || '',
-          address: data.address || '',
-          logo_url: data.logo_url || '',
-          icon_url: data.icon_url || '',
-        });
-      } else {
-        console.warn('No settings found or API error', data);
-      }
+      if (res.ok) setSettings(data);
     } catch (err: any) {
-      console.error('Error fetching settings:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // دالة الحفظ
   const saveSettings = async (newData: SettingsData) => {
     setSaving(true);
     setError(null);
     try {
-      console.log('Sending data to save:', newData);
       const res = await fetch('/api/settings/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newData),
       });
-      
-      const result = await res.json();
-      
-      if (!res.ok) throw new Error(result.error || 'فشل الحفظ');
-      
-      // إعادة الجلب للتأكد من تطابق الواجهة مع الخادم
+      if (!res.ok) throw new Error('Failed to save');
       await fetchSettings();
       return true;
     } catch (err: any) {
@@ -85,16 +54,11 @@ export const useSettings = () => {
     }
   };
 
-  // دالة استعادة البيانات الافتراضية
   const restoreDefaultSettings = async () => {
-    setSaving(true); // نستخدم نفس حالة التحميل
-    setError(null);
+    setSaving(true);
     try {
       const res = await fetch('/api/settings/restore', { method: 'POST' });
-      const result = await res.json();
-      
-      if (!res.ok) throw new Error(result.error || 'فشل الاستعادة');
-      
+      if (!res.ok) throw new Error('Failed to restore');
       await fetchSettings();
       return true;
     } catch (err: any) {
@@ -105,18 +69,7 @@ export const useSettings = () => {
     }
   };
 
-  // الجلب الأولي عند تحميل الصفحة
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+  useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
-  return {
-    settings,
-    setSettings,
-    loading,
-    saving,
-    error,
-    saveSettings,
-    restoreDefaultSettings
-  };
+  return { settings, setSettings, loading, saving, error, saveSettings, restoreDefaultSettings };
 };
