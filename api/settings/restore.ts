@@ -5,7 +5,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
-    // 1. جلب Snapshot
     const { data: current, error: fetchError } = await supabaseAdmin
       .from('site_settings')
       .select('default_snapshot')
@@ -16,7 +15,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'No snapshot found' });
     }
 
-    // 2. استعادة البيانات
     const snapshot = current.default_snapshot;
     const { error: updateError } = await supabaseAdmin
       .from('site_settings')

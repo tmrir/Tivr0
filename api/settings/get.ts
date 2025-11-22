@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // منع الكاش نهائياً
   res.setHeader('Cache-Control', 'no-store, max-age=0');
 
   try {
@@ -15,7 +14,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (error) throw error;
     if (!data) return res.status(200).json({});
 
-    // تحويل البيانات من هيكل DB (Arrays/JSON) إلى هيكل UI (Flat Fields)
     const socialLinks = Array.isArray(data.social_links) ? data.social_links : [];
     
     const getLink = (platform: string) => 
@@ -24,10 +22,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const mappedData = {
       contact_email: data.contact_email || '',
       contact_phone: data.contact_phone || '',
-      address: data.address || '', // Address is now text based on SQL migration
+      address: typeof data.address === 'object' ? (data.address.ar || '') : (data.address || ''),
       logo_url: data.logo_url || '',
       icon_url: data.icon_url || '',
-      // استخراج الروابط من المصفوفة
       social_facebook: getLink('facebook'),
       social_twitter: getLink('twitter'),
       social_instagram: getLink('instagram')

@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink } from '../types';
 
@@ -37,7 +36,7 @@ const mapCaseFromDB = (row: any): CaseStudy => ({
   category: row.category || { ar: '', en: '' },
   result: row.result || { ar: '', en: '' },
   image: row.image || '',
-  stats: row.stats || []
+  stats: Array.isArray(row.stats) ? row.stats : []
 });
 const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, stats: item.stats });
 
@@ -65,7 +64,7 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
   if (Array.isArray(row.social_links)) {
       socialLinks = row.social_links;
   } else if (typeof row.social_links === 'object' && row.social_links !== null) {
-      // Convert legacy object to array
+      // Convert legacy object to array safely
       Object.keys(row.social_links).forEach(key => {
           socialLinks.push({ platform: key, url: row.social_links[key] });
       });
@@ -75,7 +74,8 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
     contactEmail: row.contact_email || '',
     contactPhone: row.contact_phone || '',
-    address: row.address || { ar: '', en: '' },
+    // Handle address which might be simple text or localized object in different migration stages
+    address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
     socialLinks: socialLinks,
     sectionTexts: row.section_texts || { 
       workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
@@ -83,6 +83,7 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     }
   };
 };
+
 const mapSettingsToDB = (item: SiteSettings) => ({ 
   site_name: item.siteName, 
   contact_email: item.contactEmail, 
@@ -218,11 +219,15 @@ export const db = {
     get: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase.from('site_settings').select('*').single();
       if (!data || error) {
-          await triggerServerSeed(); 
-          const { data: retry } = await supabase.from('site_settings').select('*').single();
-          return mapSettingsFromDB(retry || {});
+          // Only trigger seed if we genuinely have no data, to avoid loops
+          const shouldSeed = !data; 
+          if (shouldSeed) {
+              await triggerServerSeed(); 
+              const { data: retry } = await supabase.from('site_settings').select('*').single();
+              return mapSettingsFromDB(retry || {});
+          }
       }
-      return mapSettingsFromDB(data);
+      return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
       // Merge Logic: Get current settings to preserve fields not in newSettings if partial update

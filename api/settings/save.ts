@@ -6,33 +6,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = req.body;
-    console.log('💾 Saving...', body);
+    console.log('💾 Saving Settings...', body);
 
-    // تحويل الحقول المسطحة إلى مصفوفة Social Links
     const socialLinks = [
       { platform: 'Facebook', url: body.social_facebook },
       { platform: 'Twitter', url: body.social_twitter },
       { platform: 'Instagram', url: body.social_instagram }
-    ].filter(l => l.url); // حفظ الروابط الموجودة فقط
+    ].filter(l => l.url);
 
-    // تجهيز البيانات لجدول site_settings
+    // لجعل العنوان متوافق مع النوع LocalizedString في DB، نرسله ككائن
+    const addressPayload = { ar: body.address, en: body.address };
+
     const dbPayload = {
       contact_email: body.contact_email,
       contact_phone: body.contact_phone,
-      address: body.address,
+      address: addressPayload,
       logo_url: body.logo_url,
       icon_url: body.icon_url,
-      social_links: socialLinks, // تخزين كمصفوفة JSONB
+      social_links: socialLinks,
       updated_at: new Date().toISOString()
     };
 
-    // الحفظ + أخذ لقطة (Snapshot)
     const { data, error } = await supabaseAdmin
       .from('site_settings')
       .upsert({ 
         id: 1, 
         ...dbPayload,
-        default_snapshot: dbPayload // حفظ نسخة طبق الأصل للاستعادة
+        default_snapshot: dbPayload
       })
       .select()
       .single();
