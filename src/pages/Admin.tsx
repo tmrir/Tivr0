@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
-import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage } from '../types';
+import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, SiteSettings } from '../types';
 import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type } from 'lucide-react';
 import { SettingsPage } from './Settings';
 
@@ -289,8 +289,24 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
         });
     }, []);
 
-    const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.caseStudies.save(editing); setSaving(false); setEditing(null); onUpdate(); setItems(await db.caseStudies.getAll()); };
-    const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.caseStudies.delete(id); onUpdate(); setItems(items.filter(x=>x.id!==id)); }};
+    const handleSave = async (e: React.FormEvent) => { 
+        e.preventDefault(); 
+        if (!editing) return; 
+        setSaving(true); 
+        await db.caseStudies.save(editing); 
+        setSaving(false); 
+        setEditing(null); 
+        onUpdate(); 
+        setItems(await db.caseStudies.getAll()); 
+    };
+
+    const handleDelete = async (id: string) => { 
+        if(confirm(t('admin.confirm'))) { 
+            await db.caseStudies.delete(id); 
+            onUpdate(); 
+            setItems(items.filter(x=>x.id!==id)); 
+        }
+    };
     
     const saveSectionSettings = async () => {
         setSettingsSaving(true);
@@ -303,7 +319,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     };
 
     // --------------------------
-    // DYNAMIC STATS LOGIC
+    // DYNAMIC STATS LOGIC (NEW)
     // --------------------------
     const addStat = () => {
         if (!editing) return;
@@ -330,6 +346,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 
     return (
         <div>
+             {/* Section Texts */}
              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2"><Type size={18}/> {t('admin.section.settings')}</h3>
@@ -345,10 +362,12 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                 <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.work')}</h2>
                 <button onClick={() => setEditing({id:'new', title:{ar:'',en:''}, client:'', category:{ar:'',en:''}, result:{ar:'',en:''}, image:'', stats:[]})} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 shadow-sm hover:bg-emerald-700 transition"><Plus size={18}/>{t('admin.btn.add')}</button>
             </div>
+            
             {editing ? (
                 <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto animate-fade-in">
                      <h3 className="font-bold text-xl text-slate-800 mb-6 pb-4 border-b">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
                      
+                     {/* Basic Info */}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.client')}</label><input className="w-full border p-2 rounded" value={editing.client} onChange={e=>setEditing({...editing, client:e.target.value})} /></div>
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label><input className="w-full border p-2 rounded" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} /></div>
@@ -356,9 +375,9 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 
                      <LocalizedInput label={t('admin.form.title_ar')} value={editing.title} onChange={v => setEditing({...editing, title: v})} />
                      <LocalizedInput label={t('admin.form.category_ar')} value={editing.category} onChange={v => setEditing({...editing, category: v})} />
-                     <LocalizedInput label="النتيجة / Result" value={editing.result} onChange={v => setEditing({...editing, result: v})} />
+                     <LocalizedInput label="النتيجة / Result (e.g. زيادة المبيعات 200%)" value={editing.result} onChange={v => setEditing({...editing, result: v})} />
 
-                     {/* إدارة الإحصائيات */}
+                     {/* Stats Management */}
                      <div className="mt-6 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <div className="flex justify-between items-center mb-3">
                             <label className="font-bold text-slate-700">الإحصائيات (Stats)</label>
