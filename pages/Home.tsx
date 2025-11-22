@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Layout } from '../components/Layout';
@@ -245,10 +244,7 @@ export const Home = () => {
            <div className="flex flex-col md:flex-row justify-center gap-6">
              <div className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
                <h4 className="text-xl font-bold mb-4 flex items-center gap-2"><TrendingUp className="text-tivro-primary"/> {lang === 'ar' ? 'حجز استشارة' : 'Consultation'}</h4>
-               <div className="mb-4 space-y-1 text-sm text-slate-300">
-                   {settings?.contactEmail && <div className="flex gap-2">📧 {settings.contactEmail}</div>}
-                   {settings?.contactPhone && <div className="flex gap-2">📞 {settings.contactPhone}</div>}
-               </div>
+               {/* Social Links only, no email/phone here as requested */}
                <div className="flex gap-4 mt-4 mb-6">
                   {settings?.socialLinks?.map((link, idx) => (
                     <a key={idx} href={link.url} className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition">
