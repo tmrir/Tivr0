@@ -1,41 +1,48 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
-    // 1. قراءة حقل default_snapshot الحالي
-    const { data: currentRecord, error: fetchError } = await supabaseAdmin
+    console.log('♻️ [RESTORE] Starting restoration...');
+
+    // 1. قراءة Snapshot
+    const { data: current, error: fetchError } = await supabaseAdmin
       .from('settings')
       .select('default_snapshot')
       .eq('id', 1)
       .single();
 
-    if (fetchError || !currentRecord?.default_snapshot) {
-      throw new Error('لا توجد نسخة احتياطية (default_snapshot) لاستعادتها.');
+    if (fetchError || !current?.default_snapshot) {
+      console.error('❌ [RESTORE] No snapshot found:', fetchError);
+      return res.status(400).json({ error: 'No backup snapshot found to restore.' });
     }
 
-    const snapshotData = currentRecord.default_snapshot;
+    const snapshot = current.default_snapshot;
+    console.log('♻️ [RESTORE] Snapshot found:', snapshot);
 
-    // 2. تحديث الأعمدة الرئيسية باستخدام البيانات المخزنة في الـ snapshot
+    // 2. تطبيق الـ Snapshot على الأعمدة
     const { data, error: updateError } = await supabaseAdmin
       .from('settings')
       .update({
-        ...snapshotData,
+        ...snapshot,
         updated_at: new Date().toISOString()
-        // لا نحدث default_snapshot هنا، لأننا نستعيد منه فقط
       })
       .eq('id', 1)
       .select()
       .single();
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('❌ [RESTORE] Update Failed:', updateError);
+      return res.status(500).json({ error: updateError.message });
+    }
 
+    console.log('✅ [RESTORE] Success');
     return res.status(200).json({ success: true, data });
-  } catch (error: any) {
-    console.error('Restore Settings Error:', error.message);
-    return res.status(500).json({ error: error.message });
+
+  } catch (err: any) {
+    console.error('❌ [RESTORE] Server Error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
 }
