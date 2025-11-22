@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage } from '../types';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink } from '../types';
 
 /* --- DATA MAPPERS --- */
 const mapServiceFromDB = (row: any): Service => ({
@@ -59,17 +59,30 @@ const mapMessageFromDB = (row: any): ContactMessage => ({
   createdAt: row.created_at
 });
 
-const mapSettingsFromDB = (row: any): SiteSettings => ({
-  siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
-  contactEmail: row.contact_email || '',
-  contactPhone: row.contact_phone || '',
-  address: row.address || { ar: '', en: '' },
-  socialLinks: Array.isArray(row.social_links) ? row.social_links : [],
-  sectionTexts: row.section_texts || { 
-    workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
-    workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
+const mapSettingsFromDB = (row: any): SiteSettings => {
+  // Robust handling for legacy social_links object vs new array
+  let socialLinks: SocialLink[] = [];
+  if (Array.isArray(row.social_links)) {
+      socialLinks = row.social_links;
+  } else if (typeof row.social_links === 'object' && row.social_links !== null) {
+      // Convert legacy object to array
+      Object.keys(row.social_links).forEach(key => {
+          socialLinks.push({ platform: key, url: row.social_links[key] });
+      });
   }
-});
+
+  return {
+    siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
+    contactEmail: row.contact_email || '',
+    contactPhone: row.contact_phone || '',
+    address: row.address || { ar: '', en: '' },
+    socialLinks: socialLinks,
+    sectionTexts: row.section_texts || { 
+      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
+      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
+    }
+  };
+};
 const mapSettingsToDB = (item: SiteSettings) => ({ 
   site_name: item.siteName, 
   contact_email: item.contactEmail, 
@@ -192,7 +205,6 @@ export const db = {
 
   messages: {
     getAll: async (): Promise<ContactMessage[]> => {
-        // Admin Only
         const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
         return data?.map(mapMessageFromDB) || [];
     },
@@ -212,9 +224,19 @@ export const db = {
       }
       return mapSettingsFromDB(data);
     },
-    save: async (settings: SiteSettings) => {
-      // Ensure ID is 1 for the single row of settings
-      const payload = { id: 1, ...mapSettingsToDB(settings) };
+    save: async (newSettings: SiteSettings) => {
+      // Merge Logic: Get current settings to preserve fields not in newSettings if partial update
+      const { data: currentDB } = await supabase.from('site_settings').select('*').single();
+      const current = currentDB ? mapSettingsFromDB(currentDB) : null;
+      
+      const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
+      
+      // Ensure we preserve sub-objects if they are missing in input but exist in DB
+      if (current && newSettings.sectionTexts) {
+          mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
+      }
+      
+      const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };
       return await supabase.from('site_settings').upsert(payload);
     }
   }

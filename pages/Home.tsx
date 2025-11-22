@@ -145,7 +145,7 @@ export const Home = () => {
         </div>
       </section>
 
-      {/* Case Studies */}
+      {/* Case Studies - EXACT DESIGN MATCH */}
       <section id="work" className="py-24 bg-white">
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex justify-between items-end mb-12">
