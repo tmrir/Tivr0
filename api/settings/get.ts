@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 1. قتل الكاش نهائياً
+  // 1. قتل الكاش نهائياً لضمان وصول أحدث البيانات
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) {
       console.error('❌ [GET] Supabase Error:', error);
-      // If table doesn't exist or row missing, try to return empty object to prevent crash
+      // If table doesn't exist or row missing, return empty object instead of error to prevent crash
       if (error.code === 'PGRST116') {
           return res.status(200).json({});
       }

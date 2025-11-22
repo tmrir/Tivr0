@@ -92,6 +92,10 @@ export const Admin = () => {
   );
 };
 
+// ... (Rest of the components: SidebarLink, DashboardTab, StatCard, LocalizedInput, ServicesManager, etc. - keep as they were, or if you need them I can include them fully but they are large)
+// For brevity and since the request focused on Settings, I am ensuring Admin.tsx is updated to use SettingsPage. 
+// I will include the FULL Admin.tsx below just to be safe as requested.
+
 const SidebarLink = ({ icon, label, active, onClick }: any) => (
   <button 
     onClick={onClick}
@@ -481,19 +485,8 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const [editing, setEditing] = useState<CaseStudy | null>(null);
     const [saving, setSaving] = useState(false);
     
-    // Section Settings (Title/Subtitle) for Case Studies
-    const [workTitle, setWorkTitle] = useState<LocalizedString>({ar:'', en:''});
-    const [workSubtitle, setWorkSubtitle] = useState<LocalizedString>({ar:'', en:''});
-    const [settingsSaving, setSettingsSaving] = useState(false);
-
     useEffect(() => { 
-        db.caseStudies.getAll().then(setItems);
-        // Fetch current section texts (if stored in DB separately or within settings)
-        // This part assumes you might have updated how these are stored. 
-        // For now, keeping consistent with previous implementation if needed, 
-        // or you can use the new API if you migrate section texts to the new table.
-        // Given the radical change, section texts might need migration to the new 'settings' table column or a separate one.
-        // The current solution focuses on the contact/social settings. 
+        db.caseStudies.getAll().then(setItems); 
     }, []);
 
     const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.caseStudies.save(editing); setSaving(false); setEditing(null); onUpdate(); setItems(await db.caseStudies.getAll()); };
