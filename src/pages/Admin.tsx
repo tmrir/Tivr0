@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
-import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, SiteSettings } from '../types';
+import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage } from '../types';
 import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type } from 'lucide-react';
 import { SettingsPage } from './Settings';
 
@@ -279,7 +279,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const [items, setItems] = useState<CaseStudy[]>([]);
     const [editing, setEditing] = useState<CaseStudy | null>(null);
     const [saving, setSaving] = useState(false);
-    const [sectionSettings, setSectionSettings] = useState<SiteSettings['sectionTexts']>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
+    const [sectionSettings, setSectionSettings] = useState<any>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
     const [settingsSaving, setSettingsSaving] = useState(false);
 
     useEffect(() => { 
@@ -302,17 +302,31 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
         setSettingsSaving(false);
     };
 
-    // Helper for dynamic stats
-    const addStat = () => editing && setEditing({...editing, stats: [...editing.stats, { label: {ar:'', en:''}, value: '' }]});
+    // --------------------------
+    // DYNAMIC STATS LOGIC
+    // --------------------------
+    const addStat = () => {
+        if (!editing) return;
+        // Ensure stats exists before pushing
+        const currentStats = editing.stats || [];
+        setEditing({...editing, stats: [...currentStats, { label: {ar:'', en:''}, value: '' }]});
+    };
+
     const updateStat = (idx: number, field: 'value' | 'labelAr' | 'labelEn', val: string) => {
-        if(!editing) return;
+        if(!editing || !editing.stats) return;
         const newStats = [...editing.stats];
+        
         if(field === 'value') newStats[idx].value = val;
-        else if(field === 'labelAr') newStats[idx].label.ar = val;
-        else if(field === 'labelEn') newStats[idx].label.en = val;
+        else if(field === 'labelAr') newStats[idx].label = { ...newStats[idx].label, ar: val };
+        else if(field === 'labelEn') newStats[idx].label = { ...newStats[idx].label, en: val };
+        
         setEditing({...editing, stats: newStats});
     };
-    const removeStat = (idx: number) => editing && setEditing({...editing, stats: editing.stats.filter((_, i) => i !== idx)});
+
+    const removeStat = (idx: number) => {
+        if(!editing || !editing.stats) return;
+        setEditing({...editing, stats: editing.stats.filter((_, i) => i !== idx)});
+    };
 
     return (
         <div>
@@ -350,15 +364,15 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                             <label className="font-bold text-slate-700">الإحصائيات (Stats)</label>
                             <button type="button" onClick={addStat} className="text-xs bg-white border px-3 py-1 rounded-full flex items-center gap-1 hover:bg-slate-100"><Plus size={12}/> إضافة رقم</button>
                         </div>
-                        {editing.stats.map((stat, i) => (
+                        {(editing.stats || []).map((stat, i) => (
                             <div key={i} className="flex gap-2 items-center mb-2">
-                                <input className="w-20 border p-2 rounded text-sm font-bold" placeholder="Value" value={stat.value} onChange={e=>updateStat(i, 'value', e.target.value)} />
+                                <input className="w-24 border p-2 rounded text-sm font-bold" placeholder="Value (e.g 200%)" value={stat.value} onChange={e=>updateStat(i, 'value', e.target.value)} />
                                 <input className="flex-1 border p-2 rounded text-sm" placeholder="Label (Ar)" value={stat.label.ar} onChange={e=>updateStat(i, 'labelAr', e.target.value)} />
                                 <input className="flex-1 border p-2 rounded text-sm" placeholder="Label (En)" value={stat.label.en} onChange={e=>updateStat(i, 'labelEn', e.target.value)} />
-                                <button type="button" onClick={()=>removeStat(i)} className="text-red-500 p-2"><Trash2 size={16}/></button>
+                                <button type="button" onClick={()=>removeStat(i)} className="text-red-500 p-2 bg-white rounded border hover:bg-red-50"><Trash2 size={16}/></button>
                             </div>
                         ))}
-                        {editing.stats.length === 0 && <p className="text-xs text-slate-400 italic">لا توجد إحصائيات مضافة لهذا العمل.</p>}
+                        {(!editing.stats || editing.stats.length === 0) && <p className="text-xs text-slate-400 italic">لا توجد إحصائيات مضافة لهذا العمل.</p>}
                      </div>
 
                      <div className="flex gap-3 justify-end pt-4 border-t">
@@ -380,7 +394,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                                 <h3 className="font-bold text-slate-800 mb-1">{c.title[lang]}</h3>
                                 <p className="text-sm text-slate-500 mb-3 line-clamp-2">{c.result[lang]}</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {c.stats.map((s, idx) => (
+                                    {(c.stats || []).map((s, idx) => (
                                         <div key={idx} className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">
                                             <strong>{s.value}</strong> {s.label[lang]}
                                         </div>

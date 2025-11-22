@@ -168,7 +168,7 @@ export const Home = () => {
                   <h3 className="text-white text-2xl font-bold mb-2">{c.title[lang]}</h3>
                   <p className="text-slate-200 text-sm mb-4">{c.result[lang]}</p>
                   <div className="flex gap-4 flex-wrap">
-                    {c.stats.map((stat, idx) => (
+                    {(c.stats || []).map((stat, idx) => (
                       <div key={idx} className="bg-white/10 backdrop-blur rounded px-3 py-1 border border-white/10">
                         <span className="block text-white font-bold">{stat.value}</span>
                         <span className="text-xs text-slate-300">{stat.label[lang]}</span>
