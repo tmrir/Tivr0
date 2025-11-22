@@ -7,21 +7,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const newData = req.body;
 
-  // تنظيف البيانات (حذف id و updated_at لتجنب المشاكل)
+  // تنظيف البيانات: حذف الحقول التي لا يجب تعديلها يدوياً
   delete newData.id;
   delete newData.updated_at;
-  delete newData.default_snapshot; // لا نريد تخزين سناب شوت داخل سناب شوت
+  
+  // ملاحظة: نقوم بحذف default_snapshot من البيانات الواردة لأننا سنقوم ببنائها بأنفسنا
+  delete newData.default_snapshot;
 
   try {
-    // 1. تحديث الأعمدة + تحديث الـ snapshot ليكون هو النسخة الحالية
+    // المنطق: تحديث الأعمدة العادية + وضع نسخة من البيانات في default_snapshot
+    // هذا يحقق طلبك: "آخر نسخة حفظتها تصبح النسخة الافتراضية الجديدة"
+    
+    const payload = {
+      ...newData,
+      updated_at: new Date().toISOString(),
+      default_snapshot: newData // حفظ نسخة كاملة من البيانات كـ JSON
+    };
+
+    // استخدام upsert لضمان الإنشاء إذا لم يكن الصف موجوداً
     const { data, error } = await supabaseAdmin
       .from('settings')
-      .update({
-        ...newData,
-        updated_at: new Date().toISOString(),
-        default_snapshot: newData // <-- التحديث التلقائي للمحتوى الافتراضي
-      })
-      .eq('id', 1)
+      .upsert({ id: 1, ...payload }) 
       .select()
       .single();
 
@@ -29,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ success: true, data });
   } catch (error: any) {
-    console.error('Save Error:', error);
+    console.error('Save Settings Error:', error);
     return res.status(500).json({ error: error.message });
   }
 }

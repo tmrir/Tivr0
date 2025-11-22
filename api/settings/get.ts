@@ -3,10 +3,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // منع الكاش نهائياً لضمان جلب أحدث البيانات
+  // منع الكاش نهائياً لضمان جلب أحدث البيانات دائماً
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
   try {
+    // جلب الإعدادات للصف رقم 1
     const { data, error } = await supabaseAdmin
       .from('settings')
       .select('*')
@@ -17,6 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json(data);
   } catch (error: any) {
+    console.error('Fetch Settings Error:', error.message);
     return res.status(500).json({ error: error.message });
   }
 }
