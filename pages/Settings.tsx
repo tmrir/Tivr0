@@ -36,10 +36,12 @@ export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'general' | 'logos' | 'banners' | 'home_content' | 'legal' | 'db'>('general');
   const [msg, setMsg] = useState<{type:'success'|'error', text:string} | null>(null);
 
+  // Important: Removed the critical error check that caused the white screen.
+  // Now we rely on default settings if loading fails, or show a loader.
   if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin"/></div>;
   
-  // Safety check: if hook fails drastically, show error but don't crash
-  if (!settings) return <div className="p-10 text-red-500">Critical Error: Unable to load settings. Check database connection.</div>;
+  // Fallback if settings is somehow null (should not happen with new hook)
+  if (!settings) return <div className="p-10 text-center">Loading settings...</div>;
 
   const onSave = async () => {
       const success = await saveSettings(settings);
@@ -64,6 +66,7 @@ export const SettingsPage: React.FC = () => {
         {msg && <div className={`p-4 rounded mb-6 flex items-center gap-2 ${msg.type==='success'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`}>{msg.type==='success'?<CheckCircle size={18}/>:<AlertCircle size={18}/>}{msg.text}</div>}
 
         <div className="flex flex-col md:flex-row gap-8">
+            {/* Tabs */}
             <div className="w-full md:w-64 flex-shrink-0 space-y-2">
                 <TabButton id="general" icon={Globe} label={t('admin.settings.general')} />
                 <TabButton id="logos" icon={ImageIcon} label="Logos & Branding" />
@@ -73,6 +76,7 @@ export const SettingsPage: React.FC = () => {
                 <TabButton id="db" icon={Database} label={t('admin.settings.db')} />
             </div>
 
+            {/* Content */}
             <div className="flex-1 bg-white p-8 rounded-xl shadow-sm border border-slate-200">
                 
                 {activeTab === 'general' && (

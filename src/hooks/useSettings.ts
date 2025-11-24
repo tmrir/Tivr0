@@ -31,29 +31,31 @@ const DEFAULT_SETTINGS: SiteSettings = {
 };
 
 export const useSettings = () => {
-  // Initialize with DEFAULT_SETTINGS to prevent initial null state issues
+  // NEVER allow null. Always start with defaults.
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Keep loading true initially
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
+      // Attempt fetch
       const res = await fetch(`/api/settings/get?t=${Date.now()}`);
       
       let data: any = {};
       if (res.ok) {
           data = await res.json();
       } else {
-          console.warn('API fetch failed, falling back to DB');
+          console.warn('API fetch failed, trying DB fallback');
           data = await db.settings.get();
       }
 
-      // Defensive Merge: Ensure every nested object exists
+      // Robust Merge
       const merged: SiteSettings = { 
           ...DEFAULT_SETTINGS, 
           ...data,
+          // Ensure sub-objects are merged safely
           siteName: { ...DEFAULT_SETTINGS.siteName, ...(data.site_name || data.siteName || {}) },
           address: { ...DEFAULT_SETTINGS.address, ...(data.address || {}) },
           
@@ -72,8 +74,8 @@ export const useSettings = () => {
 
     } catch (err: any) {
       console.error('Error fetching settings:', err);
-      setError(err.message);
-      // Keep defaults on error so UI doesn't break
+      // Don't set error state that blocks UI, just log it.
+      // The UI will show DEFAULT_SETTINGS, which is better than a crash.
     } finally {
       setLoading(false);
     }
@@ -151,7 +153,7 @@ export const useSettings = () => {
   }, [fetchSettings]);
 
   return {
-    settings,
+    settings, // Guaranteed to be non-null
     setSettings,
     loading,
     saving,
