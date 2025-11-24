@@ -8,12 +8,15 @@ const DEFAULT_SETTINGS: SiteSettings = {
     contactPhone: '',
     address: { ar: '', en: '' },
     socialLinks: [],
+    
     logoUrl: '',
     iconUrl: '',
     footerLogoUrl: '',
     faviconUrl: '',
+
     topBanner: { enabled: false, title: {ar:'',en:''} },
     bottomBanner: { enabled: false, title: {ar:'',en:''} },
+
     sectionTexts: { workTitle: {ar:'',en:''}, workSubtitle: {ar:'',en:''} },
     homeSections: {
         heroTitle: {ar:'',en:''}, heroSubtitle: {ar:'',en:''},
@@ -22,43 +25,51 @@ const DEFAULT_SETTINGS: SiteSettings = {
         packagesTitle: {ar:'',en:''},
         contactTitle: {ar:'',en:''}, contactSubtitle: {ar:'',en:''}
     },
+
     privacyPolicy: { ar: '', en: '' },
     termsOfService: { ar: '', en: '' }
 };
 
 export const useSettings = () => {
+  // Start with DEFAULT_SETTINGS immediately so it is never null
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Start as false to show UI immediately
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
+      // Attempt API fetch
       const res = await fetch(`/api/settings/get?t=${Date.now()}`);
+      
       let data: any = {};
       if (res.ok) {
           data = await res.json();
       } else {
+          // Silent fallback to DB if API fails
           data = await db.settings.get();
       }
 
+      // Aggressive Merge to prevent any undefined fields
       const merged: SiteSettings = { 
           ...DEFAULT_SETTINGS, 
           ...data,
-          siteName: { ...DEFAULT_SETTINGS.siteName, ...(data.site_name || data.siteName || {}) },
-          address: { ...DEFAULT_SETTINGS.address, ...(data.address || {}) },
+          // Deep merge objects
+          homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || data.homeSections || {}) },
+          sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || data.sectionTexts || {}) },
           topBanner: { ...DEFAULT_SETTINGS.topBanner, ...(data.top_banner || data.topBanner || {}) },
           bottomBanner: { ...DEFAULT_SETTINGS.bottomBanner, ...(data.bottom_banner || data.bottomBanner || {}) },
-          sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || data.sectionTexts || {}) },
-          homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || data.homeSections || {}) },
+          siteName: { ...DEFAULT_SETTINGS.siteName, ...(data.site_name || data.siteName || {}) },
+          address: { ...DEFAULT_SETTINGS.address, ...(data.address || {}) },
           privacyPolicy: { ...DEFAULT_SETTINGS.privacyPolicy, ...(data.privacy_policy || data.privacyPolicy || {}) },
           termsOfService: { ...DEFAULT_SETTINGS.termsOfService, ...(data.terms_of_service || data.termsOfService || {}) },
       };
       
       setSettings(merged);
     } catch (err: any) {
-      console.error(err);
+      console.error('Settings fetch error:', err);
+      // Do NOT clear settings on error. Keep defaults.
     } finally {
       setLoading(false);
     }
@@ -68,12 +79,11 @@ export const useSettings = () => {
     setSaving(true);
     setError(null);
     try {
-        // Ensure we send flat fields for the API to map correctly to DB columns
         const social_facebook = newData.socialLinks.find(l => l.platform.includes('Facebook'))?.url || '';
         const social_twitter = newData.socialLinks.find(l => l.platform.includes('Twitter'))?.url || '';
         const social_instagram = newData.socialLinks.find(l => l.platform.includes('Instagram'))?.url || '';
 
-        const payload = {
+        const flatPayload = {
             site_name: newData.siteName,
             contact_email: newData.contactEmail,
             contact_phone: newData.contactPhone,
@@ -88,7 +98,6 @@ export const useSettings = () => {
             social_twitter, 
             social_instagram,
             
-            // These objects map directly to JSONB columns
             top_banner: newData.topBanner,
             bottom_banner: newData.bottomBanner,
             section_texts: newData.sectionTexts,
@@ -97,23 +106,19 @@ export const useSettings = () => {
             terms_of_service: newData.termsOfService
         };
 
-      console.log('Sending Save Payload:', payload);
-
       const res = await fetch('/api/settings/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(flatPayload),
       });
       
       if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || 'Failed to save settings');
+          throw new Error('Failed to save settings');
       }
       
       await fetchSettings();
       return true;
     } catch (err: any) {
-      console.error('Save Error:', err);
       setError(err.message);
       return false;
     } finally {
