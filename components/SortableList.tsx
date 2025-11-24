@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { GripVertical } from 'lucide-react';
 
@@ -16,13 +15,11 @@ export function SortableList<T>({ items, onReorder, renderItem, keyExtractor, cl
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
-    // Required for Firefox
     e.dataTransfer.effectAllowed = "move";
-    // Create a ghost image if needed, or let browser handle it
   };
 
   const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault();
     if (draggedIndex === null) return;
     if (draggedIndex !== index) {
       setDragOverIndex(index);
@@ -36,9 +33,7 @@ export function SortableList<T>({ items, onReorder, renderItem, keyExtractor, cl
     const newItems = [...items];
     const draggedItem = newItems[draggedIndex];
 
-    // Remove item from old position
     newItems.splice(draggedIndex, 1);
-    // Insert item at new position
     newItems.splice(index, 0, draggedItem);
 
     onReorder(newItems);
@@ -68,12 +63,9 @@ export function SortableList<T>({ items, onReorder, renderItem, keyExtractor, cl
           }`}
         >
           <div className="relative group">
-            {/* Drag Handle - Only visible on hover or when dragging */}
             <div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity p-2">
               <GripVertical size={20} />
             </div>
-            
-            {/* Render the actual card content */}
             <div className="pl-8">
                 {renderItem(item, index, draggedIndex === index)}
             </div>

@@ -13,10 +13,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`🔄 Reordering ${items.length} items in ${table}...`);
 
-    // Sequential update to ensure lock consistency
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        // Using supabaseAdmin (Service Role) to bypass RLS on updates
         const { error } = await supabaseAdmin
             .from(table)
             .update({ order_index: i })
