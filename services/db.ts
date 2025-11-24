@@ -1,4 +1,272 @@
-// ... (باقي الكود)
+import { supabase } from './supabase';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page } from '../types';
+
+/* --- DATA MAPPERS --- */
+const mapServiceFromDB = (row: any): Service => ({
+  id: row.id,
+  title: row.title || { ar: '', en: '' },
+  description: row.description || { ar: '', en: '' },
+  features: row.features || [],
+  iconName: row.icon_name || 'HelpCircle',
+  orderIndex: row.order_index
+});
+const mapServiceToDB = (item: Service) => ({ title: item.title, description: item.description, features: item.features, icon_name: item.iconName });
+
+const mapPackageFromDB = (row: any): Package => ({
+  id: row.id,
+  name: row.name || { ar: '', en: '' },
+  price: row.price || '',
+  features: row.features || [],
+  isPopular: row.is_popular || false,
+  orderIndex: row.order_index
+});
+const mapPackageToDB = (item: Package) => ({ name: item.name, price: item.price, features: item.features, is_popular: item.isPopular });
+
+const mapTeamFromDB = (row: any): TeamMember => ({
+  id: row.id,
+  name: row.name || { ar: '', en: '' },
+  role: row.role || { ar: '', en: '' },
+  image: row.image || '',
+  linkedin: row.linkedin || '',
+  orderIndex: row.order_index
+});
+const mapTeamToDB = (item: TeamMember) => ({ name: item.name, role: item.role, image: item.image, linkedin: item.linkedin });
+
+const mapCaseFromDB = (row: any): CaseStudy => ({
+  id: row.id,
+  client: row.client || '',
+  title: row.title || { ar: '', en: '' },
+  category: row.category || { ar: '', en: '' },
+  result: row.result || { ar: '', en: '' },
+  image: row.image || '',
+  stats: Array.isArray(row.stats) ? row.stats : [],
+  orderIndex: row.order_index
+});
+const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, stats: item.stats });
+
+const mapBlogFromDB = (row: any): BlogPost => ({
+  id: row.id,
+  title: row.title || { ar: '', en: '' },
+  excerpt: row.excerpt || { ar: '', en: '' },
+  content: row.content || { ar: '', en: '' },
+  image: row.image || '',
+  author: row.author || '',
+  date: row.date || new Date().toISOString().split('T')[0]
+});
+const mapBlogToDB = (item: BlogPost) => ({ title: item.title, excerpt: item.excerpt, content: item.content, image: item.image, author: item.author, date: item.date });
+
+const mapMessageFromDB = (row: any): ContactMessage => ({
+  id: row.id,
+  name: row.name || '',
+  phone: row.phone || '',
+  createdAt: row.created_at
+});
+
+const mapSettingsFromDB = (row: any): SiteSettings => {
+  let socialLinks: SocialLink[] = [];
+  if (Array.isArray(row.social_links)) {
+      socialLinks = row.social_links;
+  } else if (typeof row.social_links === 'object' && row.social_links !== null) {
+      Object.keys(row.social_links).forEach(key => {
+          socialLinks.push({ platform: key, url: row.social_links[key] });
+      });
+  }
+
+  return {
+    siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
+    contactEmail: row.contact_email || '',
+    contactPhone: row.contact_phone || '',
+    address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
+    socialLinks: socialLinks,
+    
+    logoUrl: row.logo_url || '',
+    iconUrl: row.icon_url || '',
+    footerLogoUrl: row.footer_logo_url || row.logo_url || '',
+    faviconUrl: row.favicon_url || '',
+
+    topBanner: row.top_banner || { enabled: false, title: {ar:'',en:''} },
+    bottomBanner: row.bottom_banner || { enabled: false, title: {ar:'',en:''} },
+
+    sectionTexts: row.section_texts || { 
+      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
+      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
+    },
+    homeSections: row.home_sections || {
+        heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
+        servicesTitle: { ar: '', en: '' }, servicesSubtitle: { ar: '', en: '' },
+        teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
+        packagesTitle: { ar: '', en: '' },
+        contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
+    },
+
+    privacyPolicy: row.privacy_policy || { ar: '', en: '' },
+    termsOfService: row.terms_of_service || { ar: '', en: '' }
+  };
+};
+
+const mapSettingsToDB = (item: SiteSettings) => ({ 
+  site_name: item.siteName, 
+  contact_email: item.contactEmail, 
+  contact_phone: item.contactPhone, 
+  address: item.address, 
+  social_links: item.socialLinks,
+  logo_url: item.logoUrl,
+  icon_url: item.iconUrl,
+  footer_logo_url: item.footerLogoUrl,
+  favicon_url: item.faviconUrl,
+  top_banner: item.topBanner,
+  bottom_banner: item.bottomBanner,
+  section_texts: item.sectionTexts,
+  home_sections: item.homeSections,
+  privacy_policy: item.privacyPolicy,
+  terms_of_service: item.termsOfService
+});
+
+/* --- SERVER SEED TRIGGER --- */
+const triggerServerSeed = async () => {
+  try {
+    const res = await fetch('/api/seed', { method: 'POST' });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+};
+
+/* --- SAFE FETCH HELPER WITH FALLBACK --- */
+const fetchWithOrder = async (table: string, mapper: Function) => {
+    let { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .order('order_index', { ascending: true });
+
+    if (error || !data) {
+        const res = await supabase.from(table).select('*').order('created_at', { ascending: true });
+        data = res.data;
+        error = res.error;
+    }
+
+    if (!error && (!data || data.length === 0)) {
+        await triggerServerSeed();
+        const { data: retry } = await supabase.from(table).select('*').order('created_at', { ascending: true });
+        return retry?.map(row => mapper(row)) || [];
+    }
+
+    return data?.map(row => mapper(row)) || [];
+}
+
+/* --- DB SERVICE EXPORT --- */
+export const db = {
+  reorder: async (table: string, items: any[]) => {
+    try {
+      await fetch('/api/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, items })
+      });
+    } catch (e) {
+      console.error('Reorder failed', e);
+    }
+  },
+
+  services: {
+    getAll: async () => await fetchWithOrder('services', mapServiceFromDB),
+    save: async (item: Service) => {
+      const payload = mapServiceToDB(item);
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('services').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('services').delete().eq('id', id)
+  },
+
+  packages: {
+    getAll: async () => await fetchWithOrder('packages', mapPackageFromDB),
+    save: async (item: Package) => {
+      const payload = mapPackageToDB(item);
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('packages').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('packages').delete().eq('id', id)
+  },
+
+  team: {
+    getAll: async () => await fetchWithOrder('team_members', mapTeamFromDB),
+    save: async (item: TeamMember) => {
+      const payload = mapTeamToDB(item);
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('team_members').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('team_members').delete().eq('id', id)
+  },
+
+  caseStudies: {
+    getAll: async () => await fetchWithOrder('case_studies', mapCaseFromDB),
+    save: async (item: CaseStudy) => {
+      const payload = mapCaseToDB(item);
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('case_studies').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('case_studies').delete().eq('id', id)
+  },
+
+  blog: {
+    getAll: async () => {
+        const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+        if (!error && (!data || data.length === 0)) {
+            await triggerServerSeed();
+            const { data: retry } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+            return retry?.map(mapBlogFromDB) || [];
+        }
+        return data?.map(mapBlogFromDB) || [];
+    },
+    save: async (item: BlogPost) => {
+      const payload = mapBlogToDB(item);
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('blog_posts').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('blog_posts').delete().eq('id', id)
+  },
+
+  messages: {
+    getAll: async (): Promise<ContactMessage[]> => {
+        const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+        return data?.map(mapMessageFromDB) || [];
+    },
+    send: async (name: string, phone: string) => {
+        return await supabase.from('contact_messages').insert([{ name, phone }]);
+    },
+    delete: async (id: string) => await supabase.from('contact_messages').delete().eq('id', id)
+  },
+
+  settings: {
+    get: async (): Promise<SiteSettings> => {
+      const { data, error } = await supabase.from('site_settings').select('*').single();
+      if (!data || error) {
+          const shouldSeed = !data; 
+          if (shouldSeed) {
+              await triggerServerSeed(); 
+              const { data: retry } = await supabase.from('site_settings').select('*').single();
+              return mapSettingsFromDB(retry || {});
+          }
+      }
+      return mapSettingsFromDB(data || {});
+    },
+    save: async (newSettings: SiteSettings) => {
+      const { data: currentDB } = await supabase.from('site_settings').select('*').single();
+      const current = currentDB ? mapSettingsFromDB(currentDB) : null;
+      
+      const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
+      
+      if (current) {
+          if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
+          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
+          if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
+          if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
+      }
+      
+      const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };
+      return await supabase.from('site_settings').upsert(payload);
+    }
+  },
 
   pages: {
     get: async (slug: string): Promise<Page | null> => {
