@@ -20,14 +20,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       socialLinks.find((l: any) => l.platform.toLowerCase().includes(platform))?.url || '';
 
     const mappedData = {
+      site_name: data.site_name,
       contact_email: data.contact_email || '',
       contact_phone: data.contact_phone || '',
-      address: typeof data.address === 'object' ? (data.address.ar || '') : (data.address || ''),
+      address: data.address || { ar: '', en: '' },
+      
       logo_url: data.logo_url || '',
       icon_url: data.icon_url || '',
+      footer_logo_url: data.footer_logo_url || '',
+      favicon_url: data.favicon_url || '',
+
       social_facebook: getLink('facebook'),
       social_twitter: getLink('twitter'),
-      social_instagram: getLink('instagram')
+      social_instagram: getLink('instagram'),
+
+      top_banner: data.top_banner || {},
+      bottom_banner: data.bottom_banner || {},
+      section_texts: data.section_texts || {},
+      home_sections: data.home_sections || {},
+      privacy_policy: data.privacy_policy || {},
+      terms_of_service: data.terms_of_service || {}
     };
 
     return res.status(200).json(mappedData);

@@ -1,58 +1,47 @@
-
 import { useState, useEffect, useCallback } from 'react';
+import { SiteSettings } from '../types';
+import { db } from '../services/db';
 
-// تعريف واجهة البيانات بناءً على جدول settings الجديد
-export interface SettingsData {
-  contact_email: string;
-  contact_phone: string;
-  social_facebook: string;
-  social_twitter: string;
-  social_instagram: string;
-  address: string;
-  logo_url: string;
-  icon_url: string;
-}
+const DEFAULT_SETTINGS: SiteSettings = {
+    siteName: { ar: '', en: '' },
+    contactEmail: '',
+    contactPhone: '',
+    address: { ar: '', en: '' },
+    socialLinks: [],
+    logoUrl: '',
+    iconUrl: '',
+    footerLogoUrl: '',
+    faviconUrl: '',
+    topBanner: { enabled: false, title: {ar:'',en:''} },
+    bottomBanner: { enabled: false, title: {ar:'',en:''} },
+    sectionTexts: { workTitle: {ar:'',en:''}, workSubtitle: {ar:'',en:''} },
+    homeSections: {
+        heroTitle: {ar:'',en:''}, heroSubtitle: {ar:'',en:''},
+        servicesTitle: {ar:'',en:''}, servicesSubtitle: {ar:'',en:''},
+        teamTitle: {ar:'',en:''}, teamSubtitle: {ar:'',en:''},
+        packagesTitle: {ar:'',en:''},
+        contactTitle: {ar:'',en:''}, contactSubtitle: {ar:'',en:''}
+    },
+    privacyPolicy: { ar: '', en: '' },
+    termsOfService: { ar: '', en: '' }
+};
 
 export const useSettings = () => {
-  // الحالة الأولية
-  const [settings, setSettings] = useState<SettingsData>({
-    contact_email: '',
-    contact_phone: '',
-    social_facebook: '',
-    social_twitter: '',
-    social_instagram: '',
-    address: '',
-    logo_url: '',
-    icon_url: ''
-  });
-
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // دالة جلب البيانات من الـ API
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      // إضافة timestamp لتجاوز أي كاش في المتصفح
       const res = await fetch(`/api/settings/get?t=${Date.now()}`);
       const data = await res.json();
+      
+      const merged = { ...DEFAULT_SETTINGS, ...data };
+      const dbData = await db.settings.get();
+      setSettings({ ...DEFAULT_SETTINGS, ...dbData });
 
-      if (res.ok && data) {
-        setSettings({
-          contact_email: data.contact_email || '',
-          contact_phone: data.contact_phone || '',
-          social_facebook: data.social_facebook || '',
-          social_twitter: data.social_twitter || '',
-          social_instagram: data.social_instagram || '',
-          address: data.address || '',
-          logo_url: data.logo_url || '',
-          icon_url: data.icon_url || '',
-        });
-      } else {
-        // إذا لم يكن هناك بيانات، لا نرمي خطأ بل نبقي القيم فارغة (أو يمكن تفعيل Seed)
-        console.warn('No settings found or API error', data);
-      }
     } catch (err: any) {
       console.error('Error fetching settings:', err);
       setError(err.message);
@@ -61,22 +50,45 @@ export const useSettings = () => {
     }
   }, []);
 
-  // دالة الحفظ
-  const saveSettings = async (newData: SettingsData) => {
+  const saveSettings = async (newData: SiteSettings) => {
     setSaving(true);
     setError(null);
     try {
+        const social_facebook = newData.socialLinks.find(l => l.platform.includes('Facebook'))?.url || '';
+        const social_twitter = newData.socialLinks.find(l => l.platform.includes('Twitter'))?.url || '';
+        const social_instagram = newData.socialLinks.find(l => l.platform.includes('Instagram'))?.url || '';
+
+        const flatPayload = {
+            site_name: newData.siteName,
+            contact_email: newData.contactEmail,
+            contact_phone: newData.contactPhone,
+            address: newData.address,
+            logo_url: newData.logoUrl,
+            icon_url: newData.iconUrl,
+            footer_logo_url: newData.footerLogoUrl,
+            favicon_url: newData.faviconUrl,
+            social_facebook, 
+            social_twitter, 
+            social_instagram,
+            top_banner: newData.topBanner,
+            bottom_banner: newData.bottomBanner,
+            section_texts: newData.sectionTexts,
+            home_sections: newData.homeSections,
+            privacy_policy: newData.privacyPolicy,
+            terms_of_service: newData.termsOfService
+        };
+
       const res = await fetch('/api/settings/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newData),
+        body: JSON.stringify(flatPayload),
       });
       
-      const result = await res.json();
+      if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to save');
+      }
       
-      if (!res.ok) throw new Error(result.error || 'فشل الحفظ');
-      
-      // إعادة الجلب للتأكد من تطابق الواجهة مع الخادم
       await fetchSettings();
       return true;
     } catch (err: any) {
@@ -87,27 +99,15 @@ export const useSettings = () => {
     }
   };
 
-  // دالة استعادة البيانات الافتراضية
   const restoreDefaultSettings = async () => {
-    setSaving(true); // نستخدم نفس حالة التحميل
-    setError(null);
-    try {
       const res = await fetch('/api/settings/restore', { method: 'POST' });
-      const result = await res.json();
-      
-      if (!res.ok) throw new Error(result.error || 'فشل الاستعادة');
-      
-      await fetchSettings();
-      return true;
-    } catch (err: any) {
-      setError(err.message);
+      if (res.ok) {
+          await fetchSettings();
+          return true;
+      }
       return false;
-    } finally {
-      setSaving(false);
-    }
   };
 
-  // الجلب الأولي عند تحميل الصفحة
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);

@@ -74,6 +74,18 @@ export interface BannerSettings {
     bgImage?: string;
 }
 
+export interface HomeSectionsSettings {
+    heroTitle: LocalizedString;
+    heroSubtitle: LocalizedString;
+    servicesTitle: LocalizedString;
+    servicesSubtitle: LocalizedString;
+    teamTitle: LocalizedString;
+    teamSubtitle: LocalizedString;
+    packagesTitle: LocalizedString;
+    contactTitle: LocalizedString;
+    contactSubtitle: LocalizedString;
+}
+
 export interface SiteSettings {
   siteName: LocalizedString;
   contactEmail: string;
@@ -98,17 +110,7 @@ export interface SiteSettings {
   };
   
   // CMS - Home Sections Content (New)
-  homeSections: {
-      heroTitle: LocalizedString;
-      heroSubtitle: LocalizedString;
-      servicesTitle: LocalizedString;
-      servicesSubtitle: LocalizedString;
-      teamTitle: LocalizedString;
-      teamSubtitle: LocalizedString;
-      packagesTitle: LocalizedString;
-      contactTitle: LocalizedString;
-      contactSubtitle: LocalizedString;
-  };
+  homeSections: HomeSectionsSettings;
 
   privacyPolicy: LocalizedString; 
   termsOfService: LocalizedString; 

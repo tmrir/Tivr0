@@ -81,7 +81,7 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     
     logoUrl: row.logo_url || '',
     iconUrl: row.icon_url || '',
-    footerLogoUrl: row.footer_logo_url || row.logo_url || '', // Fallback to main logo
+    footerLogoUrl: row.footer_logo_url || row.logo_url || '', 
     faviconUrl: row.favicon_url || '',
 
     topBanner: row.top_banner || { enabled: false, title: {ar:'',en:''} },
@@ -256,17 +256,18 @@ export const db = {
       return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
+      // Fetch current first to merge properly (ensures no data loss if fields missing in UI)
       const { data: currentDB } = await supabase.from('site_settings').select('*').single();
       const current = currentDB ? mapSettingsFromDB(currentDB) : null;
       
       const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
       
-      // Preserve deep objects
+      // Explicit deep merge for objects
       if (current) {
           if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
+          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
           if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
           if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
-          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
       }
       
       const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };
