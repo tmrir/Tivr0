@@ -8,23 +8,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { table, items } = req.body;
 
     if (!table || !items || !Array.isArray(items)) {
-      return res.status(400).json({ error: 'Invalid payload. Requires table and items array.' });
+      return res.status(400).json({ error: 'Invalid payload.' });
     }
 
     console.log(`🔄 Reordering ${items.length} items in ${table}...`);
 
-    // Perform updates sequentially to avoid race conditions or lock contention
-    // Using a transaction would be ideal, but simple updates are safer for now
+    // Sequential update to ensure lock consistency
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
+        // Using supabaseAdmin (Service Role) to bypass RLS on updates
         const { error } = await supabaseAdmin
             .from(table)
             .update({ order_index: i })
             .eq('id', item.id);
         
         if (error) {
-            console.error(`❌ Failed to update index for item ${item.id}:`, error);
-            // Continue trying others, or throw? Continuing is safer for partial success.
+            console.error(`❌ Failed index update for ${item.id}:`, error);
         }
     }
 

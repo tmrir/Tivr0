@@ -11,7 +11,6 @@ interface LayoutProps {
   hideFooter?: boolean;
 }
 
-// Minimal default to prevent crash
 const DEFAULT_SETTINGS: Partial<SiteSettings> = {
     siteName: { ar: 'Tivro', en: 'Tivro' },
     contactEmail: '',
@@ -31,7 +30,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             const s = await db.settings.get();
             if (s) {
                 setSettings(s);
-                // Update Favicon if exists
                 if (s.faviconUrl) {
                     const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement || document.createElement('link');
                     link.type = 'image/x-icon';

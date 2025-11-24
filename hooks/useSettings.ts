@@ -38,9 +38,17 @@ export const useSettings = () => {
       const res = await fetch(`/api/settings/get?t=${Date.now()}`);
       const data = await res.json();
       
-      const merged = { ...DEFAULT_SETTINGS, ...data };
-      const dbData = await db.settings.get();
-      setSettings({ ...DEFAULT_SETTINGS, ...dbData });
+      // Merge with defaults to ensure all nested objects exist
+      const merged = { 
+          ...DEFAULT_SETTINGS, 
+          ...data,
+          homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || {}) },
+          sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || {}) },
+          topBanner: { ...DEFAULT_SETTINGS.topBanner, ...(data.top_banner || {}) },
+          bottomBanner: { ...DEFAULT_SETTINGS.bottomBanner, ...(data.bottom_banner || {}) },
+      };
+      
+      setSettings(merged);
 
     } catch (err: any) {
       console.error('Error fetching settings:', err);

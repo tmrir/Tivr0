@@ -62,6 +62,7 @@ const mapMessageFromDB = (row: any): ContactMessage => ({
   createdAt: row.created_at
 });
 
+// Comprehensive Settings Mapper
 const mapSettingsFromDB = (row: any): SiteSettings => {
   let socialLinks: SocialLink[] = [];
   if (Array.isArray(row.social_links)) {
@@ -79,9 +80,10 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
     socialLinks: socialLinks,
     
+    // CMS Fields
     logoUrl: row.logo_url || '',
     iconUrl: row.icon_url || '',
-    footerLogoUrl: row.footer_logo_url || row.logo_url || '', 
+    footerLogoUrl: row.footer_logo_url || row.logo_url || '',
     faviconUrl: row.favicon_url || '',
 
     topBanner: row.top_banner || { enabled: false, title: {ar:'',en:''} },
@@ -132,7 +134,7 @@ const triggerServerSeed = async () => {
   }
 };
 
-/* --- SAFE FETCH HELPER --- */
+/* --- SAFE FETCH HELPER WITH FALLBACK --- */
 const fetchWithOrder = async (table: string, mapper: Function) => {
     // 1. Try sorting by order_index
     let { data, error } = await supabase
@@ -140,18 +142,16 @@ const fetchWithOrder = async (table: string, mapper: Function) => {
         .select('*')
         .order('order_index', { ascending: true });
 
-    // 2. If error (likely column missing) or no data, Fallback to created_at
+    // 2. Fallback to created_at if order_index missing or error
     if (error || !data) {
-        // console.warn(`Sort by order_index failed for ${table}, falling back to created_at.`);
         const res = await supabase.from(table).select('*').order('created_at', { ascending: true });
         data = res.data;
         error = res.error;
     }
 
-    // 3. If still empty/error, check if we need to seed
+    // 3. Seed if empty
     if (!error && (!data || data.length === 0)) {
         await triggerServerSeed();
-        // Final retry
         const { data: retry } = await supabase.from(table).select('*').order('created_at', { ascending: true });
         return retry?.map(row => mapper(row)) || [];
     }
@@ -159,10 +159,11 @@ const fetchWithOrder = async (table: string, mapper: Function) => {
     return data?.map(row => mapper(row)) || [];
 }
 
-/* --- DB SERVICE --- */
+/* --- DB SERVICE EXPORT --- */
 export const db = {
   reorder: async (table: string, items: any[]) => {
     try {
+      // Call Server-side Reorder to handle permissions safely
       await fetch('/api/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -256,21 +257,11 @@ export const db = {
       return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
-      // Fetch current first to merge properly (ensures no data loss if fields missing in UI)
-      const { data: currentDB } = await supabase.from('site_settings').select('*').single();
-      const current = currentDB ? mapSettingsFromDB(currentDB) : null;
-      
-      const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
-      
-      // Explicit deep merge for objects
-      if (current) {
-          if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
-          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
-          if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
-          if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
-      }
-      
-      const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };
+      // We rely on API for saving settings to handle complex JSONB merges server-side if needed
+      // But calling supabase directly is fine if policies allow.
+      // HOWEVER, for robustness and snapshots, we use the API save endpoint from the UI hook.
+      // This method exists for compatibility but UI should use the hook.
+      const payload = { id: 1, ...mapSettingsToDB(newSettings) };
       return await supabase.from('site_settings').upsert(payload);
     }
   }

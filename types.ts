@@ -9,7 +9,7 @@ export interface Service {
   id: string;
   title: LocalizedString;
   description: LocalizedString;
-  iconName: string; // Using Lucide icon names
+  iconName: string;
   features: LocalizedString[];
   orderIndex?: number;
 }
@@ -93,25 +93,26 @@ export interface SiteSettings {
   address: LocalizedString;
   socialLinks: SocialLink[];
   
-  // CMS - Logos
-  logoUrl: string; // Main Logo
-  footerLogoUrl: string; // Footer Logo (New)
-  faviconUrl: string; // Favicon (New)
-  iconUrl: string; // Old icon url, keeping for compatibility
+  // CMS - Logos & Branding
+  logoUrl: string;
+  footerLogoUrl: string;
+  faviconUrl: string;
+  iconUrl: string; // Legacy support
 
-  // CMS - Banners (New)
+  // CMS - Banners
   topBanner: BannerSettings;
   bottomBanner: BannerSettings;
 
-  // CMS - Section Texts
+  // CMS - Section Texts (Work/Case Studies specific)
   sectionTexts: {
     workTitle: LocalizedString;
     workSubtitle: LocalizedString;
   };
   
-  // CMS - Home Sections Content (New)
+  // CMS - Home Page General Content
   homeSections: HomeSectionsSettings;
 
+  // CMS - Legal Pages
   privacyPolicy: LocalizedString; 
   termsOfService: LocalizedString; 
 }
