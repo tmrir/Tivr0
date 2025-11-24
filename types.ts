@@ -72,6 +72,8 @@ export interface SiteSettings {
     workTitle: LocalizedString;
     workSubtitle: LocalizedString;
   };
+  privacyPolicy?: LocalizedString;
+  termsOfService?: LocalizedString;
 }
 
 export interface Translations {

@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink } from '../types';
 
@@ -74,13 +75,14 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
     contactEmail: row.contact_email || '',
     contactPhone: row.contact_phone || '',
-    // Handle address which might be simple text or localized object in different migration stages
     address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
     socialLinks: socialLinks,
     sectionTexts: row.section_texts || { 
       workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
       workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
-    }
+    },
+    privacyPolicy: row.privacy_policy || { ar: '', en: '' },
+    termsOfService: row.terms_of_service || { ar: '', en: '' }
   };
 };
 
@@ -90,7 +92,9 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   contact_phone: item.contactPhone, 
   address: item.address, 
   social_links: item.socialLinks,
-  section_texts: item.sectionTexts
+  section_texts: item.sectionTexts,
+  privacy_policy: item.privacyPolicy,
+  terms_of_service: item.termsOfService
 });
 
 /* --- SERVER SEED TRIGGER --- */
@@ -114,9 +118,23 @@ const triggerServerSeed = async () => {
 
 /* --- DB SERVICE --- */
 export const db = {
+  // Helper to save new order
+  reorder: async (table: string, items: any[]) => {
+    try {
+      await fetch('/api/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, items })
+      });
+    } catch (e) {
+      console.error('Reorder failed', e);
+    }
+  },
+
   services: {
     getAll: async (): Promise<Service[]> => {
-      const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: true });
+      // CHANGED: sort by order_index first, then created_at
+      const { data, error } = await supabase.from('services').select('*').order('order_index', { ascending: true }).order('created_at', { ascending: true });
       if (!error && (!data || data.length === 0)) {
          await triggerServerSeed();
          const { data: retry } = await supabase.from('services').select('*').order('created_at', { ascending: true });
@@ -134,7 +152,8 @@ export const db = {
 
   packages: {
     getAll: async (): Promise<Package[]> => {
-      const { data, error } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
+      // CHANGED: sort by order_index
+      const { data, error } = await supabase.from('packages').select('*').order('order_index', { ascending: true }).order('created_at', { ascending: true });
       if (!error && (!data || data.length === 0)) {
          await triggerServerSeed();
          const { data: retry } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
@@ -152,7 +171,8 @@ export const db = {
 
   team: {
     getAll: async (): Promise<TeamMember[]> => {
-      const { data, error } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
+      // CHANGED: sort by order_index
+      const { data, error } = await supabase.from('team_members').select('*').order('order_index', { ascending: true }).order('created_at', { ascending: true });
       if (!error && (!data || data.length === 0)) {
          await triggerServerSeed();
          const { data: retry } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
@@ -170,7 +190,8 @@ export const db = {
 
   caseStudies: {
     getAll: async (): Promise<CaseStudy[]> => {
-      const { data, error } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
+      // CHANGED: sort by order_index
+      const { data, error } = await supabase.from('case_studies').select('*').order('order_index', { ascending: true }).order('created_at', { ascending: true });
       if (!error && (!data || data.length === 0)) {
          await triggerServerSeed();
          const { data: retry } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
@@ -219,7 +240,6 @@ export const db = {
     get: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase.from('site_settings').select('*').single();
       if (!data || error) {
-          // Only trigger seed if we genuinely have no data, to avoid loops
           const shouldSeed = !data; 
           if (shouldSeed) {
               await triggerServerSeed(); 
@@ -230,13 +250,11 @@ export const db = {
       return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
-      // Merge Logic: Get current settings to preserve fields not in newSettings if partial update
       const { data: currentDB } = await supabase.from('site_settings').select('*').single();
       const current = currentDB ? mapSettingsFromDB(currentDB) : null;
       
       const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
       
-      // Ensure we preserve sub-objects if they are missing in input but exist in DB
       if (current && newSettings.sectionTexts) {
           mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
       }

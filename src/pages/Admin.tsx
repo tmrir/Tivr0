@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
@@ -6,6 +7,7 @@ import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, SiteSettings } from '../types';
 import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type } from 'lucide-react';
 import { SettingsPage } from './Settings';
+import { SortableList } from '../components/SortableList'; // Import the new component
 
 interface ManagerProps {
   onUpdate: () => void;
@@ -102,6 +104,12 @@ const ServicesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     if (confirm(t('admin.confirm'))) { await db.services.delete(id); onUpdate(); setServices(services.filter(s => s.id !== id)); }
   };
 
+  const handleReorder = (newServices: Service[]) => {
+      setServices(newServices);
+      // Save new order to DB
+      db.reorder('services', newServices);
+  };
+
   const addFeature = () => editing && setEditing({...editing, features: [...(editing.features || []), {ar: '', en: ''}]});
   const updateFeature = (idx: number, field: 'ar'|'en', val: string) => {
       if(!editing) return; const feats = [...(editing.features || [])]; feats[idx] = {...feats[idx], [field]: val}; setEditing({...editing, features: feats});
@@ -150,17 +158,21 @@ const ServicesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
            </div>
         </form>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {services.map(s => (
-            <div key={s.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 relative group">
-                <h3 className="font-bold text-lg text-slate-800 mb-2">{s.title[lang]}</h3>
-                <div className="absolute top-3 right-3 hidden group-hover:flex gap-1">
-                    <button onClick={() => setEditing(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16}/></button>
-                    <button onClick={() => handleDelete(s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
+        <SortableList
+            items={services}
+            onReorder={handleReorder}
+            keyExtractor={(s) => s.id}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            renderItem={(s) => (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 relative group h-full">
+                    <h3 className="font-bold text-lg text-slate-800 mb-2">{s.title[lang]}</h3>
+                    <div className="absolute top-3 right-3 hidden group-hover:flex gap-1">
+                        <button onClick={() => setEditing(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16}/></button>
+                        <button onClick={() => handleDelete(s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
+                    </div>
                 </div>
-            </div>
-          ))}
-        </div>
+            )}
+        />
       )}
     </div>
   );
@@ -174,6 +186,12 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     useEffect(() => { db.team.getAll().then(setTeam); }, []);
     const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.team.save(editing); setSaving(false); setEditing(null); onUpdate(); setTeam(await db.team.getAll()); };
     const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.team.delete(id); onUpdate(); setTeam(team.filter(x=>x.id !== id)); }};
+    
+    const handleReorder = (newTeam: TeamMember[]) => {
+        setTeam(newTeam);
+        db.reorder('team_members', newTeam);
+    };
+
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
@@ -195,9 +213,13 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                      </div>
                 </form>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {team.map(m => (
-                        <div key={m.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center relative group hover:-translate-y-1 transition duration-300">
+                <SortableList
+                    items={team}
+                    onReorder={handleReorder}
+                    keyExtractor={(m) => m.id}
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+                    renderItem={(m) => (
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center relative group hover:-translate-y-1 transition duration-300 h-full">
                             <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-slate-50 shadow-md"><img src={m.image} className="w-full h-full object-cover" alt={m.name[lang]} /></div>
                             <h3 className="font-bold text-lg text-slate-900">{m.name[lang]}</h3>
                             <p className="text-tivro-primary text-sm font-medium">{m.role[lang]}</p>
@@ -206,8 +228,8 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                                 <button onClick={()=>handleDelete(m.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"><Trash2 size={16}/></button>
                             </div>
                         </div>
-                    ))}
-                </div>
+                    )}
+                />
             )}
         </div>
     );
@@ -221,6 +243,12 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     useEffect(() => { db.packages.getAll().then(setItems); }, []);
     const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.packages.save(editing); setSaving(false); setEditing(null); onUpdate(); setItems(await db.packages.getAll()); };
     const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.packages.delete(id); onUpdate(); setItems(items.filter(x=>x.id!==id)); }};
+    
+    const handleReorder = (newItems: Package[]) => {
+        setItems(newItems);
+        db.reorder('packages', newItems);
+    };
+
     const addFeature = () => editing && setEditing({...editing, features: [...editing.features, {ar: '', en: ''}]});
     const updateFeature = (idx: number, field: 'ar'|'en', val: string) => { if(!editing) return; const feats = [...editing.features]; feats[idx] = {...feats[idx], [field]: val}; setEditing({...editing, features: feats}); };
     const removeFeature = (idx: number) => editing && setEditing({...editing, features: editing.features.filter((_, i) => i !== idx)});
@@ -260,15 +288,19 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                      </div>
                 </form>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {items.map(p => (
-                        <div key={p.id} className={`bg-white rounded-xl p-6 relative group transition-all duration-300 hover:-translate-y-1 ${p.isPopular ? 'border-2 border-tivro-primary shadow-xl' : 'border border-slate-200 shadow-sm hover:shadow-md'}`}>
+                <SortableList
+                    items={items}
+                    onReorder={handleReorder}
+                    keyExtractor={(p) => p.id}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-6"
+                    renderItem={(p) => (
+                        <div className={`bg-white rounded-xl p-6 relative group transition-all duration-300 hover:-translate-y-1 h-full ${p.isPopular ? 'border-2 border-tivro-primary shadow-xl' : 'border border-slate-200 shadow-sm hover:shadow-md'}`}>
                             {p.isPopular && <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-tivro-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">{t('admin.form.popular')}</div>}
                             <div className="text-center mb-4 pt-2"><h3 className="font-bold text-xl text-slate-800 mb-1">{p.name[lang]}</h3><div className="text-3xl font-bold text-tivro-dark">{p.price}</div></div>
                             <div className="absolute top-3 right-3 hidden group-hover:flex gap-1"><button onClick={()=>setEditing(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16}/></button><button onClick={()=>handleDelete(p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button></div>
                         </div>
-                    ))}
-                </div>
+                    )}
+                />
             )}
         </div>
     );
@@ -279,7 +311,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const [items, setItems] = useState<CaseStudy[]>([]);
     const [editing, setEditing] = useState<CaseStudy | null>(null);
     const [saving, setSaving] = useState(false);
-    const [sectionSettings, setSectionSettings] = useState<any>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
+    const [sectionSettings, setSectionSettings] = useState<SiteSettings['sectionTexts']>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
     const [settingsSaving, setSettingsSaving] = useState(false);
 
     useEffect(() => { 
@@ -289,25 +321,14 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
         });
     }, []);
 
-    const handleSave = async (e: React.FormEvent) => { 
-        e.preventDefault(); 
-        if (!editing) return; 
-        setSaving(true); 
-        await db.caseStudies.save(editing); 
-        setSaving(false); 
-        setEditing(null); 
-        onUpdate(); 
-        setItems(await db.caseStudies.getAll()); 
+    const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.caseStudies.save(editing); setSaving(false); setEditing(null); onUpdate(); setItems(await db.caseStudies.getAll()); };
+    const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.caseStudies.delete(id); onUpdate(); setItems(items.filter(x=>x.id!==id)); }};
+    
+    const handleReorder = (newItems: CaseStudy[]) => {
+        setItems(newItems);
+        db.reorder('case_studies', newItems);
     };
 
-    const handleDelete = async (id: string) => { 
-        if(confirm(t('admin.confirm'))) { 
-            await db.caseStudies.delete(id); 
-            onUpdate(); 
-            setItems(items.filter(x=>x.id!==id)); 
-        }
-    };
-    
     const saveSectionSettings = async () => {
         setSettingsSaving(true);
         const currentSettings = await db.settings.get();
@@ -318,12 +339,9 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
         setSettingsSaving(false);
     };
 
-    // --------------------------
-    // DYNAMIC STATS LOGIC (NEW)
-    // --------------------------
+    // Dynamic stats logic
     const addStat = () => {
         if (!editing) return;
-        // Ensure stats exists before pushing
         const currentStats = editing.stats || [];
         setEditing({...editing, stats: [...currentStats, { label: {ar:'', en:''}, value: '' }]});
     };
@@ -346,7 +364,6 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 
     return (
         <div>
-             {/* Section Texts */}
              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2"><Type size={18}/> {t('admin.section.settings')}</h3>
@@ -367,7 +384,6 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                 <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto animate-fade-in">
                      <h3 className="font-bold text-xl text-slate-800 mb-6 pb-4 border-b">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
                      
-                     {/* Basic Info */}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.client')}</label><input className="w-full border p-2 rounded" value={editing.client} onChange={e=>setEditing({...editing, client:e.target.value})} /></div>
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label><input className="w-full border p-2 rounded" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} /></div>
@@ -400,9 +416,13 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                      </div>
                 </form>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {items.map(c => (
-                        <div key={c.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group relative hover:shadow-md transition duration-300">
+                <SortableList
+                    items={items}
+                    onReorder={handleReorder}
+                    keyExtractor={(c) => c.id}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    renderItem={(c) => (
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group relative hover:shadow-md transition duration-300 h-full">
                             <div className="h-40 w-full overflow-hidden relative">
                                 <img src={c.image} className="w-full h-full object-cover group-hover:scale-110 transition duration-500"/>
                                 <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-4">
@@ -425,8 +445,8 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                                 <button onClick={()=>handleDelete(c.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
                             </div>
                         </div>
-                    ))}
-                </div>
+                    )}
+                />
             )}
         </div>
     );
