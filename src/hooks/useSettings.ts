@@ -43,16 +43,24 @@ export const useSettings = () => {
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch directly from API to ensure fresh data without cache
+      // Try API first
       const res = await fetch(`/api/settings/get?t=${Date.now()}`);
-      const data = await res.json();
       
-      // Robust Merge: Combine defaults with API data to ensure no fields are missing
-      // This prevents UI crashes if DB has partial data
+      let data = {};
+      if (res.ok) {
+          data = await res.json();
+      } else {
+          console.warn('API fetch failed, trying direct DB fallback');
+          // Fallback to DB service if API fails
+          data = await db.settings.get();
+      }
+
+      // Robust Merge: Combine defaults with fetched data
+      // This ensures NO field is undefined, preventing white screen
       const merged = { 
           ...DEFAULT_SETTINGS, 
           ...data,
-          // Deep merge objects to avoid overwriting with undefined
+          // Deep merge objects
           homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || {}) },
           sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || {}) },
           topBanner: { ...DEFAULT_SETTINGS.topBanner, ...(data.top_banner || {}) },
@@ -64,10 +72,13 @@ export const useSettings = () => {
       };
       
       setSettings(merged);
+      setError(null);
 
     } catch (err: any) {
       console.error('Error fetching settings:', err);
       setError(err.message);
+      // Even on error, set default settings so the UI shows up
+      setSettings(DEFAULT_SETTINGS);
     } finally {
       setLoading(false);
     }
@@ -77,27 +88,23 @@ export const useSettings = () => {
     setSaving(true);
     setError(null);
     try {
-        // Extract social links for flat API structure
+        // Flatten payload for API
         const social_facebook = newData.socialLinks.find(l => l.platform.includes('Facebook'))?.url || '';
         const social_twitter = newData.socialLinks.find(l => l.platform.includes('Twitter'))?.url || '';
         const social_instagram = newData.socialLinks.find(l => l.platform.includes('Instagram'))?.url || '';
 
-        // Prepare Payload exactly as api/settings/save.ts expects it
         const flatPayload = {
             site_name: newData.siteName,
             contact_email: newData.contactEmail,
             contact_phone: newData.contactPhone,
             address: newData.address,
-            
             logo_url: newData.logoUrl,
             icon_url: newData.iconUrl,
             footer_logo_url: newData.footerLogoUrl,
             favicon_url: newData.faviconUrl,
-            
             social_facebook, 
             social_twitter, 
             social_instagram,
-            
             top_banner: newData.topBanner,
             bottom_banner: newData.bottomBanner,
             section_texts: newData.sectionTexts,
@@ -117,7 +124,6 @@ export const useSettings = () => {
           throw new Error(err.error || 'Failed to save settings');
       }
       
-      // Refresh state to match server
       await fetchSettings();
       return true;
     } catch (err: any) {
@@ -130,7 +136,7 @@ export const useSettings = () => {
   };
 
   const restoreDefaultSettings = async () => {
-      setSaving(true); // Show loading state during restore
+      setSaving(true); 
       try {
         const res = await fetch('/api/settings/restore', { method: 'POST' });
         if (res.ok) {
