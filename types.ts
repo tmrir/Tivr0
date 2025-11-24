@@ -51,6 +51,7 @@ export interface BlogPost {
   date: string;
   image: string;
   author: string;
+  orderIndex?: number;
 }
 
 export interface ContactMessage {
@@ -103,7 +104,7 @@ export interface SiteSettings {
   topBanner: BannerSettings;
   bottomBanner: BannerSettings;
 
-  // CMS - Section Texts (Work/Case Studies specific)
+  // CMS - Section Texts
   sectionTexts: {
     workTitle: LocalizedString;
     workSubtitle: LocalizedString;
@@ -112,9 +113,18 @@ export interface SiteSettings {
   // CMS - Home Page General Content
   homeSections: HomeSectionsSettings;
 
-  // CMS - Legal Pages
+  // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
   privacyPolicy: LocalizedString; 
   termsOfService: LocalizedString; 
+}
+
+// New Page Interface
+export interface Page {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+  updated_at: string;
 }
 
 export interface Translations {

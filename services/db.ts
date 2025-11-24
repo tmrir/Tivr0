@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink } from '../types';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page } from '../types';
 
 /* --- DATA MAPPERS --- */
 const mapServiceFromDB = (row: any): Service => ({
@@ -62,7 +62,6 @@ const mapMessageFromDB = (row: any): ContactMessage => ({
   createdAt: row.created_at
 });
 
-// Comprehensive Settings Mapper
 const mapSettingsFromDB = (row: any): SiteSettings => {
   let socialLinks: SocialLink[] = [];
   if (Array.isArray(row.social_links)) {
@@ -79,16 +78,12 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     contactPhone: row.contact_phone || '',
     address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
     socialLinks: socialLinks,
-    
-    // CMS Fields
     logoUrl: row.logo_url || '',
     iconUrl: row.icon_url || '',
     footerLogoUrl: row.footer_logo_url || row.logo_url || '',
     faviconUrl: row.favicon_url || '',
-
     topBanner: row.top_banner || { enabled: false, title: {ar:'',en:''} },
     bottomBanner: row.bottom_banner || { enabled: false, title: {ar:'',en:''} },
-
     sectionTexts: row.section_texts || { 
       workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
       workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
@@ -100,7 +95,6 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
         packagesTitle: { ar: '', en: '' },
         contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
     },
-
     privacyPolicy: row.privacy_policy || { ar: '', en: '' },
     termsOfService: row.terms_of_service || { ar: '', en: '' }
   };
@@ -136,20 +130,17 @@ const triggerServerSeed = async () => {
 
 /* --- SAFE FETCH HELPER WITH FALLBACK --- */
 const fetchWithOrder = async (table: string, mapper: Function) => {
-    // 1. Try sorting by order_index
     let { data, error } = await supabase
         .from(table)
         .select('*')
         .order('order_index', { ascending: true });
 
-    // 2. Fallback to created_at if order_index missing or error
     if (error || !data) {
         const res = await supabase.from(table).select('*').order('created_at', { ascending: true });
         data = res.data;
         error = res.error;
     }
 
-    // 3. Seed if empty
     if (!error && (!data || data.length === 0)) {
         await triggerServerSeed();
         const { data: retry } = await supabase.from(table).select('*').order('created_at', { ascending: true });
@@ -163,7 +154,6 @@ const fetchWithOrder = async (table: string, mapper: Function) => {
 export const db = {
   reorder: async (table: string, items: any[]) => {
     try {
-      // Call Server-side Reorder to handle permissions safely
       await fetch('/api/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -257,12 +247,49 @@ export const db = {
       return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
-      // We rely on API for saving settings to handle complex JSONB merges server-side if needed
-      // But calling supabase directly is fine if policies allow.
-      // HOWEVER, for robustness and snapshots, we use the API save endpoint from the UI hook.
-      // This method exists for compatibility but UI should use the hook.
-      const payload = { id: 1, ...mapSettingsToDB(newSettings) };
+      const { data: currentDB } = await supabase.from('site_settings').select('*').single();
+      const current = currentDB ? mapSettingsFromDB(currentDB) : null;
+      
+      const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
+      
+      if (current) {
+          if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
+          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
+          if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
+          if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
+      }
+      
+      const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };
       return await supabase.from('site_settings').upsert(payload);
+    }
+  },
+
+  pages: {
+    get: async (slug: string): Promise<Page | null> => {
+        try {
+            const res = await fetch(`/api/pages/${slug}`);
+            if (!res.ok) return null;
+            return await res.json();
+        } catch {
+            return null;
+        }
+    },
+    getAll: async (): Promise<Page[]> => {
+        try {
+            const res = await fetch('/api/pages/list');
+            if (!res.ok) return [];
+            return await res.json();
+        } catch {
+            return [];
+        }
+    },
+    save: async (slug: string, title: string, content: string) => {
+        const res = await fetch('/api/pages/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug, title, content })
+        });
+        return res.ok;
     }
   }
 };
