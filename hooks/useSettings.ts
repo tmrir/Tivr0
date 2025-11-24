@@ -27,32 +27,44 @@ const DEFAULT_SETTINGS: SiteSettings = {
 };
 
 export const useSettings = () => {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Start with DEFAULT_SETTINGS immediately so it is never null
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(false); // Start as false to show UI immediately
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
+      // Attempt API fetch
       const res = await fetch(`/api/settings/get?t=${Date.now()}`);
-      const data = await res.json();
-      
-      // Merge with defaults to ensure all nested objects exist
-      const merged = { 
+      let data: any = {};
+
+      if (res.ok) {
+          data = await res.json();
+      } else {
+          // Silent fallback to DB if API fails
+          data = await db.settings.get();
+      }
+
+      // Aggressive Merge to prevent any undefined fields
+      const merged: SiteSettings = { 
           ...DEFAULT_SETTINGS, 
           ...data,
-          homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || {}) },
-          sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || {}) },
-          topBanner: { ...DEFAULT_SETTINGS.topBanner, ...(data.top_banner || {}) },
-          bottomBanner: { ...DEFAULT_SETTINGS.bottomBanner, ...(data.bottom_banner || {}) },
+          siteName: { ...DEFAULT_SETTINGS.siteName, ...(data.site_name || data.siteName || {}) },
+          address: { ...DEFAULT_SETTINGS.address, ...(data.address || {}) },
+          topBanner: { ...DEFAULT_SETTINGS.topBanner, ...(data.top_banner || data.topBanner || {}) },
+          bottomBanner: { ...DEFAULT_SETTINGS.bottomBanner, ...(data.bottom_banner || data.bottomBanner || {}) },
+          sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || data.sectionTexts || {}) },
+          homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || data.homeSections || {}) },
+          privacyPolicy: { ...DEFAULT_SETTINGS.privacyPolicy, ...(data.privacy_policy || data.privacyPolicy || {}) },
+          termsOfService: { ...DEFAULT_SETTINGS.termsOfService, ...(data.terms_of_service || data.termsOfService || {}) },
       };
       
       setSettings(merged);
-
     } catch (err: any) {
-      console.error('Error fetching settings:', err);
-      setError(err.message);
+      console.error('Settings fetch error:', err);
+      // Do NOT clear settings on error. Keep defaults.
     } finally {
       setLoading(false);
     }
@@ -92,10 +104,7 @@ export const useSettings = () => {
         body: JSON.stringify(flatPayload),
       });
       
-      if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Failed to save');
-      }
+      if (!res.ok) throw new Error('Failed to save');
       
       await fetchSettings();
       return true;
@@ -108,12 +117,19 @@ export const useSettings = () => {
   };
 
   const restoreDefaultSettings = async () => {
-      const res = await fetch('/api/settings/restore', { method: 'POST' });
-      if (res.ok) {
-          await fetchSettings();
-          return true;
+      setSaving(true); 
+      try {
+        const res = await fetch('/api/settings/restore', { method: 'POST' });
+        if (res.ok) {
+            await fetchSettings();
+            return true;
+        }
+        return false;
+      } catch (e) {
+          return false;
+      } finally {
+          setSaving(false);
       }
-      return false;
   };
 
   useEffect(() => {
