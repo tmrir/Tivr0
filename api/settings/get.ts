@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Kill Cache
   res.setHeader('Cache-Control', 'no-store, max-age=0');
 
   try {
@@ -12,18 +11,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('id', 1)
       .single();
 
-    if (error) throw error;
+    if (error) {
+        // If table is empty or row missing, return empty object, don't error out
+        if (error.code === 'PGRST116') return res.status(200).json({});
+        throw error;
+    }
+
     if (!data) return res.status(200).json({});
 
-    // Convert DB Social Links (JSONB array) to Frontend Format
+    // Safe extraction
     const socialLinks = Array.isArray(data.social_links) ? data.social_links : [];
-    
     const getLink = (platform: string) => 
       socialLinks.find((l: any) => l.platform.toLowerCase().includes(platform))?.url || '';
 
-    // Map DB columns to Frontend Types
     const mappedData = {
-      site_name: data.site_name,
+      site_name: data.site_name || { ar: '', en: '' },
       contact_email: data.contact_email || '',
       contact_phone: data.contact_phone || '',
       address: typeof data.address === 'string' ? { ar: data.address, en: data.address } : (data.address || { ar: '', en: '' }),
@@ -33,15 +35,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       footer_logo_url: data.footer_logo_url || '',
       favicon_url: data.favicon_url || '',
 
-      // Flatten for UI if needed, but sending array is fine too. 
-      // Here we send what useSettings expects.
+      // Return arrays AND flat fields for safety
       social_links: socialLinks,
       social_facebook: getLink('facebook'),
       social_twitter: getLink('twitter'),
       social_instagram: getLink('instagram'),
 
-      top_banner: data.top_banner || {},
-      bottom_banner: data.bottom_banner || {},
+      // Guarantee Objects, never null
+      top_banner: data.top_banner || { enabled: false },
+      bottom_banner: data.bottom_banner || { enabled: false },
       section_texts: data.section_texts || {},
       home_sections: data.home_sections || {},
       privacy_policy: data.privacy_policy || {},

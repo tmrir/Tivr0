@@ -9,17 +9,14 @@ const DEFAULT_SETTINGS: SiteSettings = {
     address: { ar: '', en: '' },
     socialLinks: [],
     
-    // Logos & Branding
     logoUrl: '',
     iconUrl: '',
     footerLogoUrl: '',
     faviconUrl: '',
 
-    // Banners
     topBanner: { enabled: false, title: {ar:'',en:''} },
     bottomBanner: { enabled: false, title: {ar:'',en:''} },
 
-    // Sections
     sectionTexts: { workTitle: {ar:'',en:''}, workSubtitle: {ar:'',en:''} },
     homeSections: {
         heroTitle: {ar:'',en:''}, heroSubtitle: {ar:'',en:''},
@@ -29,13 +26,13 @@ const DEFAULT_SETTINGS: SiteSettings = {
         contactTitle: {ar:'',en:''}, contactSubtitle: {ar:'',en:''}
     },
 
-    // Legal
     privacyPolicy: { ar: '', en: '' },
     termsOfService: { ar: '', en: '' }
 };
 
 export const useSettings = () => {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  // Initialize with DEFAULT_SETTINGS to prevent initial null state issues
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,32 +40,31 @@ export const useSettings = () => {
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      // Try API first
       const res = await fetch(`/api/settings/get?t=${Date.now()}`);
       
-      let data = {};
+      let data: any = {};
       if (res.ok) {
           data = await res.json();
       } else {
-          console.warn('API fetch failed, trying direct DB fallback');
-          // Fallback to DB service if API fails
+          console.warn('API fetch failed, falling back to DB');
           data = await db.settings.get();
       }
 
-      // Robust Merge: Combine defaults with fetched data
-      // This ensures NO field is undefined, preventing white screen
-      const merged = { 
+      // Defensive Merge: Ensure every nested object exists
+      const merged: SiteSettings = { 
           ...DEFAULT_SETTINGS, 
           ...data,
-          // Deep merge objects
-          homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || {}) },
-          sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || {}) },
-          topBanner: { ...DEFAULT_SETTINGS.topBanner, ...(data.top_banner || {}) },
-          bottomBanner: { ...DEFAULT_SETTINGS.bottomBanner, ...(data.bottom_banner || {}) },
-          siteName: { ...DEFAULT_SETTINGS.siteName, ...(data.site_name || {}) },
+          siteName: { ...DEFAULT_SETTINGS.siteName, ...(data.site_name || data.siteName || {}) },
           address: { ...DEFAULT_SETTINGS.address, ...(data.address || {}) },
-          privacyPolicy: { ...DEFAULT_SETTINGS.privacyPolicy, ...(data.privacy_policy || {}) },
-          termsOfService: { ...DEFAULT_SETTINGS.termsOfService, ...(data.terms_of_service || {}) },
+          
+          topBanner: { ...DEFAULT_SETTINGS.topBanner, ...(data.top_banner || data.topBanner || {}) },
+          bottomBanner: { ...DEFAULT_SETTINGS.bottomBanner, ...(data.bottom_banner || data.bottomBanner || {}) },
+          
+          sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || data.sectionTexts || {}) },
+          homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || data.homeSections || {}) },
+          
+          privacyPolicy: { ...DEFAULT_SETTINGS.privacyPolicy, ...(data.privacy_policy || data.privacyPolicy || {}) },
+          termsOfService: { ...DEFAULT_SETTINGS.termsOfService, ...(data.terms_of_service || data.termsOfService || {}) },
       };
       
       setSettings(merged);
@@ -77,8 +73,7 @@ export const useSettings = () => {
     } catch (err: any) {
       console.error('Error fetching settings:', err);
       setError(err.message);
-      // Even on error, set default settings so the UI shows up
-      setSettings(DEFAULT_SETTINGS);
+      // Keep defaults on error so UI doesn't break
     } finally {
       setLoading(false);
     }
@@ -88,7 +83,6 @@ export const useSettings = () => {
     setSaving(true);
     setError(null);
     try {
-        // Flatten payload for API
         const social_facebook = newData.socialLinks.find(l => l.platform.includes('Facebook'))?.url || '';
         const social_twitter = newData.socialLinks.find(l => l.platform.includes('Twitter'))?.url || '';
         const social_instagram = newData.socialLinks.find(l => l.platform.includes('Instagram'))?.url || '';
@@ -98,13 +92,16 @@ export const useSettings = () => {
             contact_email: newData.contactEmail,
             contact_phone: newData.contactPhone,
             address: newData.address,
+            
             logo_url: newData.logoUrl,
             icon_url: newData.iconUrl,
             footer_logo_url: newData.footerLogoUrl,
             favicon_url: newData.faviconUrl,
+            
             social_facebook, 
             social_twitter, 
             social_instagram,
+            
             top_banner: newData.topBanner,
             bottom_banner: newData.bottomBanner,
             section_texts: newData.sectionTexts,
@@ -120,14 +117,12 @@ export const useSettings = () => {
       });
       
       if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Failed to save settings');
+          throw new Error('Failed to save settings');
       }
       
       await fetchSettings();
       return true;
     } catch (err: any) {
-      console.error('Save Error:', err);
       setError(err.message);
       return false;
     } finally {

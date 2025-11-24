@@ -10,11 +10,11 @@ const LocalizedArea = ({ label, value, onChange }: {label:string, value: Localiz
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
                 <span className="text-xs text-slate-400 block mb-1">Arabic</span>
-                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="rtl" value={value.ar} onChange={e => onChange({...value, ar: e.target.value})} />
+                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="rtl" value={value?.ar || ''} onChange={e => onChange({...value, ar: e.target.value})} />
             </div>
             <div>
                 <span className="text-xs text-slate-400 block mb-1">English</span>
-                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="ltr" value={value.en} onChange={e => onChange({...value, en: e.target.value})} />
+                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="ltr" value={value?.en || ''} onChange={e => onChange({...value, en: e.target.value})} />
             </div>
         </div>
     </div>
@@ -24,8 +24,8 @@ const LocalizedInput = ({ label, value, onChange }: {label:string, value: Locali
     <div className="mb-4">
         <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <input className="w-full border p-2 rounded" placeholder="Ar" dir="rtl" value={value.ar} onChange={e => onChange({...value, ar: e.target.value})} />
-            <input className="w-full border p-2 rounded" placeholder="En" dir="ltr" value={value.en} onChange={e => onChange({...value, en: e.target.value})} />
+            <input className="w-full border p-2 rounded" placeholder="Ar" dir="rtl" value={value?.ar || ''} onChange={e => onChange({...value, ar: e.target.value})} />
+            <input className="w-full border p-2 rounded" placeholder="En" dir="ltr" value={value?.en || ''} onChange={e => onChange({...value, en: e.target.value})} />
         </div>
     </div>
 );
@@ -36,7 +36,10 @@ export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'general' | 'logos' | 'banners' | 'home_content' | 'legal' | 'db'>('general');
   const [msg, setMsg] = useState<{type:'success'|'error', text:string} | null>(null);
 
-  if (loading || !settings) return <div className="flex justify-center p-10"><Loader2 className="animate-spin"/></div>;
+  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin"/></div>;
+  
+  // Safety check: if hook fails drastically, show error but don't crash
+  if (!settings) return <div className="p-10 text-red-500">Critical Error: Unable to load settings. Check database connection.</div>;
 
   const onSave = async () => {
       const success = await saveSettings(settings);
@@ -61,7 +64,6 @@ export const SettingsPage: React.FC = () => {
         {msg && <div className={`p-4 rounded mb-6 flex items-center gap-2 ${msg.type==='success'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`}>{msg.type==='success'?<CheckCircle size={18}/>:<AlertCircle size={18}/>}{msg.text}</div>}
 
         <div className="flex flex-col md:flex-row gap-8">
-            {/* Tabs */}
             <div className="w-full md:w-64 flex-shrink-0 space-y-2">
                 <TabButton id="general" icon={Globe} label={t('admin.settings.general')} />
                 <TabButton id="logos" icon={ImageIcon} label="Logos & Branding" />
@@ -71,7 +73,6 @@ export const SettingsPage: React.FC = () => {
                 <TabButton id="db" icon={Database} label={t('admin.settings.db')} />
             </div>
 
-            {/* Content */}
             <div className="flex-1 bg-white p-8 rounded-xl shadow-sm border border-slate-200">
                 
                 {activeTab === 'general' && (
@@ -80,8 +81,8 @@ export const SettingsPage: React.FC = () => {
                         <LocalizedInput label="Site Name" value={settings.siteName} onChange={v => setSettings({...settings, siteName: v})} />
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label className="block text-sm font-bold mb-1">{t('admin.set.email')}</label><input className="w-full border p-2 rounded" value={settings.contactEmail} onChange={e => setSettings({...settings, contactEmail: e.target.value})} /></div>
-                            <div><label className="block text-sm font-bold mb-1">{t('admin.set.phone')}</label><input className="w-full border p-2 rounded" value={settings.contactPhone} onChange={e => setSettings({...settings, contactPhone: e.target.value})} /></div>
+                            <div><label className="block text-sm font-bold mb-1">{t('admin.set.email')}</label><input className="w-full border p-2 rounded" value={settings.contactEmail || ''} onChange={e => setSettings({...settings, contactEmail: e.target.value})} /></div>
+                            <div><label className="block text-sm font-bold mb-1">{t('admin.set.phone')}</label><input className="w-full border p-2 rounded" value={settings.contactPhone || ''} onChange={e => setSettings({...settings, contactPhone: e.target.value})} /></div>
                         </div>
                         <LocalizedInput label="Address" value={settings.address} onChange={v => setSettings({...settings, address: v})} />
 
@@ -106,17 +107,17 @@ export const SettingsPage: React.FC = () => {
                         <h3 className="font-bold text-lg border-b pb-3 mb-4">Logos & Branding</h3>
                         <div>
                             <label className="block text-sm font-bold mb-1">Main Logo URL</label>
-                            <input className="w-full border p-2 rounded" value={settings.logoUrl} onChange={e => setSettings({...settings, logoUrl: e.target.value})} />
+                            <input className="w-full border p-2 rounded" value={settings.logoUrl || ''} onChange={e => setSettings({...settings, logoUrl: e.target.value})} />
                             {settings.logoUrl && <img src={settings.logoUrl} className="h-10 mt-2 border p-1"/>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold mb-1">Footer Logo URL</label>
-                            <input className="w-full border p-2 rounded" value={settings.footerLogoUrl} onChange={e => setSettings({...settings, footerLogoUrl: e.target.value})} />
+                            <input className="w-full border p-2 rounded" value={settings.footerLogoUrl || ''} onChange={e => setSettings({...settings, footerLogoUrl: e.target.value})} />
                             {settings.footerLogoUrl && <img src={settings.footerLogoUrl} className="h-10 mt-2 border p-1 bg-slate-800"/>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold mb-1">Favicon URL (ICO/PNG)</label>
-                            <input className="w-full border p-2 rounded" value={settings.faviconUrl} onChange={e => setSettings({...settings, faviconUrl: e.target.value})} />
+                            <input className="w-full border p-2 rounded" value={settings.faviconUrl || ''} onChange={e => setSettings({...settings, faviconUrl: e.target.value})} />
                             {settings.faviconUrl && <img src={settings.faviconUrl} className="h-8 w-8 mt-2 border p-1"/>}
                         </div>
                     </div>
@@ -146,28 +147,28 @@ export const SettingsPage: React.FC = () => {
                     <div className="space-y-8 animate-fade-in">
                         <div>
                             <div className="flex items-center gap-2 mb-4">
-                                <input type="checkbox" checked={settings.topBanner.enabled} onChange={e => setSettings({...settings, topBanner: {...settings.topBanner, enabled: e.target.checked}})} className="w-5 h-5"/>
+                                <input type="checkbox" checked={settings.topBanner?.enabled || false} onChange={e => setSettings({...settings, topBanner: {...settings.topBanner, enabled: e.target.checked}})} className="w-5 h-5"/>
                                 <h3 className="font-bold text-lg">Top Banner</h3>
                             </div>
-                            {settings.topBanner.enabled && (
+                            {settings.topBanner?.enabled && (
                                 <div className="bg-slate-50 p-4 rounded border space-y-3">
                                     <LocalizedInput label="Title" value={settings.topBanner.title} onChange={v => setSettings({...settings, topBanner: {...settings.topBanner, title: v}})} />
                                     <LocalizedInput label="Button Text" value={settings.topBanner.buttonText || {ar:'',en:''}} onChange={v => setSettings({...settings, topBanner: {...settings.topBanner, buttonText: v}})} />
-                                    <div><label className="text-xs font-bold">Link</label><input className="w-full border p-2 rounded" value={settings.topBanner.link} onChange={e => setSettings({...settings, topBanner: {...settings.topBanner, link: e.target.value}})} /></div>
+                                    <div><label className="text-xs font-bold">Link</label><input className="w-full border p-2 rounded" value={settings.topBanner.link || ''} onChange={e => setSettings({...settings, topBanner: {...settings.topBanner, link: e.target.value}})} /></div>
                                 </div>
                             )}
                         </div>
                         
                         <div>
                             <div className="flex items-center gap-2 mb-4">
-                                <input type="checkbox" checked={settings.bottomBanner.enabled} onChange={e => setSettings({...settings, bottomBanner: {...settings.bottomBanner, enabled: e.target.checked}})} className="w-5 h-5"/>
+                                <input type="checkbox" checked={settings.bottomBanner?.enabled || false} onChange={e => setSettings({...settings, bottomBanner: {...settings.bottomBanner, enabled: e.target.checked}})} className="w-5 h-5"/>
                                 <h3 className="font-bold text-lg">Bottom Banner</h3>
                             </div>
-                            {settings.bottomBanner.enabled && (
+                            {settings.bottomBanner?.enabled && (
                                 <div className="bg-slate-50 p-4 rounded border space-y-3">
                                     <LocalizedInput label="Title" value={settings.bottomBanner.title} onChange={v => setSettings({...settings, bottomBanner: {...settings.bottomBanner, title: v}})} />
                                     <LocalizedArea label="Description" value={settings.bottomBanner.subtitle || {ar:'',en:''}} onChange={(v: LocalizedString) => setSettings({...settings, bottomBanner: {...settings.bottomBanner, subtitle: v}})} />
-                                    <div><label className="text-xs font-bold">Background Image URL</label><input className="w-full border p-2 rounded" value={settings.bottomBanner.bgImage} onChange={e => setSettings({...settings, bottomBanner: {...settings.bottomBanner, bgImage: e.target.value}})} /></div>
+                                    <div><label className="text-xs font-bold">Background Image URL</label><input className="w-full border p-2 rounded" value={settings.bottomBanner.bgImage || ''} onChange={e => setSettings({...settings, bottomBanner: {...settings.bottomBanner, bgImage: e.target.value}})} /></div>
                                 </div>
                             )}
                         </div>
