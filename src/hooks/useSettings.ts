@@ -1,22 +1,33 @@
 import { useState, useEffect, useCallback } from 'react';
+import { SiteSettings } from '../types';
+import { db } from '../services/db';
 
-export interface SettingsData {
-  contact_email: string;
-  contact_phone: string;
-  social_facebook: string;
-  social_twitter: string;
-  social_instagram: string;
-  address: string;
-  logo_url: string;
-  icon_url: string;
-}
+const DEFAULT_SETTINGS: SiteSettings = {
+    siteName: { ar: '', en: '' },
+    contactEmail: '',
+    contactPhone: '',
+    address: { ar: '', en: '' },
+    socialLinks: [],
+    logoUrl: '',
+    iconUrl: '',
+    footerLogoUrl: '',
+    faviconUrl: '',
+    topBanner: { enabled: false, title: {ar:'',en:''} },
+    bottomBanner: { enabled: false, title: {ar:'',en:''} },
+    sectionTexts: { workTitle: {ar:'',en:''}, workSubtitle: {ar:'',en:''} },
+    homeSections: {
+        heroTitle: {ar:'',en:''}, heroSubtitle: {ar:'',en:''},
+        servicesTitle: {ar:'',en:''}, servicesSubtitle: {ar:'',en:''},
+        teamTitle: {ar:'',en:''}, teamSubtitle: {ar:'',en:''},
+        packagesTitle: {ar:'',en:''},
+        contactTitle: {ar:'',en:''}, contactSubtitle: {ar:'',en:''}
+    },
+    privacyPolicy: { ar: '', en: '' },
+    termsOfService: { ar: '', en: '' }
+};
 
 export const useSettings = () => {
-  const [settings, setSettings] = useState<SettingsData>({
-    contact_email: '', contact_phone: '', social_facebook: '', 
-    social_twitter: '', social_instagram: '', address: '', 
-    logo_url: '', icon_url: ''
-  });
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,26 +35,22 @@ export const useSettings = () => {
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/settings/get?t=${Date.now()}`);
-      const data = await res.json();
-      if (res.ok) setSettings(data);
+      const data = await db.settings.get();
+      // Merge with default to avoid undefined errors for new fields
+      setSettings({ ...DEFAULT_SETTINGS, ...data });
     } catch (err: any) {
+      console.error('Error fetching settings:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const saveSettings = async (newData: SettingsData) => {
+  const saveSettings = async (newData: SiteSettings) => {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch('/api/settings/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newData),
-      });
-      if (!res.ok) throw new Error('Failed to save');
+      await db.settings.save(newData);
       await fetchSettings();
       return true;
     } catch (err: any) {
@@ -55,21 +62,25 @@ export const useSettings = () => {
   };
 
   const restoreDefaultSettings = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch('/api/settings/restore', { method: 'POST' });
-      if (!res.ok) throw new Error('Failed to restore');
-      await fetchSettings();
-      return true;
-    } catch (err: any) {
-      setError(err.message);
+      const res = await fetch('/api/seed', { method: 'POST' });
+      if (res.ok) {
+          await fetchSettings();
+          return true;
+      }
       return false;
-    } finally {
-      setSaving(false);
-    }
   };
 
-  useEffect(() => { fetchSettings(); }, [fetchSettings]);
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
-  return { settings, setSettings, loading, saving, error, saveSettings, restoreDefaultSettings };
+  return {
+    settings,
+    setSettings,
+    loading,
+    saving,
+    error,
+    saveSettings,
+    restoreDefaultSettings
+  };
 };

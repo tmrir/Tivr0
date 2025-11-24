@@ -1,228 +1,219 @@
-
 import React, { useState } from 'react';
-import { useSettings, SettingsData } from '../hooks/useSettings';
-import { Layout } from '../components/Layout';
-import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, Globe, Phone, Share2, Image as ImageIcon } from 'lucide-react';
+import { useSettings } from '../hooks/useSettings';
+import { useApp } from '../context/AppContext';
+import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, Globe, Phone, Share2, Image as ImageIcon, Database, FileText, LayoutTemplate, Flag } from 'lucide-react';
+import { SiteSettings, LocalizedString } from '../types';
+
+const LocalizedArea = ({ label, value, onChange }: {label:string, value: LocalizedString, onChange: (v: LocalizedString)=>void}) => (
+    <div className="mb-4">
+        <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
+                <span className="text-xs text-slate-400 block mb-1">Arabic</span>
+                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="rtl" value={value.ar} onChange={e => onChange({...value, ar: e.target.value})} />
+            </div>
+            <div>
+                <span className="text-xs text-slate-400 block mb-1">English</span>
+                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="ltr" value={value.en} onChange={e => onChange({...value, en: e.target.value})} />
+            </div>
+        </div>
+    </div>
+);
+
+const LocalizedInput = ({ label, value, onChange }: {label:string, value: LocalizedString, onChange: (v: LocalizedString)=>void}) => (
+    <div className="mb-4">
+        <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <input className="w-full border p-2 rounded" placeholder="Ar" dir="rtl" value={value.ar} onChange={e => onChange({...value, ar: e.target.value})} />
+            <input className="w-full border p-2 rounded" placeholder="En" dir="ltr" value={value.en} onChange={e => onChange({...value, en: e.target.value})} />
+        </div>
+    </div>
+);
 
 export const SettingsPage: React.FC = () => {
-  const { 
-    settings, 
-    setSettings, 
-    loading, 
-    saving, 
-    error, 
-    saveSettings, 
-    restoreDefaultSettings 
-  } = useSettings();
+  const { t } = useApp();
+  const { settings, setSettings, loading, saving, error, saveSettings, restoreDefaultSettings } = useSettings();
+  const [activeTab, setActiveTab] = useState<'general' | 'logos' | 'banners' | 'home_content' | 'legal' | 'db'>('general');
+  const [msg, setMsg] = useState<{type:'success'|'error', text:string} | null>(null);
 
-  const [successMsg, setSuccessMsg] = useState('');
+  if (loading || !settings) return <div className="flex justify-center p-10"><Loader2 className="animate-spin"/></div>;
 
-  // دالة مساعدة لتحديث الحقول
-  const handleChange = (field: keyof SettingsData, value: string) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
+  const onSave = async () => {
+      const success = await saveSettings(settings);
+      if (success) {
+          setMsg({type: 'success', text: t('admin.settings.saved')});
+          setTimeout(() => setMsg(null), 3000);
+      } else {
+          setMsg({type: 'error', text: 'Error saving settings'});
+      }
   };
 
-  // معالجة الحفظ
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const success = await saveSettings(settings);
-    if (success) {
-      setSuccessMsg('تم حفظ الإعدادات وتحديث النسخة الاحتياطية بنجاح.');
-      setTimeout(() => setSuccessMsg(''), 4000);
-    }
-  };
-
-  // معالجة الاستعادة
-  const handleRestore = async () => {
-    if (!confirm('هل أنت متأكد؟ سيتم استعادة آخر نسخة تم حفظها بنجاح (Snapshot) ومسح التعديلات الحالية.')) return;
-    
-    const success = await restoreDefaultSettings();
-    if (success) {
-      setSuccessMsg('تم استعادة البيانات الافتراضية بنجاح.');
-      setTimeout(() => setSuccessMsg(''), 4000);
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <Loader2 className="animate-spin text-emerald-600" size={40} />
-        </div>
-      </Layout>
-    );
-  }
+  const TabButton = ({ id, icon: Icon, label }: any) => (
+      <button onClick={() => setActiveTab(id)} className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${activeTab === id ? 'bg-tivro-primary text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+          <Icon size={18}/> {label}
+      </button>
+  );
 
   return (
-    <Layout>
-      <div className="max-w-5xl mx-auto p-6 md:p-10 animate-fade-in">
+    <div className="max-w-5xl mx-auto">
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('admin.tab.settings')}</h2>
         
-        {/* الهيدر */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">إعدادات الموقع</h1>
-            <p className="text-slate-500">إدارة بيانات الاتصال، الروابط، والشعارات.</p>
-          </div>
-          
-          <button
-            onClick={handleRestore}
-            disabled={saving}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-red-600 border border-slate-300 px-4 py-2.5 rounded-lg hover:bg-slate-50 transition disabled:opacity-50"
-          >
-            <RotateCcw size={16} />
-            استعادة البيانات الافتراضية
-          </button>
+        {msg && <div className={`p-4 rounded mb-6 flex items-center gap-2 ${msg.type==='success'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`}>{msg.type==='success'?<CheckCircle size={18}/>:<AlertCircle size={18}/>}{msg.text}</div>}
+
+        <div className="flex flex-col md:flex-row gap-8">
+            {/* Tabs */}
+            <div className="w-full md:w-64 flex-shrink-0 space-y-2">
+                <TabButton id="general" icon={Globe} label={t('admin.settings.general')} />
+                <TabButton id="logos" icon={ImageIcon} label="Logos & Branding" />
+                <TabButton id="home_content" icon={LayoutTemplate} label="Home Content" />
+                <TabButton id="banners" icon={Flag} label="Banners" />
+                <TabButton id="legal" icon={FileText} label={t('admin.settings.legal')} />
+                <TabButton id="db" icon={Database} label={t('admin.settings.db')} />
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+                
+                {activeTab === 'general' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.general')}</h3>
+                        <LocalizedInput label="Site Name" value={settings.siteName} onChange={v => setSettings({...settings, siteName: v})} />
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label className="block text-sm font-bold mb-1">{t('admin.set.email')}</label><input className="w-full border p-2 rounded" value={settings.contactEmail} onChange={e => setSettings({...settings, contactEmail: e.target.value})} /></div>
+                            <div><label className="block text-sm font-bold mb-1">{t('admin.set.phone')}</label><input className="w-full border p-2 rounded" value={settings.contactPhone} onChange={e => setSettings({...settings, contactPhone: e.target.value})} /></div>
+                        </div>
+                        <LocalizedInput label="Address" value={settings.address} onChange={v => setSettings({...settings, address: v})} />
+
+                        <div className="pt-4 border-t">
+                            <div className="flex justify-between items-center mb-2">
+                                <h4 className="font-bold">{t('admin.settings.social')}</h4>
+                                <button onClick={() => setSettings({...settings, socialLinks: [...settings.socialLinks, {platform: 'Twitter', url: ''}]})} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">+ Add</button>
+                            </div>
+                            {settings.socialLinks.map((link, i) => (
+                                <div key={i} className="flex gap-2 mb-2">
+                                    <input className="w-1/3 border p-2 rounded text-sm" value={link.platform} onChange={e => { const l = [...settings.socialLinks]; l[i].platform = e.target.value; setSettings({...settings, socialLinks: l})}} />
+                                    <input className="flex-1 border p-2 rounded text-sm" value={link.url} onChange={e => { const l = [...settings.socialLinks]; l[i].url = e.target.value; setSettings({...settings, socialLinks: l})}} />
+                                    <button onClick={() => { const l = settings.socialLinks.filter((_, idx) => idx !== i); setSettings({...settings, socialLinks: l})}} className="text-red-500 px-2">x</button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'logos' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">Logos & Branding</h3>
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Main Logo URL</label>
+                            <input className="w-full border p-2 rounded" value={settings.logoUrl} onChange={e => setSettings({...settings, logoUrl: e.target.value})} />
+                            {settings.logoUrl && <img src={settings.logoUrl} className="h-10 mt-2 border p-1"/>}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Footer Logo URL</label>
+                            <input className="w-full border p-2 rounded" value={settings.footerLogoUrl} onChange={e => setSettings({...settings, footerLogoUrl: e.target.value})} />
+                            {settings.footerLogoUrl && <img src={settings.footerLogoUrl} className="h-10 mt-2 border p-1 bg-slate-800"/>}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Favicon URL (ICO/PNG)</label>
+                            <input className="w-full border p-2 rounded" value={settings.faviconUrl} onChange={e => setSettings({...settings, faviconUrl: e.target.value})} />
+                            {settings.faviconUrl && <img src={settings.faviconUrl} className="h-8 w-8 mt-2 border p-1"/>}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'home_content' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">Home Page Content</h3>
+                        <LocalizedInput label="Hero Title" value={settings.homeSections.heroTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, heroTitle: v}})} />
+                        <LocalizedInput label="Hero Subtitle" value={settings.homeSections.heroSubtitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, heroSubtitle: v}})} />
+                        <hr/>
+                        <LocalizedInput label="Services Title" value={settings.homeSections.servicesTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, servicesTitle: v}})} />
+                        <hr/>
+                        <LocalizedInput label="Work (Case Studies) Title" value={settings.sectionTexts.workTitle} onChange={v => setSettings({...settings, sectionTexts: {...settings.sectionTexts, workTitle: v}})} />
+                        <LocalizedInput label="Work Subtitle" value={settings.sectionTexts.workSubtitle} onChange={v => setSettings({...settings, sectionTexts: {...settings.sectionTexts, workSubtitle: v}})} />
+                        <hr/>
+                        <LocalizedInput label="Packages Title" value={settings.homeSections.packagesTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, packagesTitle: v}})} />
+                        <hr/>
+                        <LocalizedInput label="Team Title" value={settings.homeSections.teamTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, teamTitle: v}})} />
+                        <hr/>
+                        <LocalizedInput label="Contact Title" value={settings.homeSections.contactTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, contactTitle: v}})} />
+                        <LocalizedInput label="Contact Subtitle" value={settings.homeSections.contactSubtitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, contactSubtitle: v}})} />
+                    </div>
+                )}
+
+                {activeTab === 'banners' && (
+                    <div className="space-y-8 animate-fade-in">
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <input type="checkbox" checked={settings.topBanner.enabled} onChange={e => setSettings({...settings, topBanner: {...settings.topBanner, enabled: e.target.checked}})} className="w-5 h-5"/>
+                                <h3 className="font-bold text-lg">Top Banner</h3>
+                            </div>
+                            {settings.topBanner.enabled && (
+                                <div className="bg-slate-50 p-4 rounded border space-y-3">
+                                    <LocalizedInput label="Title" value={settings.topBanner.title} onChange={v => setSettings({...settings, topBanner: {...settings.topBanner, title: v}})} />
+                                    <LocalizedInput label="Button Text" value={settings.topBanner.buttonText || {ar:'',en:''}} onChange={v => setSettings({...settings, topBanner: {...settings.topBanner, buttonText: v}})} />
+                                    <div><label className="text-xs font-bold">Link</label><input className="w-full border p-2 rounded" value={settings.topBanner.link} onChange={e => setSettings({...settings, topBanner: {...settings.topBanner, link: e.target.value}})} /></div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <input type="checkbox" checked={settings.bottomBanner.enabled} onChange={e => setSettings({...settings, bottomBanner: {...settings.bottomBanner, enabled: e.target.checked}})} className="w-5 h-5"/>
+                                <h3 className="font-bold text-lg">Bottom Banner</h3>
+                            </div>
+                            {settings.bottomBanner.enabled && (
+                                <div className="bg-slate-50 p-4 rounded border space-y-3">
+                                    <LocalizedInput label="Title" value={settings.bottomBanner.title} onChange={v => setSettings({...settings, bottomBanner: {...settings.bottomBanner, title: v}})} />
+                                    <LocalizedArea label="Description" value={settings.bottomBanner.subtitle || {ar:'',en:''}} onChange={(v: LocalizedString) => setSettings({...settings, bottomBanner: {...settings.bottomBanner, subtitle: v}})} />
+                                    <div><label className="text-xs font-bold">Background Image URL</label><input className="w-full border p-2 rounded" value={settings.bottomBanner.bgImage} onChange={e => setSettings({...settings, bottomBanner: {...settings.bottomBanner, bgImage: e.target.value}})} /></div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'legal' && (
+                    <div className="space-y-6 animate-fade-in">
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.legal')}</h3>
+                        <LocalizedArea label={t('admin.set.privacy')} value={settings.privacyPolicy} onChange={(v: LocalizedString) => setSettings({...settings, privacyPolicy: v})} />
+                        <div className="border-t my-6"></div>
+                        <LocalizedArea label={t('admin.set.terms')} value={settings.termsOfService} onChange={(v: LocalizedString) => setSettings({...settings, termsOfService: v})} />
+                    </div>
+                )}
+
+                {activeTab === 'db' && (
+                    <div className="space-y-6 animate-fade-in">
+                         <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.db')}</h3>
+                         <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-6">
+                             <p className="text-sm text-amber-800">{t('admin.seed.desc')}</p>
+                         </div>
+                         <button 
+                             onClick={async () => {
+                                 if(confirm(t('admin.seed.warning'))) {
+                                     const success = await restoreDefaultSettings();
+                                     if(success) alert(t('admin.seed.success'));
+                                     else alert('Error seeding DB');
+                                 }
+                             }} 
+                             className="bg-slate-800 text-white px-6 py-3 rounded-lg font-bold hover:bg-slate-900 transition w-full flex justify-center gap-2"
+                         >
+                             <RotateCcw size={18}/> {t('admin.seed.btn')}
+                         </button>
+                    </div>
+                )}
+
+                {activeTab !== 'db' && (
+                     <div className="pt-6 mt-6 border-t flex justify-end">
+                        <button onClick={onSave} disabled={saving} className="bg-tivro-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-tivro-primary/20">
+                            {saving && <Loader2 className="animate-spin" size={18}/>} 
+                            {t('admin.btn.save')}
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
-
-        {/* رسائل التنبيه */}
-        {error && (
-          <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-8 flex items-center gap-3 border border-red-100">
-            <AlertCircle size={20} /> {error}
-          </div>
-        )}
-
-        {successMsg && (
-          <div className="bg-green-50 text-green-700 p-4 rounded-xl mb-8 flex items-center gap-3 border border-green-100">
-            <CheckCircle size={20} /> {successMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleSave} className="space-y-8">
-          
-          {/* القسم 1: بيانات الاتصال */}
-          <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Phone size={20}/></div>
-              <h2 className="text-xl font-bold text-slate-800">بيانات الاتصال</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">البريد الإلكتروني</label>
-                <input 
-                  type="email" 
-                  value={settings.contact_email} 
-                  onChange={e => handleChange('contact_email', e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"
-                  placeholder="admin@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">رقم الهاتف</label>
-                <input 
-                  type="text" 
-                  value={settings.contact_phone} 
-                  onChange={e => handleChange('contact_phone', e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"
-                  placeholder="+966 50 000 0000"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 mb-2">العنوان الفعلي</label>
-                <input 
-                  type="text" 
-                  value={settings.address} 
-                  onChange={e => handleChange('address', e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"
-                  placeholder="الرياض، المملكة العربية السعودية"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* القسم 2: التواصل الاجتماعي */}
-          <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Share2 size={20}/></div>
-              <h2 className="text-xl font-bold text-slate-800">التواصل الاجتماعي</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Facebook URL</label>
-                <input 
-                  type="url" 
-                  value={settings.social_facebook} 
-                  onChange={e => handleChange('social_facebook', e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"
-                  placeholder="https://facebook.com/..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Twitter (X) URL</label>
-                <input 
-                  type="url" 
-                  value={settings.social_twitter} 
-                  onChange={e => handleChange('social_twitter', e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"
-                  placeholder="https://twitter.com/..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Instagram URL</label>
-                <input 
-                  type="url" 
-                  value={settings.social_instagram} 
-                  onChange={e => handleChange('social_instagram', e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"
-                  placeholder="https://instagram.com/..."
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* القسم 3: الوسائط */}
-          <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-              <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><ImageIcon size={20}/></div>
-              <h2 className="text-xl font-bold text-slate-800">الشعارات والأيقونات</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">رابط الشعار (Logo URL)</label>
-                <input 
-                  type="text" 
-                  value={settings.logo_url} 
-                  onChange={e => handleChange('logo_url', e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"
-                  placeholder="https://..."
-                />
-                {settings.logo_url && <img src={settings.logo_url} alt="Logo Preview" className="mt-3 h-12 object-contain border border-slate-200 rounded p-1" />}
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">رابط الأيقونة (Icon URL)</label>
-                <input 
-                  type="text" 
-                  value={settings.icon_url} 
-                  onChange={e => handleChange('icon_url', e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition"
-                  placeholder="https://..."
-                />
-                {settings.icon_url && <img src={settings.icon_url} alt="Icon Preview" className="mt-3 h-8 w-8 object-contain border border-slate-200 rounded p-1" />}
-              </div>
-            </div>
-          </section>
-
-          {/* مسافة إضافية للزر العائم */}
-          <div className="h-24"></div>
-
-          {/* زر الحفظ العائم */}
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-full px-6 max-w-5xl pointer-events-none">
-            <div className="flex justify-end pointer-events-auto">
-               <button
-                type="submit"
-                disabled={saving}
-                className="bg-slate-900 text-white px-8 py-4 rounded-full font-bold shadow-2xl hover:bg-slate-800 transition flex items-center gap-3 disabled:opacity-70 transform hover:-translate-y-1"
-              >
-                {saving ? <Loader2 className="animate-spin" /> : <Save />}
-                {saving ? 'جاري الحفظ والمعالجة...' : 'حفظ التغييرات وتحديث النسخة'}
-              </button>
-            </div>
-          </div>
-
-        </form>
-      </div>
-    </Layout>
+    </div>
   );
 };

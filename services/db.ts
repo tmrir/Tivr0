@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink } from '../types';
 
@@ -8,7 +7,8 @@ const mapServiceFromDB = (row: any): Service => ({
   title: row.title || { ar: '', en: '' },
   description: row.description || { ar: '', en: '' },
   features: row.features || [],
-  iconName: row.icon_name || 'HelpCircle'
+  iconName: row.icon_name || 'HelpCircle',
+  orderIndex: row.order_index
 });
 const mapServiceToDB = (item: Service) => ({ title: item.title, description: item.description, features: item.features, icon_name: item.iconName });
 
@@ -17,7 +17,8 @@ const mapPackageFromDB = (row: any): Package => ({
   name: row.name || { ar: '', en: '' },
   price: row.price || '',
   features: row.features || [],
-  isPopular: row.is_popular || false
+  isPopular: row.is_popular || false,
+  orderIndex: row.order_index
 });
 const mapPackageToDB = (item: Package) => ({ name: item.name, price: item.price, features: item.features, is_popular: item.isPopular });
 
@@ -26,7 +27,8 @@ const mapTeamFromDB = (row: any): TeamMember => ({
   name: row.name || { ar: '', en: '' },
   role: row.role || { ar: '', en: '' },
   image: row.image || '',
-  linkedin: row.linkedin || ''
+  linkedin: row.linkedin || '',
+  orderIndex: row.order_index
 });
 const mapTeamToDB = (item: TeamMember) => ({ name: item.name, role: item.role, image: item.image, linkedin: item.linkedin });
 
@@ -37,7 +39,8 @@ const mapCaseFromDB = (row: any): CaseStudy => ({
   category: row.category || { ar: '', en: '' },
   result: row.result || { ar: '', en: '' },
   image: row.image || '',
-  stats: Array.isArray(row.stats) ? row.stats : []
+  stats: Array.isArray(row.stats) ? row.stats : [],
+  orderIndex: row.order_index
 });
 const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, stats: item.stats });
 
@@ -60,12 +63,10 @@ const mapMessageFromDB = (row: any): ContactMessage => ({
 });
 
 const mapSettingsFromDB = (row: any): SiteSettings => {
-  // Robust handling for legacy social_links object vs new array
   let socialLinks: SocialLink[] = [];
   if (Array.isArray(row.social_links)) {
       socialLinks = row.social_links;
   } else if (typeof row.social_links === 'object' && row.social_links !== null) {
-      // Convert legacy object to array safely
       Object.keys(row.social_links).forEach(key => {
           socialLinks.push({ platform: key, url: row.social_links[key] });
       });
@@ -77,10 +78,27 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     contactPhone: row.contact_phone || '',
     address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
     socialLinks: socialLinks,
+    
+    logoUrl: row.logo_url || '',
+    iconUrl: row.icon_url || '',
+    footerLogoUrl: row.footer_logo_url || row.logo_url || '', // Fallback to main logo
+    faviconUrl: row.favicon_url || '',
+
+    topBanner: row.top_banner || { enabled: false, title: {ar:'',en:''} },
+    bottomBanner: row.bottom_banner || { enabled: false, title: {ar:'',en:''} },
+
     sectionTexts: row.section_texts || { 
       workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
       workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
     },
+    homeSections: row.home_sections || {
+        heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
+        servicesTitle: { ar: '', en: '' }, servicesSubtitle: { ar: '', en: '' },
+        teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
+        packagesTitle: { ar: '', en: '' },
+        contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
+    },
+
     privacyPolicy: row.privacy_policy || { ar: '', en: '' },
     termsOfService: row.terms_of_service || { ar: '', en: '' }
   };
@@ -92,7 +110,14 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   contact_phone: item.contactPhone, 
   address: item.address, 
   social_links: item.socialLinks,
+  logo_url: item.logoUrl,
+  icon_url: item.iconUrl,
+  footer_logo_url: item.footerLogoUrl,
+  favicon_url: item.faviconUrl,
+  top_banner: item.topBanner,
+  bottom_banner: item.bottomBanner,
   section_texts: item.sectionTexts,
+  home_sections: item.homeSections,
   privacy_policy: item.privacyPolicy,
   terms_of_service: item.termsOfService
 });
@@ -100,25 +125,42 @@ const mapSettingsToDB = (item: SiteSettings) => ({
 /* --- SERVER SEED TRIGGER --- */
 const triggerServerSeed = async () => {
   try {
-    console.log('🔄 Triggering Server-Side Seed...');
     const res = await fetch('/api/seed', { method: 'POST' });
-    const json = await res.json();
-    if (res.ok) {
-      console.log('✅ Seed Success:', json);
-      return true;
-    } else {
-      console.error('⚠️ Seed Error:', json);
-      return false;
-    }
+    return res.ok;
   } catch (e) {
-    console.error('❌ Network Error triggering seed:', e);
     return false;
   }
 };
 
+/* --- SAFE FETCH HELPER --- */
+const fetchWithOrder = async (table: string, mapper: Function) => {
+    // 1. Try sorting by order_index
+    let { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .order('order_index', { ascending: true });
+
+    // 2. If error (likely column missing) or no data, Fallback to created_at
+    if (error || !data) {
+        // console.warn(`Sort by order_index failed for ${table}, falling back to created_at.`);
+        const res = await supabase.from(table).select('*').order('created_at', { ascending: true });
+        data = res.data;
+        error = res.error;
+    }
+
+    // 3. If still empty/error, check if we need to seed
+    if (!error && (!data || data.length === 0)) {
+        await triggerServerSeed();
+        // Final retry
+        const { data: retry } = await supabase.from(table).select('*').order('created_at', { ascending: true });
+        return retry?.map(row => mapper(row)) || [];
+    }
+
+    return data?.map(row => mapper(row)) || [];
+}
+
 /* --- DB SERVICE --- */
 export const db = {
-  // Helper to save new order
   reorder: async (table: string, items: any[]) => {
     try {
       await fetch('/api/reorder', {
@@ -132,16 +174,7 @@ export const db = {
   },
 
   services: {
-    getAll: async (): Promise<Service[]> => {
-      // CHANGED: sort by order_index first, then created_at
-      const { data, error } = await supabase.from('services').select('*').order('order_index', { ascending: true }).order('created_at', { ascending: true });
-      if (!error && (!data || data.length === 0)) {
-         await triggerServerSeed();
-         const { data: retry } = await supabase.from('services').select('*').order('created_at', { ascending: true });
-         return retry?.map(mapServiceFromDB) || [];
-      }
-      return data?.map(mapServiceFromDB) || [];
-    },
+    getAll: async () => await fetchWithOrder('services', mapServiceFromDB),
     save: async (item: Service) => {
       const payload = mapServiceToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
@@ -151,16 +184,7 @@ export const db = {
   },
 
   packages: {
-    getAll: async (): Promise<Package[]> => {
-      // CHANGED: sort by order_index
-      const { data, error } = await supabase.from('packages').select('*').order('order_index', { ascending: true }).order('created_at', { ascending: true });
-      if (!error && (!data || data.length === 0)) {
-         await triggerServerSeed();
-         const { data: retry } = await supabase.from('packages').select('*').order('created_at', { ascending: true });
-         return retry?.map(mapPackageFromDB) || [];
-      }
-      return data?.map(mapPackageFromDB) || [];
-    },
+    getAll: async () => await fetchWithOrder('packages', mapPackageFromDB),
     save: async (item: Package) => {
       const payload = mapPackageToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
@@ -170,16 +194,7 @@ export const db = {
   },
 
   team: {
-    getAll: async (): Promise<TeamMember[]> => {
-      // CHANGED: sort by order_index
-      const { data, error } = await supabase.from('team_members').select('*').order('order_index', { ascending: true }).order('created_at', { ascending: true });
-      if (!error && (!data || data.length === 0)) {
-         await triggerServerSeed();
-         const { data: retry } = await supabase.from('team_members').select('*').order('created_at', { ascending: true });
-         return retry?.map(mapTeamFromDB) || [];
-      }
-      return data?.map(mapTeamFromDB) || [];
-    },
+    getAll: async () => await fetchWithOrder('team_members', mapTeamFromDB),
     save: async (item: TeamMember) => {
       const payload = mapTeamToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
@@ -189,16 +204,7 @@ export const db = {
   },
 
   caseStudies: {
-    getAll: async (): Promise<CaseStudy[]> => {
-      // CHANGED: sort by order_index
-      const { data, error } = await supabase.from('case_studies').select('*').order('order_index', { ascending: true }).order('created_at', { ascending: true });
-      if (!error && (!data || data.length === 0)) {
-         await triggerServerSeed();
-         const { data: retry } = await supabase.from('case_studies').select('*').order('created_at', { ascending: true });
-         return retry?.map(mapCaseFromDB) || [];
-      }
-      return data?.map(mapCaseFromDB) || [];
-    },
+    getAll: async () => await fetchWithOrder('case_studies', mapCaseFromDB),
     save: async (item: CaseStudy) => {
       const payload = mapCaseToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
@@ -208,14 +214,14 @@ export const db = {
   },
 
   blog: {
-    getAll: async (): Promise<BlogPost[]> => {
-      const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
-      if (!error && (!data || data.length === 0)) {
-         await triggerServerSeed();
-         const { data: retry } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
-         return retry?.map(mapBlogFromDB) || [];
-      }
-      return data?.map(mapBlogFromDB) || [];
+    getAll: async () => {
+        const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+        if (!error && (!data || data.length === 0)) {
+            await triggerServerSeed();
+            const { data: retry } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+            return retry?.map(mapBlogFromDB) || [];
+        }
+        return data?.map(mapBlogFromDB) || [];
     },
     save: async (item: BlogPost) => {
       const payload = mapBlogToDB(item);
@@ -255,8 +261,12 @@ export const db = {
       
       const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
       
-      if (current && newSettings.sectionTexts) {
-          mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
+      // Preserve deep objects
+      if (current) {
+          if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
+          if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
+          if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
+          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
       }
       
       const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };

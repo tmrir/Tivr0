@@ -89,10 +89,10 @@ export const Home = () => {
               {lang === 'ar' ? '🚀 الوكالة الرقمية الأسرع نمواً' : '🚀 Fastest Growing Digital Agency'}
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
-              {t('hero.title')}
+              {settings?.homeSections?.heroTitle?.[lang] || t('hero.title')}
             </h1>
             <p className="text-xl text-slate-300 mb-10 leading-relaxed max-w-2xl">
-              {t('hero.subtitle')}
+              {settings?.homeSections?.heroSubtitle?.[lang] || t('hero.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <a href="#contact" className="bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2">
@@ -118,8 +118,11 @@ export const Home = () => {
       <section id="services" className="py-24 bg-slate-50">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">{t('section.services')}</h2>
-            <div className="w-20 h-1 bg-tivro-primary mx-auto rounded-full"></div>
+            <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">
+                {settings?.homeSections?.servicesTitle?.[lang] || t('section.services')}
+            </h2>
+            <p className="text-slate-500 max-w-2xl mx-auto">{settings?.homeSections?.servicesSubtitle?.[lang]}</p>
+            <div className="w-20 h-1 bg-tivro-primary mx-auto rounded-full mt-4"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {services.map(s => (
@@ -186,7 +189,9 @@ export const Home = () => {
       <section className="py-24 bg-slate-50">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
-             <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark">{lang === 'ar' ? 'باقات تناسب الجميع' : 'Packages for Everyone'}</h2>
+             <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark">
+                 {settings?.homeSections?.packagesTitle?.[lang] || (lang === 'ar' ? 'باقات تناسب الجميع' : 'Packages for Everyone')}
+             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {packages.map(pkg => (
@@ -219,7 +224,10 @@ export const Home = () => {
       <section id="team" className="py-24 bg-white border-t border-slate-100">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
-             <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">{t('section.team')}</h2>
+             <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">
+                 {settings?.homeSections?.teamTitle?.[lang] || t('section.team')}
+             </h2>
+             <p className="text-slate-500">{settings?.homeSections?.teamSubtitle?.[lang]}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
              {team.map(t => (
@@ -238,8 +246,12 @@ export const Home = () => {
       {/* CTA / Contact */}
       <section id="contact" className="py-24 bg-tivro-dark text-white">
          <div className="container mx-auto px-4 text-center">
-           <h2 className="text-3xl md:text-5xl font-bold mb-6">{lang === 'ar' ? 'جاهز لنقل مشروعك للمستوى التالي؟' : 'Ready to take your business to the next level?'}</h2>
-           <p className="text-slate-300 mb-10 max-w-2xl mx-auto text-lg">{lang === 'ar' ? 'دعنا نناقش أهدافك ونضع استراتيجية مخصصة لنجاحك.' : 'Let\'s discuss your goals and craft a custom strategy for your success.'}</p>
+           <h2 className="text-3xl md:text-5xl font-bold mb-6">
+               {settings?.homeSections?.contactTitle?.[lang] || (lang === 'ar' ? 'جاهز لنقل مشروعك للمستوى التالي؟' : 'Ready to take your business to the next level?')}
+           </h2>
+           <p className="text-slate-300 mb-10 max-w-2xl mx-auto text-lg">
+               {settings?.homeSections?.contactSubtitle?.[lang] || (lang === 'ar' ? 'دعنا نناقش أهدافك ونضع استراتيجية مخصصة لنجاحك.' : 'Let\'s discuss your goals and craft a custom strategy for your success.')}
+           </p>
            <div className="flex flex-col md:flex-row justify-center gap-6">
              <div className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
                <h4 className="text-xl font-bold mb-4 flex items-center gap-2"><TrendingUp className="text-tivro-primary"/> {lang === 'ar' ? 'حجز استشارة' : 'Consultation'}</h4>
