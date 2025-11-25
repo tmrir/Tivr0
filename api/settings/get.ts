@@ -2,7 +2,12 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Prevent caching completely
   res.setHeader('Cache-Control', 'no-store, max-age=0');
+
+  if (req.method !== 'GET') {
+    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
+  }
 
   try {
     const { data, error } = await supabaseAdmin
@@ -12,47 +17,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (error) {
-        // If table is empty or row missing, return empty object, don't error out
-        if (error.code === 'PGRST116') return res.status(200).json({});
-        throw error;
+      console.error('❌ [GET Settings] DB Error:', error);
+      // Return empty object if no settings found instead of crashing
+      if (error.code === 'PGRST116') return res.status(200).json({ ok: true, data: {} });
+      return res.status(500).json({ ok: false, error: error.message });
     }
 
-    if (!data) return res.status(200).json({});
-
-    // Safe extraction
-    const socialLinks = Array.isArray(data.social_links) ? data.social_links : [];
-    const getLink = (platform: string) => 
-      socialLinks.find((l: any) => l.platform.toLowerCase().includes(platform))?.url || '';
-
-    const mappedData = {
-      site_name: data.site_name || { ar: '', en: '' },
-      contact_email: data.contact_email || '',
-      contact_phone: data.contact_phone || '',
-      address: typeof data.address === 'string' ? { ar: data.address, en: data.address } : (data.address || { ar: '', en: '' }),
-      
-      logo_url: data.logo_url || '',
-      icon_url: data.icon_url || '',
-      footer_logo_url: data.footer_logo_url || '',
-      favicon_url: data.favicon_url || '',
-
-      // Return arrays AND flat fields for safety
-      social_links: socialLinks,
-      social_facebook: getLink('facebook'),
-      social_twitter: getLink('twitter'),
-      social_instagram: getLink('instagram'),
-
-      // Guarantee Objects, never null
-      top_banner: data.top_banner || { enabled: false },
-      bottom_banner: data.bottom_banner || { enabled: false },
-      section_texts: data.section_texts || {},
-      home_sections: data.home_sections || {},
-      privacy_policy: data.privacy_policy || {},
-      terms_of_service: data.terms_of_service || {}
-    };
-
-    return res.status(200).json(mappedData);
+    // Transform array social links to flat object if needed by frontend, 
+    // or keep as is if frontend handles it. Assuming frontend handles array now.
+    return res.status(200).json({ ok: true, data });
   } catch (err: any) {
-    console.error('GET Settings Error:', err);
-    return res.status(500).json({ error: err.message });
+    console.error('❌ [GET Settings] Server Error:', err);
+    return res.status(500).json({ ok: false, error: err.message });
   }
 }
