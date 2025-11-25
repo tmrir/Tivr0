@@ -1,9 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-// Correct relative path: up one level to 'settings', up one to 'api', then into 'utils'
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Content-Type', 'application/json');
+
+  if (req.method !== 'GET') {
+    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
+  }
 
   try {
     const { data, error } = await supabaseAdmin
@@ -13,14 +16,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (error) {
-      // Return empty object if row missing (fresh DB)
-      if (error.code === 'PGRST116') return res.status(200).json({ ok: true, data: {} });
-      throw error;
+      console.error('❌ [API] Supabase Get Error:', error);
+      return res.status(500).json({ ok: false, error: error.message, details: error });
     }
 
     return res.status(200).json({ ok: true, data });
   } catch (err: any) {
-    console.error('Get Settings API Error:', err);
-    return res.status(500).json({ ok: false, error: err.message });
+    console.error('❌ [API] Fatal Get Error:', err);
+    return res.status(500).json({ ok: false, error: 'Internal Server Error', message: err.message || 'Unknown error' });
   }
 }
