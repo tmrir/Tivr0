@@ -2,25 +2,32 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-  }
+  // Ensure we always return JSON
+  res.setHeader('Content-Type', 'application/json');
 
   try {
-    const payload = req.body;
-    console.log('💾 [SAVE Settings] Payload:', JSON.stringify(payload, null, 2));
+    if (req.method !== 'POST') {
+      return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
+    }
 
-    // Ensure we don't overwrite ID or create a new row
+    const payload = req.body;
+    
+    // Validation: Ensure payload exists
+    if (!payload) {
+        return res.status(400).json({ ok: false, error: 'Empty payload' });
+    }
+
+    console.log('💾 [SAVE] Processing...');
+
+    // Prepare DB Payload
     const dbPayload = {
       ...payload,
       id: 1,
       updated_at: new Date().toISOString(),
-      default_snapshot: payload // Auto-Backup: Save current state as snapshot
+      default_snapshot: payload 
     };
 
-    // Remove fields that shouldn't be in top-level columns if payload is nested
-    // Assuming payload structure matches DB columns exactly based on frontend hook
-
+    // Execute Update
     const { data, error } = await supabaseAdmin
       .from('site_settings')
       .upsert(dbPayload)
@@ -28,14 +35,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (error) {
-      console.error('❌ [SAVE Settings] Supabase Error:', error);
-      return res.status(500).json({ ok: false, error: error.message, details: error });
+      console.error('❌ [SAVE] DB Error:', error);
+      return res.status(500).json({ ok: false, error: error.message });
     }
 
-    console.log('✅ [SAVE Settings] Success:', data.id);
+    console.log('✅ [SAVE] Success');
     return res.status(200).json({ ok: true, data });
+
   } catch (err: any) {
-    console.error('❌ [SAVE Settings] Fatal Error:', err);
-    return res.status(500).json({ ok: false, error: err.message });
+    console.error('❌ [SAVE] Crash:', err);
+    // Catch-all for server crashes to ensure JSON response
+    return res.status(500).json({ ok: false, error: 'Internal Server Error: ' + (err.message || 'Unknown') });
   }
 }
