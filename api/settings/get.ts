@@ -1,13 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+// Correct relative path: up one level to 'settings', up one to 'api', then into 'utils'
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Prevent caching completely
   res.setHeader('Cache-Control', 'no-store, max-age=0');
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-  }
 
   try {
     const { data, error } = await supabaseAdmin
@@ -17,17 +13,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (error) {
-      console.error('❌ [GET Settings] DB Error:', error);
-      // Return empty object if no settings found instead of crashing
+      // Return empty object if row missing (fresh DB)
       if (error.code === 'PGRST116') return res.status(200).json({ ok: true, data: {} });
-      return res.status(500).json({ ok: false, error: error.message });
+      throw error;
     }
 
-    // Transform array social links to flat object if needed by frontend, 
-    // or keep as is if frontend handles it. Assuming frontend handles array now.
     return res.status(200).json({ ok: true, data });
   } catch (err: any) {
-    console.error('❌ [GET Settings] Server Error:', err);
+    console.error('Get Settings API Error:', err);
     return res.status(500).json({ ok: false, error: err.message });
   }
 }
