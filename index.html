@@ -5,31 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tivro | تيفرو للتسويق الرقمي</title>
     <meta name="description" content="وكالة تيفرو للتسويق الإلكتروني - شريكك للنمو الرقمي في السعودية" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Production-ready Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/lib/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Cairo', 'sans-serif'],
-            },
-            colors: {
-              tivro: {
-                dark: '#0f172a', // Slate 900
-                primary: '#059669', // Emerald 600
-                accent: '#f97316', // Orange 500
-                light: '#f8fafc', // Slate 50
-              }
-            }
-          }
-        }
-      }
-    </script>
     <style>
       body {
         font-family: 'Cairo', sans-serif;
       }
+      /* Custom Tailwind colors */
+      .bg-tivro-dark { background-color: #0f172a; }
+      .bg-tivro-primary { background-color: #059669; }
+      .bg-tivro-accent { background-color: #f97316; }
+      .bg-tivro-light { background-color: #f8fafc; }
+      .text-tivro-dark { color: #0f172a; }
+      .text-tivro-primary { color: #059669; }
+      .text-tivro-accent { color: #f97316; }
+      .text-tivro-light { color: #f8fafc; }
       /* Hide scrollbar for clean UI in admin panels */
       .no-scrollbar::-webkit-scrollbar {
         display: none;
