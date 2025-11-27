@@ -1,7 +1,6 @@
 
 import React, { ReactNode, useState, useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
-import { SettingsProvider } from './context/SettingsContext';
 import { Home } from './pages/Home';
 import { Admin } from './pages/Admin';
 import { Legal } from './pages/Legal';
@@ -67,9 +66,7 @@ function App() {
   return (
     <ErrorBoundary>
       <AppProvider>
-        <SettingsProvider>
-          <Router />
-        </SettingsProvider>
+        <Router />
       </AppProvider>
     </ErrorBoundary>
   );

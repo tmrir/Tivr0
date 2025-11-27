@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { useSettingsContext } from '../context/SettingsContext';
 import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter, Facebook } from 'lucide-react';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
-import { Service, SiteSettings } from '../types';
+import { SiteSettings, Service } from '../types';
 import * as Icons from 'lucide-react';
 
 interface LayoutProps {
@@ -21,30 +20,30 @@ const DEFAULT_SETTINGS: Partial<SiteSettings> = {
 
 export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) => {
   const { t, lang, setLang, isAdmin } = useApp();
-  const { settings } = useSettingsContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [settings, setSettings] = useState<SiteSettings | any>(DEFAULT_SETTINGS);
   const [footerServices, setFooterServices] = useState<Service[]>([]);
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
         try {
+            const s = await db.settings.get();
+            if (s) {
+                setSettings(s);
+                if (s.faviconUrl) {
+                    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement || document.createElement('link');
+                    link.type = 'image/x-icon';
+                    link.rel = 'shortcut icon';
+                    link.href = s.faviconUrl;
+                    document.getElementsByTagName('head')[0].appendChild(link);
+                }
+            }
             const services = await db.services.getAll();
             setFooterServices(services.slice(0, 4));
-        } catch(e) { 
-            console.error('❌ [Layout] Error fetching services:', e);
-        }
+        } catch(e) { console.error(e); }
     };
-    fetchServices();
-
-    // تحديث favicon عند تغيير الإعدادات
-    if (settings?.faviconUrl) {
-        const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement || document.createElement('link');
-        link.type = 'image/x-icon';
-        link.rel = 'shortcut icon';
-        link.href = settings.faviconUrl;
-        document.getElementsByTagName('head')[0].appendChild(link);
-    }
-  }, [settings?.faviconUrl]);
+    fetchData();
+  }, []);
 
   const toggleLang = () => setLang(lang === 'ar' ? 'en' : 'ar');
   const handleLogout = async () => {
@@ -149,7 +148,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                   <span className="text-2xl font-bold">{settings?.siteName?.[lang]}</span>
                 </div>
                 <p className="text-slate-400 max-w-md leading-relaxed mb-6">
-                  {settings?.footerDescription?.[lang] || (lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.')}
+                  {lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.'}
                 </p>
                 <div className="flex gap-4">
                   {settings?.socialLinks?.map((link: any, i: number) => (

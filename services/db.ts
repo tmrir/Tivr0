@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { supabaseAdmin } from '../utils/supabase-admin';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page } from '../types';
 
 /* --- DATA MAPPERS --- */
@@ -79,7 +78,6 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     contactPhone: row.contact_phone || '',
     address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
     socialLinks: socialLinks,
-    footerDescription: row.footer_description || { ar: 'وكالة تسويق رقمي سعودية متكاملة.', en: 'A full-service Saudi digital marketing agency.' },
     
     logoUrl: row.logo_url || '',
     iconUrl: row.icon_url || '',
@@ -127,16 +125,9 @@ const mapSettingsToDB = (item: SiteSettings) => ({
 /* --- SERVER SEED TRIGGER --- */
 const triggerServerSeed = async () => {
   try {
-    // In Vite development, API routes don't exist, so just return false
-    if ((import.meta as any).env?.DEV) {
-      console.log('🌱 [DB] Development mode detected, skipping server seed');
-      return false;
-    }
-    
     const res = await fetch('/api/seed', { method: 'POST' });
     return res.ok;
   } catch (e) {
-    console.log('🌱 [DB] Seed API not available, continuing without seed');
     return false;
   }
 };
@@ -167,27 +158,13 @@ const fetchWithOrder = async (table: string, mapper: Function) => {
 export const db = {
   reorder: async (table: string, items: any[]) => {
     try {
-      console.log(`🔄 [db] Reordering ${table} with ${items.length} items`);
-      
-      // استخدام supabaseAdmin مباشرة بدلاً من API endpoint
-      const updatePromises = items.map((item: any, index: number) => {
-        console.log(`📝 [db] Updating item ${item.id} to order_index ${index}`);
-        return supabaseAdmin.from(table).update({ order_index: index }).eq('id', item.id);
+      await fetch('/api/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, items })
       });
-
-      const results = await Promise.all(updatePromises);
-      
-      const errors = results.filter(result => result.error);
-      if (errors.length > 0) {
-        console.error('❌ [db] Some updates failed:', errors);
-        throw new Error('Some updates failed');
-      }
-      
-      console.log('✅ [db] Reorder successful');
-      return { success: true, updatedCount: items.length };
     } catch (e) {
-      console.error('❌ [db] Reorder failed:', e);
-      throw e;
+      console.error('Reorder failed', e);
     }
   },
 
@@ -274,63 +251,20 @@ export const db = {
       return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
-      console.log('🗃️ [DB] Starting save operation with:', newSettings);
+      const { data: currentDB } = await supabase.from('site_settings').select('*').single();
+      const current = currentDB ? mapSettingsFromDB(currentDB) : null;
       
-      try {
-        // Simplified approach - just try to upsert the data directly
-        const payload = { 
-          id: 1, 
-          site_name: newSettings.siteName, 
-          contact_email: newSettings.contactEmail, 
-          contact_phone: newSettings.contactPhone, 
-          address: newSettings.address, 
-          social_links: newSettings.socialLinks,
-          logo_url: newSettings.logoUrl,
-          icon_url: newSettings.iconUrl,
-          footer_logo_url: newSettings.footerLogoUrl,
-          favicon_url: newSettings.faviconUrl,
-          top_banner: newSettings.topBanner,
-          bottom_banner: newSettings.bottomBanner,
-          section_texts: newSettings.sectionTexts,
-          home_sections: newSettings.homeSections,
-          privacy_policy: newSettings.privacyPolicy,
-          terms_of_service: newSettings.termsOfService,
-          updated_at: new Date().toISOString()
-        };
-        
-        console.log('🗃️ [DB] Simplified payload:', payload);
-        
-        // Try admin client first (bypasses RLS issues)
-        let result = await supabaseAdmin
-          .from('site_settings')
-          .upsert(payload, { onConflict: 'id' })
-          .select()
-          .single();
-        
-        console.log('🗃️ [DB] Admin client result:', result);
-        
-        if (result.error) {
-          console.log('🗃️ [DB] Admin client failed, trying regular client...');
-          result = await supabase
-            .from('site_settings')
-            .upsert(payload, { onConflict: 'id' })
-            .select()
-            .single();
-          console.log('🗃️ [DB] Regular client result:', result);
-        }
-        
-        if (result.error) {
-          console.error('🗃️ [DB] Save failed:', result.error);
-          throw new Error(`Save failed: ${result.error.message}`);
-        } else {
-          console.log('🗃️ [DB] Save successful!');
-        }
-        
-        return result;
-      } catch (error) {
-        console.error('🗃️ [DB] Save operation failed:', error);
-        throw error;
+      const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
+      
+      if (current) {
+          if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
+          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
+          if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
+          if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
       }
+      
+      const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };
+      return await supabase.from('site_settings').upsert(payload);
     }
   },
 

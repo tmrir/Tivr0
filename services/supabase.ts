@@ -9,32 +9,17 @@ const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || FALLBACK_URL;
 const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || FALLBACK_KEY;
 
-// Global singleton instance
-declare global {
-  interface Window {
-    __supabaseInstance?: any;
-  }
-}
-
 console.log('🔌 Initializing Supabase Client...');
 console.log('   URL:', supabaseUrl);
 // Don't log the full key for security, just check existence
 console.log('   Key Present:', !!supabaseAnonKey);
 
-// Create singleton instance using window object to persist across imports
-if (!window.__supabaseInstance) {
-  window.__supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  });
-  console.log('🔌 Created new Supabase instance');
-} else {
-  console.log('🔌 Using existing Supabase instance');
-}
-
-export const supabase = window.__supabaseInstance;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
 
 // Export a helper to check connection status (simplified)
 export const checkConnection = async () => {

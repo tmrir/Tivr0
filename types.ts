@@ -87,14 +87,6 @@ export interface HomeSectionsSettings {
     contactSubtitle: LocalizedString;
 }
 
-export interface FontSizeSettings {
-    heroTitle: string; // CSS font-size value like 'text-4xl', 'text-5xl', etc.
-    heroSubtitle: string; // CSS font-size value
-    servicesTitle: string; // CSS font-size value
-    servicesSubtitle: string; // CSS font-size value
-    teamTitle: string; // CSS font-size value
-}
-
 export interface SiteSettings {
   siteName: LocalizedString;
   contactEmail: string;
@@ -120,9 +112,6 @@ export interface SiteSettings {
   
   // CMS - Home Page General Content
   homeSections: HomeSectionsSettings;
-
-  // CMS - Font Size Settings
-  fontSizes: FontSizeSettings;
 
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
   privacyPolicy: LocalizedString; 

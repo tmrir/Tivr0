@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { useSettingsContext } from '../context/SettingsContext';
 import { Layout } from '../components/Layout';
+import { db } from '../services/db';
 import { SiteSettings } from '../types';
 import { Loader2 } from 'lucide-react';
 
@@ -12,7 +12,15 @@ interface LegalPageProps {
 
 export const Legal: React.FC<LegalPageProps> = ({ type }) => {
     const { t, lang } = useApp();
-    const { settings, loading } = useSettingsContext();
+    const [settings, setSettings] = useState<SiteSettings | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        db.settings.get().then(s => {
+            setSettings(s);
+            setLoading(false);
+        });
+    }, []);
 
     if (loading) return <Layout><div className="flex justify-center p-20"><Loader2 className="animate-spin"/></div></Layout>;
 

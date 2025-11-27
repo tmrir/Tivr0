@@ -1,25 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { useSettingsContext } from '../context/SettingsContext';
-import { db } from '../services/db';
-import { Service, CaseStudy, TeamMember, Package, BlogPost } from '../types';
-import { Star, ArrowRight, CheckCircle, Users as UsersIcon, Briefcase, BarChart3, MessageSquare, Shield, Zap, ArrowLeft, TrendingUp, Loader2, HelpCircle, Code, Palette, Globe, Camera, Building } from 'lucide-react';
-import { 
-  ImageWithFallback, 
-  DefaultTeamAvatar, 
-  DefaultCaseStudyImage, 
-  DefaultBlogImage 
-} from '../components/DefaultIcons';
 import { Layout } from '../components/Layout';
+import { db } from '../services/db';
+import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Loader2 } from 'lucide-react';
+import * as Icons from 'lucide-react';
+import { Service, CaseStudy, TeamMember, Package, SiteSettings } from '../types';
 
 export const Home = () => {
   const { t, lang, dir } = useApp();
-  const { settings } = useSettingsContext();
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<Service[]>([]);
   const [cases, setCases] = useState<CaseStudy[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -28,16 +22,18 @@ export const Home = () => {
   useEffect(() => {
     const loadData = async () => {
         try {
-            const [s, c, tData, p] = await Promise.all([
+            const [s, c, tData, p, set] = await Promise.all([
                 db.services.getAll(),
                 db.caseStudies.getAll(),
                 db.team.getAll(),
-                db.packages.getAll()
+                db.packages.getAll(),
+                db.settings.get()
             ]);
             setServices(s);
             setCases(c);
             setTeam(tData);
             setPackages(p);
+            setSettings(set);
         } catch (e) {
             console.error("Home Data Load Error", e);
         } finally {
@@ -67,7 +63,6 @@ export const Home = () => {
   };
 
   const IconComponent = ({ name, className }: { name: string, className?: string }) => {
-    const Icons = { HelpCircle, Code, Palette, Globe, Camera, Building, Star, ArrowRight, CheckCircle, Users: UsersIcon, Briefcase, BarChart3, MessageSquare, Shield, Zap, ArrowLeft, TrendingUp, Loader2 };
     const Icon = (Icons as any)[name] ? (Icons as any)[name] : Icons.HelpCircle;
     return <Icon className={className} />;
   };
@@ -93,18 +88,18 @@ export const Home = () => {
             <div className="inline-block px-4 py-1 bg-tivro-primary/20 text-tivro-primary rounded-full text-sm font-bold mb-6 border border-tivro-primary/30">
               {lang === 'ar' ? '🚀 الوكالة الرقمية الأسرع نمواً' : '🚀 Fastest Growing Digital Agency'}
             </div>
-            <h1 className={`font-bold mb-8 leading-tight ${settings?.fontSizes?.heroTitle || 'text-5xl md:text-7xl'}`}>
+            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
               {settings?.homeSections?.heroTitle?.[lang] || t('hero.title')}
             </h1>
-            <p className={`text-slate-300 mb-10 leading-relaxed max-w-2xl ${settings?.fontSizes?.heroSubtitle || 'text-xl'}`}>
+            <p className="text-xl text-slate-300 mb-10 leading-relaxed max-w-2xl">
               {settings?.homeSections?.heroSubtitle?.[lang] || t('hero.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#contact" className={`bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2 ${settings?.fontSizes?.teamTitle || 'text-lg'}`}>
-                {settings?.homeSections?.teamTitle?.[lang] || t('cta.start')}
+              <a href="#contact" className="bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2">
+                {t('cta.start')}
                 {dir === 'rtl' ? <ArrowLeft /> : <ArrowRight />}
               </a>
-              <a href="#work" className={`bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold transition flex items-center justify-center ${settings?.fontSizes?.teamTitle || 'text-lg'}`}>
+              <a href="#work" className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold text-lg transition flex items-center justify-center">
                 {t('nav.work')}
               </a>
             </div>
@@ -123,10 +118,10 @@ export const Home = () => {
       <section id="services" className="py-24 bg-slate-50">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
-            <h2 className={`font-bold text-tivro-dark mb-4 ${settings?.fontSizes?.servicesTitle || 'text-3xl md:text-4xl'}`}>
+            <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">
                 {settings?.homeSections?.servicesTitle?.[lang] || t('section.services')}
             </h2>
-            <p className={`text-slate-500 max-w-2xl mx-auto ${settings?.fontSizes?.servicesSubtitle || 'text-base'}`}>{settings?.homeSections?.servicesSubtitle?.[lang] || (lang === 'ar' ? 'نقدم حلولاً رقمية متكاملة تنمو مع عملك' : 'We provide integrated digital solutions that grow with your business')}</p>
+            <p className="text-slate-500 max-w-2xl mx-auto">{settings?.homeSections?.servicesSubtitle?.[lang]}</p>
             <div className="w-20 h-1 bg-tivro-primary mx-auto rounded-full mt-4"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -169,12 +164,7 @@ export const Home = () => {
             {cases.map(c => (
               <div key={c.id} className="group relative rounded-2xl overflow-hidden shadow-lg cursor-pointer">
                 <div className="aspect-video overflow-hidden bg-slate-200">
-                   <ImageWithFallback 
-                     src={c.image} 
-                     alt={c.title[lang]} 
-                     fallback={() => <DefaultCaseStudyImage className="w-full h-full" />}
-                     className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" 
-                   />
+                   <img src={c.image} alt={c.title[lang]} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent flex flex-col justify-end p-8">
                   <span className="text-tivro-primary font-bold text-sm mb-2 bg-black/20 backdrop-blur-sm px-2 py-1 rounded w-fit">{c.category[lang]}</span>
@@ -237,18 +227,13 @@ export const Home = () => {
              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">
                  {settings?.homeSections?.teamTitle?.[lang] || t('section.team')}
              </h2>
-             <p className="text-slate-500">{settings?.homeSections?.teamSubtitle?.[lang] || (lang === 'ar' ? 'نلتقي بفريقنا من الخبراء' : 'Meet our expert team')}</p>
+             <p className="text-slate-500">{settings?.homeSections?.teamSubtitle?.[lang]}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
              {team.map(t => (
                <div key={t.id} className="text-center group">
                  <div className="w-40 h-40 mx-auto mb-6 rounded-full overflow-hidden border-4 border-slate-50 shadow-lg">
-                   <ImageWithFallback 
-                     src={t.image} 
-                     alt={t.name[lang]} 
-                     fallback={() => <DefaultTeamAvatar size={160} />}
-                     className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
-                   />
+                   <img src={t.image} alt={t.name[lang]} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
                  </div>
                  <h3 className="text-xl font-bold text-slate-900">{t.name[lang]}</h3>
                  <p className="text-tivro-primary font-medium text-sm mb-2">{t.role[lang]}</p>
@@ -270,17 +255,13 @@ export const Home = () => {
            <div className="flex flex-col md:flex-row justify-center gap-6">
              <div className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
                <h4 className="text-xl font-bold mb-4 flex items-center gap-2"><TrendingUp className="text-tivro-primary"/> {lang === 'ar' ? 'حجز استشارة' : 'Consultation'}</h4>
-               {/* Social Links Display - Using Static Links */}
+               {/* Social Links Display - Using Settings */}
                <div className="flex gap-4 mt-4 mb-6">
-                  <a href="#" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition text-white">
-                    <UsersIcon className="w-4 h-4" />
-                  </a>
-                  <a href="#" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition text-white">
-                    <MessageSquare className="w-4 h-4" />
-                  </a>
-                  <a href="#" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition text-white">
-                    <Shield className="w-4 h-4" />
-                  </a>
+                  {settings?.socialLinks?.map((link, idx) => (
+                    <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition text-white">
+                      <IconComponent name={link.platform} className="w-4 h-4" />
+                    </a>
+                  ))}
                </div>
                <form className="space-y-4 w-full md:w-80" onSubmit={handleContactSubmit}>
                  <input 

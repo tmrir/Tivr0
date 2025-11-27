@@ -1,17 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
-import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage } from '../types';
+import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, SiteSettings } from '../types';
 import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type } from 'lucide-react';
 import { SettingsPage } from './Settings';
-import { SortableList } from '../components/SortableList';
+import { SortableList } from '../components/SortableList'; // Import the new component
 
 interface ManagerProps {
   onUpdate: () => void;
 }
 
+/* --- HELPER COMPONENTS --- */
 const LocalizedInput = ({ label, value, onChange }: { label: string, value: LocalizedString, onChange: (v: LocalizedString) => void }) => {
     const { t } = useApp();
     const safeValue = value || { ar: '', en: '' };
@@ -46,6 +48,8 @@ const SidebarLink = ({ icon, label, active, onClick }: any) => (
   </button>
 );
 
+/* --- MANAGERS --- */
+
 const DashboardTab = () => {
   const { t } = useApp();
   const [stats, setStats] = useState({ services: 0, team: 0, cases: 0, packages: 0 });
@@ -71,7 +75,7 @@ const DashboardTab = () => {
         <StatCard title={t('admin.dash.packages')} value={stats.packages.toString()} />
       </div>
       <div className="bg-green-50 border border-green-100 p-4 rounded-lg text-green-800">
-          <strong>System Status:</strong> Connected to Supabase. Drag & Drop Enabled.
+          <strong>System Status:</strong> Settings System V2.0 (Server-Side API) Connected.
       </div>
     </div>
   );
@@ -100,9 +104,10 @@ const ServicesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     if (confirm(t('admin.confirm'))) { await db.services.delete(id); onUpdate(); setServices(services.filter(s => s.id !== id)); }
   };
 
-  const handleReorder = (newItems: Service[]) => {
-      setServices(newItems);
-      db.reorder('services', newItems);
+  const handleReorder = (newServices: Service[]) => {
+      setServices(newServices);
+      // Save new order to DB
+      db.reorder('services', newServices);
   };
 
   const addFeature = () => editing && setEditing({...editing, features: [...(editing.features || []), {ar: '', en: ''}]});
@@ -182,9 +187,9 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.team.save(editing); setSaving(false); setEditing(null); onUpdate(); setTeam(await db.team.getAll()); };
     const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.team.delete(id); onUpdate(); setTeam(team.filter(x=>x.id !== id)); }};
     
-    const handleReorder = (newItems: TeamMember[]) => {
-        setTeam(newItems);
-        db.reorder('team_members', newItems);
+    const handleReorder = (newTeam: TeamMember[]) => {
+        setTeam(newTeam);
+        db.reorder('team_members', newTeam);
     };
 
     return (
@@ -306,7 +311,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const [items, setItems] = useState<CaseStudy[]>([]);
     const [editing, setEditing] = useState<CaseStudy | null>(null);
     const [saving, setSaving] = useState(false);
-    const [sectionSettings, setSectionSettings] = useState<any>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
+    const [sectionSettings, setSectionSettings] = useState<SiteSettings['sectionTexts']>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
     const [settingsSaving, setSettingsSaving] = useState(false);
 
     useEffect(() => { 
@@ -334,7 +339,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
         setSettingsSaving(false);
     };
 
-    // --- Dynamic Stats Logic ---
+    // Dynamic stats logic
     const addStat = () => {
         if (!editing) return;
         const currentStats = editing.stats || [];
@@ -344,9 +349,11 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const updateStat = (idx: number, field: 'value' | 'labelAr' | 'labelEn', val: string) => {
         if(!editing || !editing.stats) return;
         const newStats = [...editing.stats];
+        
         if(field === 'value') newStats[idx].value = val;
         else if(field === 'labelAr') newStats[idx].label = { ...newStats[idx].label, ar: val };
         else if(field === 'labelEn') newStats[idx].label = { ...newStats[idx].label, en: val };
+        
         setEditing({...editing, stats: newStats});
     };
 
@@ -357,7 +364,6 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 
     return (
         <div>
-             {/* Section Texts Editor */}
              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2"><Type size={18}/> {t('admin.section.settings')}</h3>
@@ -378,7 +384,6 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                 <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto animate-fade-in">
                      <h3 className="font-bold text-xl text-slate-800 mb-6 pb-4 border-b">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
                      
-                     {/* Basic Info */}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.client')}</label><input className="w-full border p-2 rounded" value={editing.client} onChange={e=>setEditing({...editing, client:e.target.value})} /></div>
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label><input className="w-full border p-2 rounded" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} /></div>

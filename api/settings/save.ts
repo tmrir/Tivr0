@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../utils/supabaseAdmin';
+import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Ensure content type is JSON for all responses
