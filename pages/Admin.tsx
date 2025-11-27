@@ -4,13 +4,10 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type } from 'lucide-react';
-import { SettingsPage } from './Settings';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Menu, X } from 'lucide-react';
+import SettingsNewPage from './SettingsNew';
 import { SortableList } from '../components/SortableList';
-
-interface ManagerProps {
-  onUpdate: () => void;
-}
+import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
 
 const LocalizedInput = ({ label, value, onChange }: { label: string, value: LocalizedString, onChange: (v: LocalizedString) => void }) => {
     const { t } = useApp();
@@ -578,6 +575,7 @@ export const Admin = () => {
   const [refresh, setRefresh] = useState(0);
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -586,6 +584,11 @@ export const Admin = () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setAuthError(error.message);
     setIsLoggingIn(false);
+  };
+
+  const handleMobileTabClick = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin"/></div>;
@@ -621,6 +624,47 @@ export const Admin = () => {
   return (
     <Layout hideFooter>
       <div className="flex h-[calc(100vh-80px)] bg-slate-50" dir={dir}>
+        {/* Mobile Menu Button */}
+        <div className="md:hidden fixed top-4 right-4 z-50">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="bg-white p-3 rounded-lg shadow-lg border border-slate-200"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setMobileMenuOpen(false)} />
+        )}
+
+        {/* Mobile Menu Sidebar */}
+        <aside className={`md:hidden fixed top-0 right-0 h-full w-64 bg-white border-l border-slate-200 z-50 transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-slate-900">{t('admin.menu.main')}</h3>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <nav className="space-y-1">
+              <SidebarLink icon={<BarChart2 size={20}/>} label={t('admin.tab.dashboard')} active={activeTab === 'dashboard'} onClick={() => handleMobileTabClick('dashboard')} />
+              <SidebarLink icon={<List size={20}/>} label={t('admin.tab.services')} active={activeTab === 'services'} onClick={() => handleMobileTabClick('services')} />
+              <SidebarLink icon={<UsersIcon size={20}/>} label={t('admin.tab.team')} active={activeTab === 'team'} onClick={() => handleMobileTabClick('team')} />
+              <SidebarLink icon={<PackageIcon size={20}/>} label={t('admin.tab.packages')} active={activeTab === 'packages'} onClick={() => handleMobileTabClick('packages')} />
+              <SidebarLink icon={<Briefcase size={20}/>} label={t('admin.tab.work')} active={activeTab === 'work'} onClick={() => handleMobileTabClick('work')} />
+              <SidebarLink icon={<FileText size={20}/>} label={t('admin.tab.blog')} active={activeTab === 'blog'} onClick={() => handleMobileTabClick('blog')} />
+              <SidebarLink icon={<MessageCircle size={20}/>} label={t('admin.tab.messages')} active={activeTab === 'messages'} onClick={() => handleMobileTabClick('messages')} />
+              <SidebarLink icon={<SettingsIcon size={20}/>} label={t('admin.tab.settings')} active={activeTab === 'settings'} onClick={() => handleMobileTabClick('settings')} />
+            </nav>
+          </div>
+        </aside>
+
+        {/* Desktop Sidebar */}
         <aside className="w-64 bg-white border-r border-slate-200 flex-shrink-0 hidden md:block overflow-y-auto">
           <div className="p-6">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{t('admin.menu.main')}</h3>
@@ -636,15 +680,17 @@ export const Admin = () => {
             </nav>
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto p-8">
-          {activeTab === 'dashboard' && <DashboardTab />}
-          {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-          {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-          {activeTab === 'packages' && <PackagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-          {activeTab === 'work' && <CaseStudiesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-          {activeTab === 'blog' && <BlogManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-          {activeTab === 'messages' && <MessagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-          {activeTab === 'settings' && <SettingsPage />}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="pt-12 md:pt-0">
+            {activeTab === 'dashboard' && <DashboardTab />}
+            {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+            {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+            {activeTab === 'packages' && <PackagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+            {activeTab === 'work' && <CaseStudiesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+            {activeTab === 'blog' && <BlogManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+            {activeTab === 'messages' && <MessagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+            {activeTab === 'settings' && <SettingsNewPage />}
+          </div>
         </main>
       </div>
     </Layout>
