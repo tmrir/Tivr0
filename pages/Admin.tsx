@@ -9,6 +9,10 @@ import SettingsNewPage from './SettingsNew';
 import { SortableList } from '../components/SortableList';
 import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
 
+interface ManagerProps {
+  onUpdate: () => void;
+}
+
 const LocalizedInput = ({ label, value, onChange }: { label: string, value: LocalizedString, onChange: (v: LocalizedString) => void }) => {
     const { t } = useApp();
     const safeValue = value || { ar: '', en: '' };
