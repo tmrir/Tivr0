@@ -78,7 +78,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
-        <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
+        <div className="container h-20 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2">
             {settings?.logoUrl ? (
                 <img src={settings.logoUrl} alt="Logo" className="h-10 object-contain" />
@@ -136,7 +136,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       {/* Footer */}
       {!hideFooter && (
         <footer className="bg-tivro-dark text-white pt-16 pb-8">
-          <div className="container mx-auto px-4 md:px-8">
+          <div className="container">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
               <div className="col-span-1 md:col-span-2">
                 <div className="flex items-center gap-2 mb-6">
