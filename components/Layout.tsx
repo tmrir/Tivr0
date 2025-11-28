@@ -179,8 +179,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
               <p>{t('footer.rights')}</p>
               <div className="flex gap-6 mt-4 md:mt-0">
-                <a href="#privacy" className="hover:text-white">{t('nav.privacy')}</a>
-                <a href="#terms" className="hover:text-white">{t('nav.terms')}</a>
+                <a href="#privacy" className="hover:text-white">{settings?.sectionTexts?.privacyLink?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</a>
+                <a href="#terms" className="hover:text-white">{settings?.sectionTexts?.termsLink?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service')}</a>
               </div>
             </div>
           </div>

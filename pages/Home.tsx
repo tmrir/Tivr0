@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Layout } from '../components/Layout';
 import { db } from '../services/db';
-import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Loader2, User } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { Service, CaseStudy, TeamMember, Package, SiteSettings } from '../types';
 
@@ -102,7 +102,7 @@ export const Home = () => {
         <div className="container mx-auto px-4 md:px-8 relative z-10">
           <div className="max-w-3xl">
             <div className="inline-block px-4 py-1 bg-tivro-primary/20 text-tivro-primary rounded-full text-sm font-bold mb-6 border border-tivro-primary/30">
-              {lang === 'ar' ? '🚀 الوكالة الرقمية الأسرع نمواً' : '🚀 Fastest Growing Digital Agency'}
+              {settings?.homeSections?.heroBadge?.[lang] || (lang === 'ar' ? '🚀 الوكالة الرقمية الأسرع نمواً' : '🚀 Fastest Growing Digital Agency')}
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
               {settings?.homeSections?.heroTitle?.[lang] || t('hero.title')}
@@ -248,8 +248,12 @@ export const Home = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
              {team.map(t => (
                <div key={t.id} className="text-center group">
-                 <div className="w-40 h-40 mx-auto mb-6 rounded-full overflow-hidden border-4 border-slate-50 shadow-lg">
-                   <img src={t.image} alt={t.name[lang]} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                 <div className="w-40 h-40 mx-auto mb-6 rounded-full overflow-hidden border-4 border-slate-50 shadow-lg bg-slate-100 flex items-center justify-center">
+                   {t.image ? (
+                     <img src={t.image} alt={t.name[lang]} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                   ) : (
+                     <User className="w-16 h-16 text-slate-400" />
+                   )}
                  </div>
                  <h3 className="text-xl font-bold text-slate-900">{t.name[lang]}</h3>
                  <p className="text-tivro-primary font-medium text-sm mb-2">{t.role[lang]}</p>

@@ -43,11 +43,17 @@ export const defaultSettings: SiteSettings = {
   // نصوص الأقسام
   sectionTexts: {
     workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
-    workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' }
+    workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' },
+    // الروابط القانونية
+    privacyLink: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+    termsLink: { ar: 'شروط الخدمة', en: 'Terms of Service' }
   },
   
   // أقسام الصفحة الرئيسية
   homeSections: {
+    // Hero Badge/Tag (العنوان العلوي فوق العنوان الرئيسي)
+    heroBadge: { ar: '🚀 الوكالة الرقمية الأسرع نمواً', en: '🚀 Fastest Growing Digital Agency' },
+    
     // Hero Section
     heroTitle: { ar: 'نحول أفكارك إلى واقع رقمي', en: 'We Turn Your Ideas into Digital Reality' },
     heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة تقدم حلولاً مبتكرة لنمو عملك', en: 'A full-service digital marketing agency offering innovative solutions for your business growth' },

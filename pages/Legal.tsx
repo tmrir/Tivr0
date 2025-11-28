@@ -24,7 +24,9 @@ export const Legal: React.FC<LegalPageProps> = ({ type }) => {
 
     if (loading) return <Layout><div className="flex justify-center p-20"><Loader2 className="animate-spin"/></div></Layout>;
 
-    const title = type === 'privacy' ? t('nav.privacy') : t('nav.terms');
+    const title = type === 'privacy' 
+        ? (settings?.sectionTexts?.privacyLink?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'))
+        : (settings?.sectionTexts?.termsLink?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service'));
     const content = type === 'privacy' ? settings?.privacyPolicy?.[lang] : settings?.termsOfService?.[lang];
 
     return (

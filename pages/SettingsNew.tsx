@@ -233,11 +233,25 @@ export const SettingsNewPage: React.FC = () => {
                                 </h4>
                             </div>
                             <div className="p-4 space-y-3">
+                                <LocalizedInput label="الشارة العلوية (Hero Badge)" value={safeSettings.homeSections.heroBadge} onChange={v => updateNestedField('homeSections', 'heroBadge', v)} />
                                 <LocalizedInput label="العنوان الرئيسي" value={safeSettings.homeSections.heroTitle} onChange={v => updateNestedField('homeSections', 'heroTitle', v)} />
                                 <LocalizedInput label="العنوان الفرعي" value={safeSettings.homeSections.heroSubtitle} onChange={v => updateNestedField('homeSections', 'heroSubtitle', v)} />
                                 <LocalizedInput label="عنوان الأعمال" value={safeSettings.homeSections.servicesTitle} onChange={v => updateNestedField('homeSections', 'servicesTitle', v)} />
                                 <LocalizedInput label="وصف الأعمال" value={safeSettings.homeSections.servicesSubtitle} onChange={v => updateNestedField('homeSections', 'servicesSubtitle', v)} />
                                 <LocalizedInput label="زر البدء" value={safeSettings.homeSections.teamTitle} onChange={v => updateNestedField('homeSections', 'teamTitle', v)} />
+                            </div>
+                        </div>
+
+                        {/* Legal Links Section */}
+                        <div className="border border-slate-200 rounded-lg overflow-hidden">
+                            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3">
+                                <h4 className="font-bold flex items-center gap-2">
+                                    ⚖️ الروابط القانونية (Legal Links)
+                                </h4>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                <LocalizedInput label="رابط سياسة الخصوصية" value={safeSettings.sectionTexts.privacyLink} onChange={v => updateNestedField('sectionTexts', 'privacyLink', v)} />
+                                <LocalizedInput label="رابط شروط الخدمة" value={safeSettings.sectionTexts.termsLink} onChange={v => updateNestedField('sectionTexts', 'termsLink', v)} />
                             </div>
                         </div>
 
