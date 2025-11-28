@@ -131,17 +131,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = savedLang;
 
-    // Add timeout to prevent infinite loading
+    // Add timeout to prevent infinite loading - reduced to 2 seconds
     const loadingTimeout = setTimeout(() => {
+      console.log('⏰ Loading timeout reached, forcing loading to false');
       setLoading(false);
-    }, 3000);
+    }, 2000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(loadingTimeout);
+      console.log('🔐 Auth session retrieved:', !!session);
       setIsAdmin(!!session);
       setLoading(false);
     }).catch((error) => {
-      console.error('Auth session error:', error);
+      console.error('❌ Auth session error:', error);
       clearTimeout(loadingTimeout);
       setLoading(false);
     });
@@ -149,6 +151,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('🔄 Auth state changed:', !!session);
       setIsAdmin(!!session);
     });
 
