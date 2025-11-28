@@ -75,6 +75,14 @@ export interface BannerSettings {
     bgImage?: string;
 }
 
+export interface FontSizeSettings {
+    heroTitle: string;
+    heroSubtitle: string;
+    servicesTitle: string;
+    servicesSubtitle: string;
+    teamTitle: string;
+}
+
 export interface HomeSectionsSettings {
     heroTitle: LocalizedString;
     heroSubtitle: LocalizedString;
@@ -112,6 +120,9 @@ export interface SiteSettings {
   
   // CMS - Home Page General Content
   homeSections: HomeSectionsSettings;
+
+  // CMS - Font Sizes
+  fontSizes: FontSizeSettings;
 
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
   privacyPolicy: LocalizedString; 

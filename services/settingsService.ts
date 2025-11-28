@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../utils/supabase-admin';
-import { supabase } from '../supabase';
+import { supabase } from '../services/supabase';
 import { SiteSettings, FontSizeSettings } from '../types';
 
 // Service متخصص للإعدادات فقط
