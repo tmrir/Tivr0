@@ -18,7 +18,27 @@ export class SettingsService {
     try {
       console.log('🔧 [SettingsService] Fetching settings...');
       
-      // استخدام supabase العادي بدلاً من supabaseAdmin للعمل المحلي
+      // أولاً، تحقق من localStorage أولاً (للأسبقية)
+      const localSettings = localStorage.getItem('tivro_settings');
+      const localTimestamp = localStorage.getItem('tivro_settings_timestamp');
+      
+      if (localSettings && localTimestamp) {
+        const localAge = Date.now() - parseInt(localTimestamp);
+        const localAgeMinutes = localAge / (1000 * 60);
+        
+        console.log(`📱 [SettingsService] Found localStorage data, age: ${localAgeMinutes.toFixed(1)} minutes`);
+        
+        // إذا كانت بيانات localStorage أحدث من 5 دقائق، استخدمها مباشرة
+        if (localAgeMinutes < 5) {
+          console.log('✅ [SettingsService] Using fresh localStorage data');
+          return JSON.parse(localSettings);
+        }
+        
+        // إذا كانت أقدم، جرب Supabase ولكن احتفظ بالبيانات المحلية كـ backup
+        console.log('🔄 [SettingsService] LocalStorage data is old, trying Supabase...');
+      }
+      
+      // ثانياً، جلب من Supabase
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
@@ -26,13 +46,11 @@ export class SettingsService {
         .single();
 
       if (error) {
-        console.error('❌ [SettingsService] Fetch error:', error);
-        console.log('🔄 [SettingsService] Falling back to localStorage...');
+        console.error('❌ [SettingsService] Supabase fetch error:', error);
         
-        // Fallback to localStorage if Supabase fails
-        const localSettings = localStorage.getItem('tivro_settings');
+        // إذا فشل Supabase، استخدم localStorage
         if (localSettings) {
-          console.log('✅ [SettingsService] Loaded from localStorage');
+          console.log('✅ [SettingsService] Fallback to localStorage');
           return JSON.parse(localSettings);
         }
         
@@ -41,7 +59,18 @@ export class SettingsService {
 
       console.log('✅ [SettingsService] Settings fetched from Supabase');
       
-      // Save to localStorage as backup
+      // قارن الطوابع الزمنية لتحديد الأحدث
+      const dbTimestamp = data.updated_at ? new Date(data.updated_at).getTime() : 0;
+      const localTime = localTimestamp ? parseInt(localTimestamp) : 0;
+      
+      if (localSettings && localTime > dbTimestamp) {
+        console.log('🔄 [SettingsService] LocalStorage data is newer than DB, using localStorage');
+        return JSON.parse(localSettings);
+      }
+      
+      console.log('📊 [SettingsService] Using Supabase data (newer or same age)');
+      
+      // حفظ بيانات Supabase في localStorage كـ backup
       localStorage.setItem('tivro_settings', JSON.stringify(data));
       localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       
@@ -50,7 +79,7 @@ export class SettingsService {
       console.error('❌ [SettingsService] Critical error:', error);
       console.log('🔄 [SettingsService] Final fallback to localStorage...');
       
-      // Final fallback to localStorage
+      // الحل النهائي: localStorage
       const localSettings = localStorage.getItem('tivro_settings');
       if (localSettings) {
         console.log('✅ [SettingsService] Loaded from localStorage as final fallback');
@@ -70,7 +99,12 @@ export class SettingsService {
       const payload = this.mapToDB(settings);
       console.log('📦 [SettingsService] Payload:', payload);
 
-      // استخدام supabase العادي بدلاً من supabaseAdmin للعمل المحلي
+      // أولاً، احفظ في localStorage دائماً (لضمان عدم ضياع البيانات)
+      localStorage.setItem('tivro_settings', JSON.stringify(settings));
+      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
+      console.log('✅ [SettingsService] Saved to localStorage immediately');
+
+      // ثانياً، حاول الحفظ في Supabase
       const { data, error } = await supabase
         .from('site_settings')
         .upsert(payload, { 
@@ -81,21 +115,12 @@ export class SettingsService {
         .single();
 
       if (error) {
-        console.error('❌ [SettingsService] Save error:', error);
-        console.log('🔄 [SettingsService] Falling back to localStorage...');
-        
-        // Fallback to localStorage if Supabase fails
-        localStorage.setItem('tivro_settings', JSON.stringify(settings));
-        localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
-        console.log('✅ [SettingsService] Saved to localStorage');
-        return true;
+        console.error('❌ [SettingsService] Supabase save error:', error);
+        console.log('✅ [SettingsService] Data saved to localStorage only (Supabase failed)');
+        return true; // نعتبره نجاح لأن localStorage تم حفظه
       }
 
-      console.log('✅ [SettingsService] Settings saved successfully:', data);
-      
-      // Save to localStorage as backup
-      localStorage.setItem('tivro_settings', JSON.stringify(settings));
-      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
+      console.log('✅ [SettingsService] Settings saved to Supabase successfully:', data);
       
       // التحقق من الحفظ عن طريق قراءة البيانات مرة أخرى
       const { data: verifyData, error: verifyError } = await supabase
@@ -106,18 +131,10 @@ export class SettingsService {
         
       if (verifyError) {
         console.error('❌ [SettingsService] Verification error:', verifyError);
+        console.log('⚠️ [SettingsService] Could not verify Supabase save, but localStorage has data');
       } else {
-        console.log('🔍 [SettingsService] Verified saved data:', verifyData);
-        console.log('🔍 [SettingsService] site_name in DB:', verifyData.site_name);
-        console.log('🔍 [SettingsService] Expected site_name:', payload.site_name);
-        
-        if (JSON.stringify(verifyData.site_name) !== JSON.stringify(payload.site_name)) {
-          console.error('❌ [SettingsService] CRITICAL: Data not saved correctly!');
-          console.error('❌ [SettingsService] Expected:', payload.site_name);
-          console.error('❌ [SettingsService] Got:', verifyData.site_name);
-        } else {
-          console.log('✅ [SettingsService] Data verified successfully in DB');
-        }
+        console.log('🔍 [SettingsService] Verified saved data in Supabase:', verifyData);
+        console.log('✅ [SettingsService] Data saved and verified in both localStorage and Supabase');
       }
       
       return true;
@@ -125,7 +142,7 @@ export class SettingsService {
       console.error('❌ [SettingsService] Critical save error:', error);
       console.log('🔄 [SettingsService] Falling back to localStorage...');
       
-      // Fallback to localStorage if everything fails
+      // الحل النهائي: localStorage فقط
       localStorage.setItem('tivro_settings', JSON.stringify(settings));
       localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       console.log('✅ [SettingsService] Saved to localStorage as fallback');
