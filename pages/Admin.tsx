@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { SettingsProvider } from '../context/SettingsContext';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
@@ -662,7 +663,11 @@ export const Admin = () => {
           {activeTab === 'work' && <CaseStudiesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'blog' && <BlogManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'messages' && <MessagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-          {activeTab === 'settings' && <SettingsNewPage />}
+          {activeTab === 'settings' && (
+            <SettingsProvider>
+              <SettingsNewPage />
+            </SettingsProvider>
+          )}
         </main>
       </div>
     </Layout>
