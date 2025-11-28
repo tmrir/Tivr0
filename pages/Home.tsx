@@ -34,13 +34,29 @@ export const Home = () => {
             setTeam(tData);
             setPackages(p);
             setSettings(set);
+            console.log('✅ [Home] Data loaded successfully:', { settings: set });
         } catch (e) {
             console.error("Home Data Load Error", e);
         } finally {
             setLoading(false);
         }
     };
+
+    // تحميل البيانات عند تحميل المكون
     loadData();
+
+    // الاستماع لتحديثات الإعدادات من لوحة التحكم
+    const handleSettingsUpdate = (event: CustomEvent) => {
+        console.log('🔄 [Home] Settings updated event received:', event.detail);
+        setSettings(event.detail);
+    };
+
+    window.addEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
+
+    // تنظيف event listener عند unmount
+    return () => {
+        window.removeEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
+    };
   }, []);
 
   const handleContactSubmit = async (e: React.FormEvent) => {

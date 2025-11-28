@@ -62,9 +62,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     }
   }, []);
 
-  const saveSettings = useCallback(async () => {
-    if (!hasUnsavedChanges) return true;
-
+  const saveSettings = useCallback(async (): Promise<boolean> => {
     setSaving(true);
     setError(null);
     try {
