@@ -309,6 +309,25 @@ export const Home = () => {
            </div>
          </div>
       </section>
+
+      {/* Legal Sections - Hidden anchor targets for smooth scrolling */}
+      <section id="privacy" className="sr-only">
+        <div className="container mx-auto px-4 py-16">
+          <h1 className="text-4xl font-bold text-slate-900 mb-8">{settings?.sectionTexts?.privacyLink?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</h1>
+          <div className="prose prose-lg max-w-none text-slate-700 whitespace-pre-wrap">
+            {settings?.privacyPolicy?.[lang] || (lang === 'ar' ? 'لا يوجد محتوى حالياً.' : 'No content available.')}
+          </div>
+        </div>
+      </section>
+
+      <section id="terms" className="sr-only">
+        <div className="container mx-auto px-4 py-16">
+          <h1 className="text-4xl font-bold text-slate-900 mb-8">{settings?.sectionTexts?.termsLink?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service')}</h1>
+          <div className="prose prose-lg max-w-none text-slate-700 whitespace-pre-wrap">
+            {settings?.termsOfService?.[lang] || (lang === 'ar' ? 'لا يوجد محتوى حالياً.' : 'No content available.')}
+          </div>
+        </div>
+      </section>
     </Layout>
   );
 };

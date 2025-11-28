@@ -53,7 +53,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   };
 
   const NavLink = ({ href, label }: { href: string; label: string }) => (
-    <a href={href} className="text-slate-600 hover:text-tivro-primary font-medium transition-colors duration-200 text-sm md:text-base" onClick={() => setIsMenuOpen(false)}>{label}</a>
+    <a href={href} className="text-slate-600 hover:text-tivro-primary font-medium transition-colors duration-200 text-sm md:text-base" onClick={(e) => {
+      if (href.startsWith('#')) {
+        e.preventDefault();
+        const targetId = href.substring(1);
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        setIsMenuOpen(false);
+      }
+    }}>{label}</a>
   );
 
   const IconComponent = ({ name }: { name: string }) => {
@@ -179,8 +189,20 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
               <p>{t('footer.rights')}</p>
               <div className="flex gap-6 mt-4 md:mt-0">
-                <a href="#privacy" className="hover:text-white">{settings?.sectionTexts?.privacyLink?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</a>
-                <a href="#terms" className="hover:text-white">{settings?.sectionTexts?.termsLink?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service')}</a>
+                <a href="#privacy" className="hover:text-white" onClick={(e) => {
+                  e.preventDefault();
+                  const targetElement = document.getElementById('privacy');
+                  if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}>{settings?.sectionTexts?.privacyLink?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</a>
+                <a href="#terms" className="hover:text-white" onClick={(e) => {
+                  e.preventDefault();
+                  const targetElement = document.getElementById('terms');
+                  if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}>{settings?.sectionTexts?.termsLink?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service')}</a>
               </div>
             </div>
           </div>

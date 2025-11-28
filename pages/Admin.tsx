@@ -184,9 +184,18 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.team.save(editing); setSaving(false); setEditing(null); onUpdate(); setTeam(await db.team.getAll()); };
     const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.team.delete(id); onUpdate(); setTeam(team.filter(x=>x.id !== id)); }};
     
-    const handleReorder = (newItems: TeamMember[]) => {
+    const handleReorder = async (newItems: TeamMember[]) => {
         setTeam(newItems);
-        db.reorder('team_members', newItems);
+        // حفظ الترتيب الجديد في قاعدة البيانات
+        try {
+            await db.reorder('team_members', newItems);
+            console.log('✅ Team order saved successfully');
+        } catch (error) {
+            console.error('❌ Failed to save team order:', error);
+            // إعادة الترتيب القديم في حالة الفشل
+            const originalTeam = await db.team.getAll();
+            setTeam(originalTeam);
+        }
     };
 
     return (
