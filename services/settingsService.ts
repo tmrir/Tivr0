@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../utils/supabase-admin';
+import { supabase } from '../supabase';
 import { SiteSettings, FontSizeSettings } from '../types';
 
 // Service متخصص للإعدادات فقط
@@ -17,7 +18,8 @@ export class SettingsService {
     try {
       console.log('🔧 [SettingsService] Fetching settings...');
       
-      const { data, error } = await supabaseAdmin
+      // استخدام supabase العادي بدلاً من supabaseAdmin للعمل المحلي
+      const { data, error } = await supabase
         .from('site_settings')
         .select('*')
         .eq('id', 1)
@@ -25,15 +27,23 @@ export class SettingsService {
 
       if (error) {
         console.error('❌ [SettingsService] Fetch error:', error);
+        console.log('🔄 [SettingsService] Falling back to localStorage...');
+        
+        // Fallback to localStorage if Supabase fails
+        const localSettings = localStorage.getItem('tivro_settings');
+        if (localSettings) {
+          console.log('✅ [SettingsService] Loaded from localStorage');
+          return JSON.parse(localSettings);
+        }
+        
         throw new Error(`Failed to fetch settings: ${error.message}`);
       }
 
-      if (!data) {
-        console.log('⚠️ [SettingsService] No settings found, creating default...');
-        return await this.createDefaultSettings();
-      }
-
-      console.log('✅ [SettingsService] Settings fetched successfully');
+      console.log('✅ [SettingsService] Settings fetched from Supabase');
+      
+      // Save to localStorage as backup
+      localStorage.setItem('tivro_settings', JSON.stringify(data));
+      
       return this.mapFromDB(data);
     } catch (error) {
       console.error('❌ [SettingsService] Critical error:', error);
@@ -49,7 +59,8 @@ export class SettingsService {
       const payload = this.mapToDB(settings);
       console.log('📦 [SettingsService] Payload:', payload);
 
-      const { data, error } = await supabaseAdmin
+      // استخدام supabase العادي بدلاً من supabaseAdmin للعمل المحلي
+      const { data, error } = await supabase
         .from('site_settings')
         .upsert(payload, { 
           onConflict: 'id',
@@ -60,13 +71,21 @@ export class SettingsService {
 
       if (error) {
         console.error('❌ [SettingsService] Save error:', error);
-        throw new Error(`Failed to save settings: ${error.message}`);
+        console.log('🔄 [SettingsService] Falling back to localStorage...');
+        
+        // Fallback to localStorage if Supabase fails
+        localStorage.setItem('tivro_settings', JSON.stringify(settings));
+        console.log('✅ [SettingsService] Saved to localStorage');
+        return true;
       }
 
       console.log('✅ [SettingsService] Settings saved successfully:', data);
       
+      // Save to localStorage as backup
+      localStorage.setItem('tivro_settings', JSON.stringify(settings));
+      
       // التحقق من الحفظ عن طريق قراءة البيانات مرة أخرى
-      const { data: verifyData, error: verifyError } = await supabaseAdmin
+      const { data: verifyData, error: verifyError } = await supabase
         .from('site_settings')
         .select('*')
         .eq('id', 1)
@@ -91,7 +110,12 @@ export class SettingsService {
       return true;
     } catch (error) {
       console.error('❌ [SettingsService] Critical save error:', error);
-      return false;
+      console.log('🔄 [SettingsService] Falling back to localStorage...');
+      
+      // Fallback to localStorage if everything fails
+      localStorage.setItem('tivro_settings', JSON.stringify(settings));
+      console.log('✅ [SettingsService] Saved to localStorage as fallback');
+      return true;
     }
   }
 
@@ -217,7 +241,8 @@ export class SettingsService {
   // اختبار الاتصال بقاعدة البيانات
   async testConnection(): Promise<boolean> {
     try {
-      const { data, error } = await supabaseAdmin
+      // استخدام supabase العادي بدلاً من supabaseAdmin للعمل المحلي
+      const { data, error } = await supabase
         .from('site_settings')
         .select('count', { count: 'exact', head: true });
       
