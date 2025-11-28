@@ -49,6 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       bottom_banner: body.bottom_banner || {},
       section_texts: body.section_texts || {},
       home_sections: body.home_sections || {},
+      font_sizes: body.font_sizes || {},
       privacy_policy: body.privacy_policy || {},
       terms_of_service: body.terms_of_service || {},
 
