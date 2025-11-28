@@ -31,7 +31,27 @@ export const Home = () => {
             ]);
             setServices(s);
             setCases(c);
-            setTeam(tData);
+            
+            // تطبيق ترتيب الفريق المحفوظ في LocalStorage
+            const savedOrder = localStorage.getItem('tivro_team_order');
+            if (savedOrder) {
+                try {
+                    const orderedIds = JSON.parse(savedOrder);
+                    // ترتيب الفريق حسب الترتيب المحفوظ
+                    const orderedTeam = orderedIds.map((id: string) => 
+                        tData.find(member => member.id === id)
+                    ).filter(Boolean);
+                    // إضافة الأعضاء الجديد غير المرتبين في النهاية
+                    const newMembers = tData.filter(member => !orderedIds.includes(member.id));
+                    setTeam([...orderedTeam, ...newMembers]);
+                } catch (error) {
+                    console.error('Failed to load saved team order in Home:', error);
+                    setTeam(tData);
+                }
+            } else {
+                setTeam(tData);
+            }
+            
             setPackages(p);
             setSettings(set);
             console.log('✅ [Home] Data loaded successfully:', { settings: set });

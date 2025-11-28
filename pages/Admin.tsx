@@ -180,21 +180,50 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const [team, setTeam] = useState<TeamMember[]>([]);
     const [editing, setEditing] = useState<TeamMember | null>(null);
     const [saving, setSaving] = useState(false);
-    useEffect(() => { db.team.getAll().then(setTeam); }, []);
+    
+    useEffect(() => {
+        const loadTeam = async () => {
+            // محاولة تحميل الترتيب المحفوظ من LocalStorage أولاً
+            const savedOrder = localStorage.getItem('tivro_team_order');
+            if (savedOrder) {
+                try {
+                    const orderedIds = JSON.parse(savedOrder);
+                    const allTeam = await db.team.getAll();
+                    // ترتيب الفريق حسب الترتيب المحفوظ
+                    const orderedTeam = orderedIds.map((id: string) => 
+                        allTeam.find(member => member.id === id)
+                    ).filter(Boolean) as TeamMember[];
+                    // إضافة الأعضاء الجديد غير المرتبين في النهاية
+                    const newMembers = allTeam.filter(member => !orderedIds.includes(member.id));
+                    setTeam([...orderedTeam, ...newMembers]);
+                } catch (error) {
+                    console.error('Failed to load saved team order:', error);
+                    // في حالة الخطأ، تحميل الترتيب الافتراضي
+                    db.team.getAll().then(setTeam);
+                }
+            } else {
+                db.team.getAll().then(setTeam);
+            }
+        };
+        loadTeam();
+    }, []);
+    
     const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.team.save(editing); setSaving(false); setEditing(null); onUpdate(); setTeam(await db.team.getAll()); };
     const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.team.delete(id); onUpdate(); setTeam(team.filter(x=>x.id !== id)); }};
     
     const handleReorder = async (newItems: TeamMember[]) => {
         setTeam(newItems);
-        // حفظ الترتيب الجديد في قاعدة البيانات
+        // حفظ الترتيب الجديد في LocalStorage فوراً
+        const newOrder = newItems.map(item => item.id);
+        localStorage.setItem('tivro_team_order', JSON.stringify(newOrder));
+        
+        // حفظ الترتيب الجديد في قاعدة البيانات أيضاً
         try {
             await db.reorder('team_members', newItems);
-            console.log('✅ Team order saved successfully');
+            console.log('✅ Team order saved successfully to both LocalStorage and Database');
         } catch (error) {
-            console.error('❌ Failed to save team order:', error);
-            // إعادة الترتيب القديم في حالة الفشل
-            const originalTeam = await db.team.getAll();
-            setTeam(originalTeam);
+            console.error('❌ Failed to save team order to database:', error);
+            // الترتيب محفوظ في LocalStorage على الأقل
         }
     };
 

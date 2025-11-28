@@ -95,7 +95,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             ) : (
                 <div className="w-10 h-10 bg-tivro-dark rounded-lg flex items-center justify-center text-white font-bold text-xl">T</div>
             )}
-            <span className="text-2xl font-bold text-tivro-dark tracking-tight">{settings?.siteName?.[lang] || 'Tivro'}</span>
+            <div className="flex flex-col items-start">
+              <span className="text-2xl font-bold text-tivro-dark tracking-tight leading-tight">{settings?.siteName?.[lang] || 'Tivro'}</span>
+              <span className="text-xs text-slate-500 font-medium leading-none">لخدمات الأعمال</span>
+            </div>
           </a>
 
           <nav className="hidden md:flex items-center gap-8">
