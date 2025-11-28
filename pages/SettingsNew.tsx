@@ -41,12 +41,16 @@ export const SettingsNewPage: React.FC = () => {
   const { settings, loading, saving, error, saveSettings, testConnection, updateField, updateNestedField, fetchSettings } = useSettingsNew();
   const [activeTab, setActiveTab] = useState<'general' | 'logos' | 'home_content' | 'legal' | 'db'>('general');
   const [msg, setMsg] = useState<{type:'success'|'error', text:string} | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  // تحميل الإعدادات عند تحميل الصفحة
+  // تحميل الإعدادات مرة واحدة فقط عند تحميل الصفحة
   useEffect(() => {
-    console.log('🔧 [SettingsNewPage] Component mounted, fetching settings...');
-    fetchSettings();
-  }, [fetchSettings]);
+    if (!hasLoaded) {
+      console.log('🔧 [SettingsNewPage] Component mounted, fetching settings...');
+      fetchSettings();
+      setHasLoaded(true);
+    }
+  }, [hasLoaded]);
 
   const onSave = async () => {
       console.log('🔧 [SettingsNewPage] onSave called');

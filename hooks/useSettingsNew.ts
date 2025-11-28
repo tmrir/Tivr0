@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSettingsContext } from '../context/SettingsContext';
 import { SiteSettings } from '../types';
 
@@ -17,7 +17,7 @@ export function useSettingsNew() {
   } = useSettingsContext();
 
   // تحديث حقل متداخل
-  const updateNestedField = (parent: keyof SiteSettings, field: string, value: any) => {
+  const updateNestedField = useCallback((parent: keyof SiteSettings, field: string, value: any) => {
     const newSettings = {
       ...settings,
       [parent]: {
@@ -26,7 +26,7 @@ export function useSettingsNew() {
       }
     };
     updateSettings(newSettings);
-  };
+  }, [settings, updateSettings]);
 
   return {
     settings,

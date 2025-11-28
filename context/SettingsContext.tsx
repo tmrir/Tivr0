@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { SiteSettings } from '../types';
 import { settingsService } from '../services/settingsService';
-import { SiteSettings, FontSizeSettings } from '../types';
 
 interface SettingsContextType {
   settings: SiteSettings;
@@ -84,7 +84,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     fetchSettings();
   }, []);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -100,9 +100,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const saveSettings = async () => {
+  const saveSettings = useCallback(async () => {
     if (!hasUnsavedChanges) return true;
 
     setSaving(true);
@@ -132,29 +132,29 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     } finally {
       setSaving(false);
     }
-  };
+  }, [hasUnsavedChanges, settings]);
 
-  const updateSettings = (newSettings: Partial<SiteSettings>) => {
+  const updateSettings = useCallback((newSettings: Partial<SiteSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettings(updatedSettings);
     setHasUnsavedChanges(JSON.stringify(updatedSettings) !== JSON.stringify(originalSettings));
-  };
+  }, [settings, originalSettings]);
 
-  const updateField = (field: keyof SiteSettings, value: any) => {
+  const updateField = useCallback((field: keyof SiteSettings, value: any) => {
     const updatedSettings = { ...settings, [field]: value };
     setSettings(updatedSettings);
     setHasUnsavedChanges(JSON.stringify(updatedSettings) !== JSON.stringify(originalSettings));
-  };
+  }, [settings, originalSettings]);
 
-  const resetChanges = () => {
+  const resetChanges = useCallback(() => {
     setSettings(originalSettings);
     setHasUnsavedChanges(false);
     setError(null);
-  };
+  }, [originalSettings]);
 
-  const refreshSettings = async () => {
+  const refreshSettings = useCallback(async () => {
     await fetchSettings();
-  };
+  }, [fetchSettings]);
 
   // الاستماع لتحديثات الإعدادات من مكونات أخرى
   useEffect(() => {
