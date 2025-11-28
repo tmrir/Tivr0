@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { SiteSettings } from '../types';
 import { settingsService } from '../services/settingsService';
+import { defaultSettings } from '../defaultSettings';
 
 interface SettingsContextType {
   settings: SiteSettings;
@@ -30,59 +31,18 @@ interface SettingsProviderProps {
 }
 
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
-  const defaultSettings: SiteSettings = {
-    siteName: { ar: 'تيفرو', en: 'Tivro' },
-    contactEmail: 'info@tivro.sa',
-    contactPhone: '+966 50 000 0000',
-    address: { ar: 'الرياض', en: 'Riyadh' },
-    socialLinks: [
-      { platform: 'Twitter', url: '#' },
-      { platform: 'Linkedin', url: '#' },
-      { platform: 'Instagram', url: '#' }
-    ],
-    logoUrl: '',
-    iconUrl: '',
-    footerLogoUrl: '',
-    faviconUrl: '',
-    sectionTexts: {
-      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
-      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' }
-    },
-    homeSections: {
-      heroTitle: { ar: 'نحول أفكارك إلى واقع رقمي', en: 'We Turn Your Ideas into Digital Reality' },
-      heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة تقدم حلولاً مبتكرة لنمو عملك', en: 'A full-service digital marketing agency offering innovative solutions for your business growth' },
-      servicesTitle: { ar: 'خدماتنا', en: 'Our Services' },
-      servicesSubtitle: { ar: 'نقدم حلولاً رقمية متكاملة تنمو مع عملك', en: 'We provide integrated digital solutions that grow with your business' },
-      teamTitle: { ar: 'فريقنا', en: 'Our Team' },
-      teamSubtitle: { ar: 'نلتقي بفريقنا من الخبراء', en: 'Meet our expert team' },
-      packagesTitle: { ar: 'باقاتنا', en: 'Our Packages' },
-      contactTitle: { ar: 'تواصل معنا', en: 'Contact Us' },
-      contactSubtitle: { ar: 'جاهز لنقل مشروعك للمستوى التالي؟', en: 'Ready to take your business to the next level?' }
-    },
-    fontSizes: {
-      heroTitle: 'text-4xl',
-      heroSubtitle: 'text-xl',
-      servicesTitle: 'text-3xl',
-      servicesSubtitle: 'text-lg',
-      teamTitle: 'text-2xl'
-    },
-    topBanner: { enabled: false, title: { ar: '', en: '' } },
-    bottomBanner: { enabled: false, title: { ar: '', en: '' } },
-    privacyPolicy: { ar: '', en: '' },
-    termsOfService: { ar: '', en: '' }
-  };
-
+  // استخدام defaultSettings كحالة أولية موحدة
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [originalSettings, setOriginalSettings] = useState<SiteSettings>(settings);
+  const [originalSettings, setOriginalSettings] = useState<SiteSettings>(defaultSettings);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // جلب الإعدادات عند تحميل المكون
+  // جلب الإعدادات عند تحميل المكون (مرة واحدة فقط)
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, []); // مصفوفة اعتماد فارغة لمنع التكرار
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);

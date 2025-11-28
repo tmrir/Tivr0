@@ -52,9 +52,48 @@ export const SettingsNewPage: React.FC = () => {
     }
   }, [hasLoaded]);
 
+  // إضافة fallback لجميع الحقول لمنع الأخطاء
+  const safeSettings = {
+    siteName: settings?.siteName || { ar: 'تيفرو', en: 'Tivro' },
+    contactEmail: settings?.contactEmail || 'info@tivro.sa',
+    contactPhone: settings?.contactPhone || '+966 50 2026 151',
+    address: settings?.address || { ar: 'الرياض', en: 'Riyadh' },
+    socialLinks: Array.isArray(settings?.socialLinks) ? settings.socialLinks : [],
+    logoUrl: settings?.logoUrl || '',
+    iconUrl: settings?.iconUrl || '',
+    footerLogoUrl: settings?.footerLogoUrl || '',
+    faviconUrl: settings?.faviconUrl || '',
+    topBanner: settings?.topBanner || { enabled: false, title: { ar: '', en: '' } },
+    bottomBanner: settings?.bottomBanner || { enabled: false, title: { ar: '', en: '' } },
+    sectionTexts: settings?.sectionTexts || {
+      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
+      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' }
+    },
+    homeSections: settings?.homeSections || {
+      heroTitle: { ar: 'نحول أفكارك إلى واقع رقمي', en: 'We Turn Your Ideas into Digital Reality' },
+      heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة', en: 'A full-service digital marketing agency' },
+      servicesTitle: { ar: 'خدماتنا', en: 'Our Services' },
+      servicesSubtitle: { ar: 'حلولاً رقمية متكاملة', en: 'Integrated digital solutions' },
+      teamTitle: { ar: 'فريقنا', en: 'Our Team' },
+      teamSubtitle: { ar: 'فريق من الخبراء', en: 'Expert team' },
+      packagesTitle: { ar: 'باقاتنا', en: 'Our Packages' },
+      contactTitle: { ar: 'تواصل معنا', en: 'Contact Us' },
+      contactSubtitle: { ar: 'تواصل معنا', en: 'Contact Us' }
+    },
+    fontSizes: settings?.fontSizes || {
+      heroTitle: 'text-4xl',
+      heroSubtitle: 'text-xl',
+      servicesTitle: 'text-3xl',
+      servicesSubtitle: 'text-lg',
+      teamTitle: 'text-2xl'
+    },
+    privacyPolicy: settings?.privacyPolicy || { ar: '', en: '' },
+    termsOfService: settings?.termsOfService || { ar: '', en: '' }
+  };
+
   const onSave = async () => {
       console.log('🔧 [SettingsNewPage] onSave called');
-      const success = await saveSettings(settings);
+      const success = await saveSettings(safeSettings);
       if (success) {
           console.log('✅ [SettingsNewPage] Save successful');
           setMsg({type: 'success', text: t('admin.settings.saved')});
@@ -111,39 +150,39 @@ export const SettingsNewPage: React.FC = () => {
                 {activeTab === 'general' && (
                     <div className="space-y-6 animate-fade-in">
                         <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.general')}</h3>
-                        <LocalizedInput label="Site Name" value={settings.siteName} onChange={v => updateField('siteName', v)} />
+                        <LocalizedInput label="Site Name" value={safeSettings.siteName} onChange={v => updateField('siteName', v)} />
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-bold mb-1">{t('admin.set.email')}</label>
-                                <input className="w-full border p-2 rounded" value={settings.contactEmail || ''} onChange={e => updateField('contactEmail', e.target.value)} />
+                                <input className="w-full border p-2 rounded" value={safeSettings.contactEmail || ''} onChange={e => updateField('contactEmail', e.target.value)} />
                             </div>
                             <div>
                                 <label className="block text-sm font-bold mb-1">{t('admin.set.phone')}</label>
-                                <input className="w-full border p-2 rounded" value={settings.contactPhone || ''} onChange={e => updateField('contactPhone', e.target.value)} />
+                                <input className="w-full border p-2 rounded" value={safeSettings.contactPhone || ''} onChange={e => updateField('contactPhone', e.target.value)} />
                             </div>
                         </div>
-                        <LocalizedInput label="Address" value={settings.address} onChange={v => updateField('address', v)} />
+                        <LocalizedInput label="Address" value={safeSettings.address} onChange={v => updateField('address', v)} />
 
                         <div className="pt-4 border-t">
                             <div className="flex justify-between items-center mb-2">
                                 <h4 className="font-bold">{t('admin.settings.social')}</h4>
-                                <button onClick={() => updateField('socialLinks', [...settings.socialLinks, {platform: 'Twitter', url: ''}])} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">+ Add</button>
+                                <button onClick={() => updateField('socialLinks', [...safeSettings.socialLinks, {platform: 'Twitter', url: ''}])} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">+ Add</button>
                             </div>
-                            {settings.socialLinks.map((link, i) => (
+                            {safeSettings.socialLinks.map((link, i) => (
                                 <div key={i} className="flex gap-2 mb-2">
                                     <input className="w-1/3 border p-2 rounded text-sm" value={link.platform} onChange={e => { 
-                                        const l = [...settings.socialLinks]; 
+                                        const l = [...safeSettings.socialLinks]; 
                                         l[i].platform = e.target.value; 
                                         updateField('socialLinks', l);
                                     }} />
                                     <input className="flex-1 border p-2 rounded text-sm" value={link.url} onChange={e => { 
-                                        const l = [...settings.socialLinks]; 
+                                        const l = [...safeSettings.socialLinks]; 
                                         l[i].url = e.target.value; 
                                         updateField('socialLinks', l);
                                     }} />
                                     <button onClick={() => { 
-                                        const l = settings.socialLinks.filter((_, idx) => idx !== i); 
+                                        const l = safeSettings.socialLinks.filter((_, idx) => idx !== i); 
                                         updateField('socialLinks', l);
                                     }} className="text-red-500 px-2">x</button>
                                 </div>
@@ -157,18 +196,18 @@ export const SettingsNewPage: React.FC = () => {
                         <h3 className="font-bold text-lg border-b pb-3 mb-4">Logos & Branding</h3>
                         <div>
                             <label className="block text-sm font-bold mb-1">Main Logo URL</label>
-                            <input className="w-full border p-2 rounded" value={settings.logoUrl || ''} onChange={e => updateField('logoUrl', e.target.value)} />
-                            {settings.logoUrl && <img src={settings.logoUrl} className="h-10 mt-2 border p-1"/>}
+                            <input className="w-full border p-2 rounded" value={safeSettings.logoUrl || ''} onChange={e => updateField('logoUrl', e.target.value)} />
+                            {settings.logoUrl && <img src={safeSettings.logoUrl} className="h-10 mt-2 border p-1"/>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold mb-1">Footer Logo URL</label>
-                            <input className="w-full border p-2 rounded" value={settings.footerLogoUrl || ''} onChange={e => updateField('footerLogoUrl', e.target.value)} />
-                            {settings.footerLogoUrl && <img src={settings.footerLogoUrl} className="h-10 mt-2 border p-1 bg-slate-800"/>}
+                            <input className="w-full border p-2 rounded" value={safeSettings.footerLogoUrl || ''} onChange={e => updateField('footerLogoUrl', e.target.value)} />
+                            {settings.footerLogoUrl && <img src={safeSettings.footerLogoUrl} className="h-10 mt-2 border p-1 bg-slate-800"/>}
                         </div>
                         <div>
                             <label className="block text-sm font-bold mb-1">Favicon URL (ICO/PNG)</label>
-                            <input className="w-full border p-2 rounded" value={settings.faviconUrl || ''} onChange={e => updateField('faviconUrl', e.target.value)} />
-                            {settings.faviconUrl && <img src={settings.faviconUrl} className="h-8 w-8 mt-2 border p-1"/>}
+                            <input className="w-full border p-2 rounded" value={safeSettings.faviconUrl || ''} onChange={e => updateField('faviconUrl', e.target.value)} />
+                            {settings.faviconUrl && <img src={safeSettings.faviconUrl} className="h-8 w-8 mt-2 border p-1"/>}
                         </div>
                     </div>
                 )}
@@ -194,11 +233,11 @@ export const SettingsNewPage: React.FC = () => {
                                 </h4>
                             </div>
                             <div className="p-4 space-y-3">
-                                <LocalizedInput label="العنوان الرئيسي" value={settings.homeSections.heroTitle} onChange={v => updateNestedField('homeSections', 'heroTitle', v)} />
-                                <LocalizedInput label="العنوان الفرعي" value={settings.homeSections.heroSubtitle} onChange={v => updateNestedField('homeSections', 'heroSubtitle', v)} />
-                                <LocalizedInput label="عنوان الأعمال" value={settings.homeSections.servicesTitle} onChange={v => updateNestedField('homeSections', 'servicesTitle', v)} />
-                                <LocalizedInput label="وصف الأعمال" value={settings.homeSections.servicesSubtitle} onChange={v => updateNestedField('homeSections', 'servicesSubtitle', v)} />
-                                <LocalizedInput label="زر البدء" value={settings.homeSections.teamTitle} onChange={v => updateNestedField('homeSections', 'teamTitle', v)} />
+                                <LocalizedInput label="العنوان الرئيسي" value={safeSettings.homeSections.heroTitle} onChange={v => updateNestedField('homeSections', 'heroTitle', v)} />
+                                <LocalizedInput label="العنوان الفرعي" value={safeSettings.homeSections.heroSubtitle} onChange={v => updateNestedField('homeSections', 'heroSubtitle', v)} />
+                                <LocalizedInput label="عنوان الأعمال" value={safeSettings.homeSections.servicesTitle} onChange={v => updateNestedField('homeSections', 'servicesTitle', v)} />
+                                <LocalizedInput label="وصف الأعمال" value={safeSettings.homeSections.servicesSubtitle} onChange={v => updateNestedField('homeSections', 'servicesSubtitle', v)} />
+                                <LocalizedInput label="زر البدء" value={safeSettings.homeSections.teamTitle} onChange={v => updateNestedField('homeSections', 'teamTitle', v)} />
                             </div>
                         </div>
 
@@ -220,7 +259,7 @@ export const SettingsNewPage: React.FC = () => {
                                     <div>
                                         <label className="block text-sm font-bold mb-1">حجم خط العنوان الرئيسي</label>
                                         <select 
-                                            value={settings.fontSizes.heroTitle} 
+                                            value={safeSettings.fontSizes.heroTitle} 
                                             onChange={e => updateNestedField('fontSizes', 'heroTitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
@@ -235,7 +274,7 @@ export const SettingsNewPage: React.FC = () => {
                                     <div>
                                         <label className="block text-sm font-bold mb-1">حجم خط العنوان الفرعي</label>
                                         <select 
-                                            value={settings.fontSizes.heroSubtitle} 
+                                            value={safeSettings.fontSizes.heroSubtitle} 
                                             onChange={e => updateNestedField('fontSizes', 'heroSubtitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
@@ -250,7 +289,7 @@ export const SettingsNewPage: React.FC = () => {
                                     <div>
                                         <label className="block text-sm font-bold mb-1">حجم خط عنوان الأعمال</label>
                                         <select 
-                                            value={settings.fontSizes.servicesTitle} 
+                                            value={safeSettings.fontSizes.servicesTitle} 
                                             onChange={e => updateNestedField('fontSizes', 'servicesTitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
@@ -265,7 +304,7 @@ export const SettingsNewPage: React.FC = () => {
                                     <div>
                                         <label className="block text-sm font-bold mb-1">حجم خط وصف الأعمال</label>
                                         <select 
-                                            value={settings.fontSizes.servicesSubtitle} 
+                                            value={safeSettings.fontSizes.servicesSubtitle} 
                                             onChange={e => updateNestedField('fontSizes', 'servicesSubtitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
@@ -280,7 +319,7 @@ export const SettingsNewPage: React.FC = () => {
                                     <div>
                                         <label className="block text-sm font-bold mb-1">حجم خط زر البدء</label>
                                         <select 
-                                            value={settings.fontSizes.teamTitle} 
+                                            value={safeSettings.fontSizes.teamTitle} 
                                             onChange={e => updateNestedField('fontSizes', 'teamTitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >

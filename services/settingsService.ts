@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../utils/supabase-admin';
 import { supabase } from '../services/supabase';
 import { SiteSettings, FontSizeSettings } from '../types';
+import { defaultSettings, mergeWithDefaults, validateSettings } from '../defaultSettings';
 
 // Service متخصص للإعدادات فقط
 export class SettingsService {
@@ -13,32 +14,27 @@ export class SettingsService {
     return SettingsService.instance;
   }
 
-  // جلب الإعدادات من قاعدة البيانات
+  // جلب الإعدادات مع التوحيد الكامل
   async getSettings(): Promise<SiteSettings> {
     try {
-      console.log('🔧 [SettingsService] Fetching settings...');
+      console.log('🔧 [SettingsService] Fetching settings with unified structure...');
       
-      // أولاً، تحقق من localStorage أولاً (للأسبقية)
+      // أولاً، تحقق من localStorage
       const localSettings = localStorage.getItem('tivro_settings');
       const localTimestamp = localStorage.getItem('tivro_settings_timestamp');
       
       if (localSettings && localTimestamp) {
-        const localAge = Date.now() - parseInt(localTimestamp);
-        const localAgeMinutes = localAge / (1000 * 60);
-        
-        console.log(`📱 [SettingsService] Found localStorage data, age: ${localAgeMinutes.toFixed(1)} minutes`);
-        
-        // إذا كانت بيانات localStorage أحدث من 5 دقائق، استخدمها مباشرة
-        if (localAgeMinutes < 5) {
-          console.log('✅ [SettingsService] Using fresh localStorage data');
-          return JSON.parse(localSettings);
+        try {
+          const parsed = JSON.parse(localSettings);
+          const validated = validateSettings(parsed);
+          console.log('✅ [SettingsService] Loaded and validated from localStorage');
+          return validated;
+        } catch (parseError) {
+          console.error('❌ [SettingsService] LocalStorage parse error:', parseError);
         }
-        
-        // إذا كانت أقدم، جرب Supabase ولكن احتفظ بالبيانات المحلية كـ backup
-        console.log('🔄 [SettingsService] LocalStorage data is old, trying Supabase...');
       }
       
-      // ثانياً، جلب من Supabase
+      // ثانياً، جلب من Supabase مع دمج مع الإعدادات الافتراضية
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
@@ -47,64 +43,55 @@ export class SettingsService {
 
       if (error) {
         console.error('❌ [SettingsService] Supabase fetch error:', error);
+        console.log('🔄 [SettingsService] Using default settings as fallback');
         
-        // إذا فشل Supabase، استخدم localStorage
-        if (localSettings) {
-          console.log('✅ [SettingsService] Fallback to localStorage');
-          return JSON.parse(localSettings);
-        }
+        // حفظ الإعدادات الافتراضية في localStorage
+        localStorage.setItem('tivro_settings', JSON.stringify(defaultSettings));
+        localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
         
-        throw new Error(`Failed to fetch settings: ${error.message}`);
+        return defaultSettings;
       }
 
       console.log('✅ [SettingsService] Settings fetched from Supabase');
       
-      // قارن الطوابع الزمنية لتحديد الأحدث
-      const dbTimestamp = data.updated_at ? new Date(data.updated_at).getTime() : 0;
-      const localTime = localTimestamp ? parseInt(localTimestamp) : 0;
+      // دمج بيانات Supabase مع الإعدادات الافتراضية
+      const mergedSettings = mergeWithDefaults(data);
+      const validated = validateSettings(mergedSettings);
       
-      if (localSettings && localTime > dbTimestamp) {
-        console.log('🔄 [SettingsService] LocalStorage data is newer than DB, using localStorage');
-        return JSON.parse(localSettings);
-      }
-      
-      console.log('📊 [SettingsService] Using Supabase data (newer or same age)');
-      
-      // حفظ بيانات Supabase في localStorage كـ backup
-      localStorage.setItem('tivro_settings', JSON.stringify(data));
+      // حفظ البيانات المدمجة في localStorage
+      localStorage.setItem('tivro_settings', JSON.stringify(validated));
       localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       
-      return this.mapFromDB(data);
+      console.log('🔗 [SettingsService] Merged Supabase data with defaults');
+      return validated;
     } catch (error) {
       console.error('❌ [SettingsService] Critical error:', error);
-      console.log('🔄 [SettingsService] Final fallback to localStorage...');
+      console.log('🔄 [SettingsService] Using default settings as final fallback');
       
-      // الحل النهائي: localStorage
-      const localSettings = localStorage.getItem('tivro_settings');
-      if (localSettings) {
-        console.log('✅ [SettingsService] Loaded from localStorage as final fallback');
-        return JSON.parse(localSettings);
-      }
+      // الحل النهائي: الإعدادات الافتراضية
+      localStorage.setItem('tivro_settings', JSON.stringify(defaultSettings));
+      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       
-      console.log('🔄 [SettingsService] Using default settings...');
-      return this.getDefaultSettings();
+      return defaultSettings;
     }
   }
 
-  // حفظ الإعدادات
+  // حفظ الإعدادات مع التوحيد الكامل
   async saveSettings(settings: SiteSettings): Promise<boolean> {
     try {
-      console.log('💾 [SettingsService] Saving settings...');
+      console.log('💾 [SettingsService] Saving unified settings...');
       
-      const payload = this.mapToDB(settings);
-      console.log('📦 [SettingsService] Payload:', payload);
+      // التحقق من صحة الإعدادات ودمجها مع الافتراضيات
+      const validated = validateSettings(settings);
+      console.log('📦 [SettingsService] Validated settings:', validated);
 
-      // أولاً، احفظ في localStorage دائماً (لضمان عدم ضياع البيانات)
-      localStorage.setItem('tivro_settings', JSON.stringify(settings));
+      // أولاً، احفظ في localStorage دائماً
+      localStorage.setItem('tivro_settings', JSON.stringify(validated));
       localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       console.log('✅ [SettingsService] Saved to localStorage immediately');
 
       // ثانياً، حاول الحفظ في Supabase
+      const payload = this.mapToDB(validated);
       const { data, error } = await supabase
         .from('site_settings')
         .upsert(payload, { 
@@ -117,33 +104,20 @@ export class SettingsService {
       if (error) {
         console.error('❌ [SettingsService] Supabase save error:', error);
         console.log('✅ [SettingsService] Data saved to localStorage only (Supabase failed)');
-        return true; // نعتبره نجاح لأن localStorage تم حفظه
+        return true; // نجاح لأن localStorage تم حفظه
       }
 
       console.log('✅ [SettingsService] Settings saved to Supabase successfully:', data);
-      
-      // التحقق من الحفظ عن طريق قراءة البيانات مرة أخرى
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('site_settings')
-        .select('*')
-        .eq('id', 1)
-        .single();
-        
-      if (verifyError) {
-        console.error('❌ [SettingsService] Verification error:', verifyError);
-        console.log('⚠️ [SettingsService] Could not verify Supabase save, but localStorage has data');
-      } else {
-        console.log('🔍 [SettingsService] Verified saved data in Supabase:', verifyData);
-        console.log('✅ [SettingsService] Data saved and verified in both localStorage and Supabase');
-      }
+      console.log('🔗 [SettingsService] Data synchronized between localStorage and Supabase');
       
       return true;
     } catch (error) {
       console.error('❌ [SettingsService] Critical save error:', error);
       console.log('🔄 [SettingsService] Falling back to localStorage...');
       
-      // الحل النهائي: localStorage فقط
-      localStorage.setItem('tivro_settings', JSON.stringify(settings));
+      // الحل النهائي: localStorage مع التحقق
+      const validated = validateSettings(settings);
+      localStorage.setItem('tivro_settings', JSON.stringify(validated));
       localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       console.log('✅ [SettingsService] Saved to localStorage as fallback');
       return true;
