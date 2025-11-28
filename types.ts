@@ -113,9 +113,6 @@ export interface SiteSettings {
   // CMS - Home Page General Content
   homeSections: HomeSectionsSettings;
 
-  // CMS - Font Size Settings
-  fontSizes: FontSizeSettings;
-
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
   privacyPolicy: LocalizedString; 
   termsOfService: LocalizedString; 
@@ -135,13 +132,4 @@ export interface Translations {
     ar: string;
     en: string;
   };
-}
-
-// Font Size Settings Interface
-export interface FontSizeSettings {
-  heroTitle: string;
-  heroSubtitle: string;
-  servicesTitle: string;
-  servicesSubtitle: string;
-  teamTitle: string;
 }

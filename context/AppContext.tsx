@@ -126,39 +126,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const savedLang = (localStorage.getItem('tivro_lang') as Language) || 'ar';
-    setLangState(savedLang);
-    document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = savedLang;
-
-    // Add timeout to prevent infinite loading - reduced to 2 seconds
-    const loadingTimeout = setTimeout(() => {
-      console.log('⏰ Loading timeout reached, forcing loading to false');
-      setLoading(false);
-    }, 2000);
+    const savedLang = localStorage.getItem('tivro_lang') as Language;
+    if (savedLang) {
+        setLangState(savedLang);
+        document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.lang = savedLang;
+    } else {
+        document.documentElement.dir = 'rtl';
+        document.documentElement.lang = 'ar';
+    }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(loadingTimeout);
-      console.log('🔐 Auth session retrieved:', !!session);
       setIsAdmin(!!session);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('❌ Auth session error:', error);
-      clearTimeout(loadingTimeout);
       setLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('🔄 Auth state changed:', !!session);
       setIsAdmin(!!session);
     });
 
-    return () => {
-      clearTimeout(loadingTimeout);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const setLang = (l: Language) => {

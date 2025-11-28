@@ -97,9 +97,6 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     } catch (err: any) {
       console.error('❌ [SettingsContext] Fetch error:', err);
       setError(err.message || 'Failed to fetch settings');
-      // Use default settings on error to prevent infinite loading
-      setSettings(defaultSettings);
-      setOriginalSettings(defaultSettings);
     } finally {
       setLoading(false);
     }

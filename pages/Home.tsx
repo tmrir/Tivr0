@@ -83,15 +83,15 @@ export const Home = () => {
       {/* Hero Section */}
       <section className="relative bg-tivro-dark text-white overflow-hidden pt-20 pb-32">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-tivro-primary/20 to-transparent pointer-events-none" />
-        <div className="container relative z-10">
-          <div className="max-w-4xl">
+        <div className="container mx-auto px-4 md:px-8 relative z-10">
+          <div className="max-w-3xl">
             <div className="inline-block px-4 py-1 bg-tivro-primary/20 text-tivro-primary rounded-full text-sm font-bold mb-6 border border-tivro-primary/30">
               {lang === 'ar' ? '🚀 الوكالة الرقمية الأسرع نمواً' : '🚀 Fastest Growing Digital Agency'}
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-8 leading-tight">
+            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
               {settings?.homeSections?.heroTitle?.[lang] || t('hero.title')}
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-slate-300 mb-10 leading-relaxed max-w-4xl">
+            <p className="text-xl text-slate-300 mb-10 leading-relaxed max-w-2xl">
               {settings?.homeSections?.heroSubtitle?.[lang] || t('hero.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -106,7 +106,7 @@ export const Home = () => {
           </div>
         </div>
         <div className="absolute bottom-0 w-full border-t border-white/10 bg-white/5 backdrop-blur-sm py-6">
-          <div className="container flex justify-around text-center">
+          <div className="container mx-auto px-4 flex justify-around text-center">
              <div><div className="text-2xl font-bold text-tivro-primary">+150%</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'متوسط نمو العملاء' : 'Avg Client Growth'}</div></div>
              <div><div className="text-2xl font-bold text-tivro-primary">+50</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'عميل سعيد' : 'Happy Client'}</div></div>
              <div><div className="text-2xl font-bold text-tivro-primary">24/7</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'دعم فني' : 'Support'}</div></div>
@@ -116,7 +116,7 @@ export const Home = () => {
 
       {/* Services Section */}
       <section id="services" className="py-24 bg-slate-50">
-        <div className="container">
+        <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">
                 {settings?.homeSections?.servicesTitle?.[lang] || t('section.services')}
@@ -148,7 +148,7 @@ export const Home = () => {
 
       {/* Case Studies - EXACT DESIGN MATCH */}
       <section id="work" className="py-24 bg-white">
-        <div className="container">
+        <div className="container mx-auto px-4 md:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">
@@ -187,7 +187,7 @@ export const Home = () => {
 
       {/* Packages */}
       <section className="py-24 bg-slate-50">
-        <div className="container">
+        <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark">
                  {settings?.homeSections?.packagesTitle?.[lang] || (lang === 'ar' ? 'باقات تناسب الجميع' : 'Packages for Everyone')}
@@ -222,7 +222,7 @@ export const Home = () => {
 
       {/* Team Section */}
       <section id="team" className="py-24 bg-white border-t border-slate-100">
-        <div className="container">
+        <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">
                  {settings?.homeSections?.teamTitle?.[lang] || t('section.team')}
@@ -245,7 +245,7 @@ export const Home = () => {
 
       {/* CTA / Contact */}
       <section id="contact" className="py-24 bg-tivro-dark text-white">
-        <div className="container text-center">
+         <div className="container mx-auto px-4 text-center">
            <h2 className="text-3xl md:text-5xl font-bold mb-6">
                {settings?.homeSections?.contactTitle?.[lang] || (lang === 'ar' ? 'جاهز لنقل مشروعك للمستوى التالي؟' : 'Ready to take your business to the next level?')}
            </h2>

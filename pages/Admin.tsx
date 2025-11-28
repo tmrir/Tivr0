@@ -4,7 +4,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Menu, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle } from 'lucide-react';
 import SettingsNewPage from './SettingsNew';
 import { SortableList } from '../components/SortableList';
 import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
@@ -216,7 +216,14 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
                     renderItem={(m) => (
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center relative group hover:-translate-y-1 transition duration-300 h-full">
-                            <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-slate-50 shadow-md"><img src={m.image} className="w-full h-full object-cover" alt={m.name[lang]} /></div>
+                            <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-slate-50 shadow-md">
+                                <ImageWithFallback 
+                                  src={m.image} 
+                                  alt={m.name[lang]} 
+                                  fallback={() => <DefaultTeamAvatar size={96} />}
+                                  className="w-full h-full object-cover" 
+                                />
+                            </div>
                             <h3 className="font-bold text-lg text-slate-900">{m.name[lang]}</h3>
                             <p className="text-tivro-primary text-sm font-medium">{m.role[lang]}</p>
                             <div className="absolute top-3 right-3 hidden group-hover:flex bg-white/90 backdrop-blur shadow-sm rounded-lg border border-slate-100 p-1 z-10 gap-1">
@@ -420,7 +427,12 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                     renderItem={(c) => (
                         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group relative hover:shadow-md transition duration-300 h-full">
                             <div className="h-40 w-full overflow-hidden relative">
-                                <img src={c.image} className="w-full h-full object-cover group-hover:scale-110 transition duration-500"/>
+                                <ImageWithFallback 
+                                  src={c.image} 
+                                  alt={c.title[lang]} 
+                                  fallback={() => <DefaultCaseStudyImage className="w-full h-full" />}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                                />
                                 <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-4">
                                     <span className="text-tivro-primary text-xs font-bold bg-black/50 px-2 py-1 rounded">{c.category[lang]}</span>
                                 </div>
@@ -504,7 +516,12 @@ const BlogManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                         <div key={p.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between group">
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
-                                    {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><FileText/></div>}
+                                    <ImageWithFallback 
+                                      src={p.image} 
+                                      alt={p.title[lang]} 
+                                      fallback={() => <DefaultBlogImage className="w-full h-full" />}
+                                      className="w-full h-full object-cover" 
+                                    />
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-slate-800">{p.title[lang]}</h3>
@@ -579,7 +596,6 @@ export const Admin = () => {
   const [refresh, setRefresh] = useState(0);
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -588,11 +604,6 @@ export const Admin = () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setAuthError(error.message);
     setIsLoggingIn(false);
-  };
-
-  const handleMobileTabClick = (tab: typeof activeTab) => {
-    setActiveTab(tab);
-    setMobileMenuOpen(false);
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin"/></div>;
@@ -628,47 +639,6 @@ export const Admin = () => {
   return (
     <Layout hideFooter>
       <div className="flex h-[calc(100vh-80px)] bg-slate-50" dir={dir}>
-        {/* Mobile Menu Button */}
-        <div className="md:hidden fixed top-4 right-4 z-50">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="bg-white p-3 rounded-lg shadow-lg border border-slate-200"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {/* Mobile Menu Overlay */}
-        {mobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setMobileMenuOpen(false)} />
-        )}
-
-        {/* Mobile Menu Sidebar */}
-        <aside className={`md:hidden fixed top-0 right-0 h-full w-64 bg-white border-l border-slate-200 z-50 transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-slate-900">{t('admin.menu.main')}</h3>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 hover:bg-slate-100 rounded-lg"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <nav className="space-y-1">
-              <SidebarLink icon={<BarChart2 size={20}/>} label={t('admin.tab.dashboard')} active={activeTab === 'dashboard'} onClick={() => handleMobileTabClick('dashboard')} />
-              <SidebarLink icon={<List size={20}/>} label={t('admin.tab.services')} active={activeTab === 'services'} onClick={() => handleMobileTabClick('services')} />
-              <SidebarLink icon={<UsersIcon size={20}/>} label={t('admin.tab.team')} active={activeTab === 'team'} onClick={() => handleMobileTabClick('team')} />
-              <SidebarLink icon={<PackageIcon size={20}/>} label={t('admin.tab.packages')} active={activeTab === 'packages'} onClick={() => handleMobileTabClick('packages')} />
-              <SidebarLink icon={<Briefcase size={20}/>} label={t('admin.tab.work')} active={activeTab === 'work'} onClick={() => handleMobileTabClick('work')} />
-              <SidebarLink icon={<FileText size={20}/>} label={t('admin.tab.blog')} active={activeTab === 'blog'} onClick={() => handleMobileTabClick('blog')} />
-              <SidebarLink icon={<MessageCircle size={20}/>} label={t('admin.tab.messages')} active={activeTab === 'messages'} onClick={() => handleMobileTabClick('messages')} />
-              <SidebarLink icon={<SettingsIcon size={20}/>} label={t('admin.tab.settings')} active={activeTab === 'settings'} onClick={() => handleMobileTabClick('settings')} />
-            </nav>
-          </div>
-        </aside>
-
-        {/* Desktop Sidebar */}
         <aside className="w-64 bg-white border-r border-slate-200 flex-shrink-0 hidden md:block overflow-y-auto">
           <div className="p-6">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{t('admin.menu.main')}</h3>
@@ -684,17 +654,15 @@ export const Admin = () => {
             </nav>
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="pt-12 md:pt-0">
-            {activeTab === 'dashboard' && <DashboardTab />}
-            {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-            {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-            {activeTab === 'packages' && <PackagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-            {activeTab === 'work' && <CaseStudiesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-            {activeTab === 'blog' && <BlogManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-            {activeTab === 'messages' && <MessagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-            {activeTab === 'settings' && <SettingsNewPage />}
-          </div>
+        <main className="flex-1 overflow-y-auto p-8">
+          {activeTab === 'dashboard' && <DashboardTab />}
+          {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'packages' && <PackagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'work' && <CaseStudiesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'blog' && <BlogManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'messages' && <MessagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'settings' && <SettingsNewPage />}
         </main>
       </div>
     </Layout>

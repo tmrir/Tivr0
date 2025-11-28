@@ -28,17 +28,6 @@ export function useSettingsNew() {
     updateSettings(newSettings);
   };
 
-  // Test connection function
-  const testConnection = async () => {
-    try {
-      // Simulate connection test
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return true;
-    } catch (err) {
-      return false;
-    }
-  };
-
   return {
     settings,
     setSettings: updateSettings,
@@ -49,7 +38,13 @@ export function useSettingsNew() {
     fetchSettings: refreshSettings,
     saveSettings,
     resetChanges,
-    testConnection,
+    testConnection: async () => {
+      try {
+        return true;
+      } catch (err) {
+        return false;
+      }
+    },
     updateField,
     updateNestedField
   };
