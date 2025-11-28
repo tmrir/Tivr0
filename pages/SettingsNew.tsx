@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettingsNew } from '../hooks/useSettingsNew';
 import { useApp } from '../context/AppContext';
 import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, Globe, Phone, Share2, Image as ImageIcon, Database, FileText, LayoutTemplate } from 'lucide-react';
@@ -38,9 +38,15 @@ const LocalizedInput = ({ label, value, onChange }: {label:string, value: Locali
 
 export const SettingsNewPage: React.FC = () => {
   const { t, lang } = useApp();
-  const { settings, loading, saving, error, saveSettings, testConnection, updateField, updateNestedField } = useSettingsNew();
+  const { settings, loading, saving, error, saveSettings, testConnection, updateField, updateNestedField, fetchSettings } = useSettingsNew();
   const [activeTab, setActiveTab] = useState<'general' | 'logos' | 'home_content' | 'legal' | 'db'>('general');
   const [msg, setMsg] = useState<{type:'success'|'error', text:string} | null>(null);
+
+  // تحميل الإعدادات عند تحميل الصفحة
+  useEffect(() => {
+    console.log('🔧 [SettingsNewPage] Component mounted, fetching settings...');
+    fetchSettings();
+  }, [fetchSettings]);
 
   const onSave = async () => {
       console.log('🔧 [SettingsNewPage] onSave called');

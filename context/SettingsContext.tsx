@@ -115,7 +115,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       
       if (success) {
         console.log('✅ [SettingsContext] Settings saved successfully');
-        setOriginalSettings(settings);
+        
+        // تحديث originalSettings لمطابقة الإعدادات الحالية
+        setOriginalSettings(JSON.parse(JSON.stringify(settings)));
         setHasUnsavedChanges(false);
         
         window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: settings }));

@@ -43,10 +43,21 @@ export class SettingsService {
       
       // Save to localStorage as backup
       localStorage.setItem('tivro_settings', JSON.stringify(data));
+      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       
       return this.mapFromDB(data);
     } catch (error) {
       console.error('❌ [SettingsService] Critical error:', error);
+      console.log('🔄 [SettingsService] Final fallback to localStorage...');
+      
+      // Final fallback to localStorage
+      const localSettings = localStorage.getItem('tivro_settings');
+      if (localSettings) {
+        console.log('✅ [SettingsService] Loaded from localStorage as final fallback');
+        return JSON.parse(localSettings);
+      }
+      
+      console.log('🔄 [SettingsService] Using default settings...');
       return this.getDefaultSettings();
     }
   }
@@ -75,6 +86,7 @@ export class SettingsService {
         
         // Fallback to localStorage if Supabase fails
         localStorage.setItem('tivro_settings', JSON.stringify(settings));
+        localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
         console.log('✅ [SettingsService] Saved to localStorage');
         return true;
       }
@@ -83,6 +95,7 @@ export class SettingsService {
       
       // Save to localStorage as backup
       localStorage.setItem('tivro_settings', JSON.stringify(settings));
+      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       
       // التحقق من الحفظ عن طريق قراءة البيانات مرة أخرى
       const { data: verifyData, error: verifyError } = await supabase
@@ -114,6 +127,7 @@ export class SettingsService {
       
       // Fallback to localStorage if everything fails
       localStorage.setItem('tivro_settings', JSON.stringify(settings));
+      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       console.log('✅ [SettingsService] Saved to localStorage as fallback');
       return true;
     }
