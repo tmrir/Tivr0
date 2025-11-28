@@ -84,6 +84,7 @@ export interface FontSizeSettings {
 }
 
 export interface HomeSectionsSettings {
+    heroBadge: LocalizedString;
     heroTitle: LocalizedString;
     heroSubtitle: LocalizedString;
     servicesTitle: LocalizedString;
@@ -116,6 +117,8 @@ export interface SiteSettings {
   sectionTexts: {
     workTitle: LocalizedString;
     workSubtitle: LocalizedString;
+    privacyLink: LocalizedString;
+    termsLink: LocalizedString;
   };
   
   // CMS - Home Page General Content
