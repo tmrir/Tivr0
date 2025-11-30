@@ -49,6 +49,73 @@ export const defaultSettings: SiteSettings = {
     termsLink: { ar: 'شروط الخدمة', en: 'Terms of Service' }
   },
   
+  // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
+  privacyPolicy: { 
+    ar: 'سياسة الخصوصية...',
+    en: 'Privacy Policy content...' 
+  }, 
+  termsOfService: { 
+    ar: 'شروط الخدمة...',
+    en: 'Terms of Service content...' 
+  },
+
+  // CMS - Contact Us Section
+  contactUs: {
+    title: { ar: 'تواصل معنا', en: 'Contact Us' },
+    subtitle: { ar: 'جاهز لنقل مشروعك للمستوى التالي؟', en: 'Ready to take your business to the next level?' },
+    cards: [
+      {
+        heading: { ar: 'حجز استشارة', en: 'Book Consultation' },
+        iconType: 'svg',
+        iconSVG: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up text-tivro-primary"><path d="M16 7h6v6"></path><path d="m22 7-8.5 8.5-5-5L2 17"></path></svg>',
+        contentHTML: '<div class="space-y-4"><p class="text-slate-300">دعنا نناقش أهدافك ونضع استراتيجية مخصصة لنجاحك.</p></div>'
+      }
+    ],
+    socialLinks: [
+      { 
+        name: 'Twitter', 
+        url: 'https://twitter.com/tivro', 
+        iconSVG_or_name: 'Twitter' 
+      },
+      { 
+        name: 'LinkedIn', 
+        url: 'https://linkedin.com/company/tivro', 
+        iconSVG_or_name: 'Linkedin' 
+      },
+      { 
+        name: 'Instagram', 
+        url: 'https://instagram.com/tivro', 
+        iconSVG_or_name: 'Instagram' 
+      },
+      { 
+        name: 'Facebook', 
+        url: 'https://facebook.com/tivro', 
+        iconSVG_or_name: 'Facebook' 
+      }
+    ],
+    form: {
+      fields: [
+        {
+          name: 'name',
+          label: { ar: 'الاسم', en: 'Name' },
+          placeholder: { ar: 'الاسم', en: 'Name' },
+          type: 'text',
+          required: true
+        },
+        {
+          name: 'phone',
+          label: { ar: 'رقم الجوال', en: 'Phone Number' },
+          placeholder: { ar: 'رقم الجوال', en: 'Phone Number' },
+          type: 'tel',
+          required: true
+        }
+      ],
+      submitText: { ar: 'إرسال الطلب', en: 'Send Request' },
+      submitAction: '/api/contact'
+    },
+    cssClasses: 'container mx-auto px-4 text-center'
+  },
+  
   // أقسام الصفحة الرئيسية
   homeSections: {
     // Hero Badge/Tag (العنوان العلوي فوق العنوان الرئيسي)

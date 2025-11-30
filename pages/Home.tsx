@@ -5,6 +5,7 @@ import { db } from '../services/db';
 import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Loader2, User } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { Service, CaseStudy, TeamMember, Package, SiteSettings } from '../types';
+import ContactUsSection from '../components/ContactUsSection';
 
 export const Home = () => {
   const { t, lang, dir } = useApp();
@@ -329,6 +330,9 @@ export const Home = () => {
            </div>
          </div>
       </section>
+
+      {/* Contact Us Section */}
+      <ContactUsSection settings={settings?.contactUs} />
 
       {/* Legal Sections - Hidden anchor targets for smooth scrolling */}
       <section id="privacy" className="sr-only">

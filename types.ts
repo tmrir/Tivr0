@@ -127,6 +127,9 @@ export interface SiteSettings {
   // CMS - Font Sizes
   fontSizes: FontSizeSettings;
 
+  // CMS - Contact Us Section
+  contactUs: ContactUsSettings;
+
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
   privacyPolicy: LocalizedString; 
   termsOfService: LocalizedString; 
@@ -146,4 +149,39 @@ export interface Translations {
     ar: string;
     en: string;
   };
+}
+
+// Contact Us Section Types
+export interface ContactFormField {
+  name: string;
+  label: LocalizedString;
+  placeholder: LocalizedString;
+  type: 'text' | 'tel' | 'email' | 'textarea';
+  required: boolean;
+}
+
+export interface ContactSocialLink {
+  name: string;
+  url: string;
+  iconSVG_or_name: string;
+}
+
+export interface ContactCard {
+  heading: LocalizedString;
+  iconType: 'svg' | 'iconName';
+  iconSVG: string;
+  contentHTML: string;
+}
+
+export interface ContactUsSettings {
+  title: LocalizedString;
+  subtitle: LocalizedString;
+  cards: ContactCard[];
+  socialLinks: ContactSocialLink[];
+  form: {
+    fields: ContactFormField[];
+    submitText: LocalizedString;
+    submitAction?: string;
+  };
+  cssClasses?: string;
 }
