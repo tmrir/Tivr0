@@ -629,7 +629,7 @@ const MessagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 };
 
 export const Admin = () => {
-  const { isAdmin, t, loading, dir } = useApp();
+  const { isAdmin, t, loading, dir, lang } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'contact' | 'messages' | 'settings'>('dashboard');
