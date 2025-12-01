@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter, Facebook } from 'lucide-react';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
-import { SiteSettings, Service } from '../types';
+import { SiteSettings, Service, Package } from '../types';
 import * as Icons from 'lucide-react';
 
 interface LayoutProps {
@@ -23,6 +23,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [settings, setSettings] = useState<SiteSettings | any>(DEFAULT_SETTINGS);
   const [footerServices, setFooterServices] = useState<Service[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,6 +41,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             }
             const services = await db.services.getAll();
             setFooterServices(services.slice(0, 4));
+            const packagesData = await db.packages.getAll();
+            setPackages(packagesData);
         } catch(e) { console.error(e); }
     };
     fetchData();
@@ -56,10 +59,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     <a href={href} className="text-slate-600 hover:text-tivro-primary font-medium transition-colors duration-200 text-sm md:text-base" onClick={(e) => {
       if (href.startsWith('#')) {
         e.preventDefault();
-        const targetId = href.substring(1);
-        const targetElement = document.getElementById(targetId);
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (href === '#') {
+          // Return to top of page
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          const targetId = href.substring(1);
+          const targetElement = document.getElementById(targetId);
+          if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
         }
         setIsMenuOpen(false);
       }
@@ -104,6 +112,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
           <nav className="hidden md:flex items-center gap-8">
             <NavLink href="#" label={t('nav.home')} />
             <NavLink href="#services" label={t('nav.services')} />
+            {packages.length > 0 && <NavLink href="#packages" label={lang === 'ar' ? 'الباقات' : 'Packages'} />}
             <NavLink href="#work" label={t('nav.work')} />
             <NavLink href="#team" label={t('nav.team')} />
             <NavLink href="#blog" label={t('nav.blog')} />
@@ -131,6 +140,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
           <div className="md:hidden absolute top-20 left-0 w-full bg-white border-b border-slate-100 p-6 shadow-xl flex flex-col gap-6 animate-fade-in">
             <NavLink href="#" label={t('nav.home')} />
             <NavLink href="#services" label={t('nav.services')} />
+            {packages.length > 0 && <NavLink href="#packages" label={lang === 'ar' ? 'الباقات' : 'Packages'} />}
             <NavLink href="#work" label={t('nav.work')} />
             <NavLink href="#team" label={t('nav.team')} />
             <NavLink href="#blog" label={t('nav.blog')} />

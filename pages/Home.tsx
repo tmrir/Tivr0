@@ -74,9 +74,30 @@ export const Home = () => {
 
     window.addEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
 
-    // تنظيف event listener عند unmount
+    // دعم التمرير التلقائي عند تحميل الهاش
+    const handleHashScroll = () => {
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            // انتظر قليلاً حتى يتم تحميل البيانات
+            setTimeout(() => {
+                const targetElement = document.getElementById(hash);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+    };
+
+    // تحقق من الهاش عند التحميل الأولي
+    handleHashScroll();
+
+    // الاستماع لتغييرات الهاش
+    window.addEventListener('hashchange', handleHashScroll);
+
+    // تنظيف event listeners عند unmount
     return () => {
         window.removeEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
+        window.removeEventListener('hashchange', handleHashScroll);
     };
   }, []);
 
@@ -223,7 +244,7 @@ export const Home = () => {
       </section>
 
       {/* Packages */}
-      <section className="py-24 bg-slate-50">
+      <section id="packages" className="py-24 bg-slate-50">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark">
