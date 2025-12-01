@@ -171,7 +171,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                   <span className="text-2xl font-bold">{settings?.siteName?.[lang]}</span>
                 </div>
                 <p className="text-slate-400 max-w-md leading-relaxed mb-6">
-                  {lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.'}
+                  {settings?.footerDescription?.[lang] || (lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.')}
                 </p>
                 <div className="flex gap-4">
                   {settings?.socialLinks?.map((link: any, i: number) => (
@@ -200,7 +200,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             </div>
             
             <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
-              <p>{t('footer.rights')}</p>
+              <p>{settings?.copyrightText?.[lang] || t('footer.rights')}</p>
               <div className="flex gap-6 mt-4 md:mt-0">
                 <a href="#privacy" className="hover:text-white" onClick={(e) => {
                   e.preventDefault();
@@ -208,14 +208,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                   if (targetElement) {
                     targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
-                }}>{settings?.sectionTexts?.privacyLink?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</a>
+                }}>{settings?.footerLinks?.privacy?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</a>
                 <a href="#terms" className="hover:text-white" onClick={(e) => {
                   e.preventDefault();
                   const targetElement = document.getElementById('terms');
                   if (targetElement) {
                     targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
-                }}>{settings?.sectionTexts?.termsLink?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service')}</a>
+                }}>{settings?.footerLinks?.terms?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service')}</a>
               </div>
             </div>
           </div>

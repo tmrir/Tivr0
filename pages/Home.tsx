@@ -352,15 +352,13 @@ export const Home = () => {
          </div>
       </section>
 
-      {/* Contact Us Section */}
-      <ContactUsSection settings={settings?.contactUs} />
-
+            
       {/* Legal Sections - Hidden anchor targets for smooth scrolling */}
       <section id="privacy" className="sr-only">
         <div className="container mx-auto px-4 py-16">
           <h1 className="text-4xl font-bold text-slate-900 mb-8">{settings?.sectionTexts?.privacyLink?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</h1>
           <div className="prose prose-lg max-w-none text-slate-700 whitespace-pre-wrap">
-            {settings?.privacyPolicy?.[lang] || (lang === 'ar' ? 'لا يوجد محتوى حالياً.' : 'No content available.')}
+            {settings?.privacyPolicy?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}
           </div>
         </div>
       </section>

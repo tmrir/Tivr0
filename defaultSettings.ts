@@ -148,6 +148,14 @@ export const defaultSettings: SiteSettings = {
     servicesTitle: 'text-3xl',
     servicesSubtitle: 'text-lg',
     teamTitle: 'text-2xl'
+  },
+
+  // إعدادات الفوتر
+  footerDescription: { ar: 'وكالة تسويق رقمي سعودية متكاملة.', en: 'A full-service Saudi digital marketing agency.' },
+  copyrightText: { ar: 'جميع الحقوق محفوظة لشركة تيفرو © 2024', en: 'All rights reserved © Tivro Company 2024' },
+  footerLinks: {
+    privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+    terms: { ar: 'شروط الخدمة', en: 'Terms of Service' }
   }
 };
 

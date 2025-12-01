@@ -130,6 +130,14 @@ export interface SiteSettings {
   // CMS - Contact Us Section
   contactUs: ContactUsSettings;
 
+  // CMS - Footer Settings
+  footerDescription: LocalizedString;
+  copyrightText: LocalizedString;
+  footerLinks: {
+    privacy: LocalizedString;
+    terms: LocalizedString;
+  };
+
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
   privacyPolicy: LocalizedString; 
   termsOfService: LocalizedString; 

@@ -88,7 +88,13 @@ export const SettingsNewPage: React.FC = () => {
       teamTitle: 'text-2xl'
     },
     privacyPolicy: settings?.privacyPolicy || { ar: '', en: '' },
-    termsOfService: settings?.termsOfService || { ar: '', en: '' }
+    termsOfService: settings?.termsOfService || { ar: '', en: '' },
+    footerDescription: settings?.footerDescription || { ar: 'وكالة تسويق رقمي سعودية متكاملة.', en: 'A full-service Saudi digital marketing agency.' },
+    copyrightText: settings?.copyrightText || { ar: 'جميع الحقوق محفوظة لشركة تيفرو © 2024', en: 'All rights reserved © Tivro Company 2024' },
+    footerLinks: settings?.footerLinks || {
+      privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+      terms: { ar: 'شروط الخدمة', en: 'Terms of Service' }
+    }
   };
 
   const onSave = async () => {
@@ -356,12 +362,110 @@ export const SettingsNewPage: React.FC = () => {
                                 </h4>
                             </div>
                             <div className="p-4 space-y-3">
-                                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded">
-                                    <p className="text-sm text-yellow-800">
-                                        💡 <strong>ملاحظة:</strong> الفوتر حالياً يعرض نص ثابت "وكالة تسويق رقمي سعودية متكاملة." و "جميع الحقوق محفوظة لشركة تيفرو © 2024" وروابط الخصوصية والشروط.
+                                {/* Footer Description */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">وصف الفوتر</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <div>
+                                            <span className="text-xs text-slate-400 block mb-1">🇸🇦 العربية</span>
+                                            <textarea 
+                                                className="w-full border p-2 rounded h-20 text-sm" 
+                                                dir="rtl" 
+                                                placeholder="وصف الفوتر باللغة العربية"
+                                                value={settings.footerDescription?.ar || ''}
+                                                onChange={e => updateNestedField('footerDescription', 'ar', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-slate-400 block mb-1">🇺🇸 English</span>
+                                            <textarea 
+                                                className="w-full border p-2 rounded h-20 text-sm" 
+                                                dir="ltr" 
+                                                placeholder="Footer description in English"
+                                                value={settings.footerDescription?.en || ''}
+                                                onChange={e => updateNestedField('footerDescription', 'en', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Copyright Text */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">نص حقوق الطبع والنشر</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <div>
+                                            <span className="text-xs text-slate-400 block mb-1">🇸🇦 العربية</span>
+                                            <input 
+                                                className="w-full border p-2 rounded text-sm" 
+                                                dir="rtl" 
+                                                placeholder="نص حقوق الطبع باللغة العربية"
+                                                value={settings.copyrightText?.ar || ''}
+                                                onChange={e => updateNestedField('copyrightText', 'ar', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-slate-400 block mb-1">🇺🇸 English</span>
+                                            <input 
+                                                className="w-full border p-2 rounded text-sm" 
+                                                dir="ltr" 
+                                                placeholder="Copyright text in English"
+                                                value={settings.copyrightText?.en || ''}
+                                                onChange={e => updateNestedField('copyrightText', 'en', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer Links */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">روابط الفوتر</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <div>
+                                            <span className="text-xs text-slate-400 block mb-1">🇸🇦 رابط سياسة الخصوصية</span>
+                                            <input 
+                                                className="w-full border p-2 rounded text-sm" 
+                                                placeholder="سياسة الخصوصية"
+                                                value={settings.footerLinks?.privacy?.ar || ''}
+                                                onChange={e => updateNestedField('footerLinks.privacy', 'ar', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-slate-400 block mb-1">🇺🇸 Privacy Policy Link</span>
+                                            <input 
+                                                className="w-full border p-2 rounded text-sm" 
+                                                placeholder="Privacy Policy"
+                                                value={settings.footerLinks?.privacy?.en || ''}
+                                                onChange={e => updateNestedField('footerLinks.privacy', 'en', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-slate-400 block mb-1">🇸🇦 رابط شروط الخدمة</span>
+                                            <input 
+                                                className="w-full border p-2 rounded text-sm" 
+                                                placeholder="شروط الخدمة"
+                                                value={settings.footerLinks?.terms?.ar || ''}
+                                                onChange={e => updateNestedField('footerLinks.terms', 'ar', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-slate-400 block mb-1">🇺🇸 Terms of Service Link</span>
+                                            <input 
+                                                className="w-full border p-2 rounded text-sm" 
+                                                placeholder="Terms of Service"
+                                                value={settings.footerLinks?.terms?.en || ''}
+                                                onChange={e => updateNestedField('footerLinks.terms', 'en', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer Status */}
+                                <div className="bg-green-50 border border-green-200 p-3 rounded">
+                                    <p className="text-sm text-green-800">
+                                        ✅ <strong>حالة:</strong> إعدادات الفوتر جاهزة للتعديل والحفظ الفوري.
                                     </p>
-                                    <p className="text-xs text-yellow-600 mt-2">
-                                        يمكن إضافة خيارات تعديل الفوتر في المستقبل.
+                                    <p className="text-xs text-green-600 mt-1">
+                                        ستظهر التغييرات فوراً في واجهة الموقع بعد الحفظ.
                                     </p>
                                 </div>
                             </div>
