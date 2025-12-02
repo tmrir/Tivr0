@@ -5,7 +5,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare, Layout as LayoutIcon, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare, Layout as LayoutIcon, Eye, EyeOff, Star } from 'lucide-react';
 import SettingsNewPage from './SettingsNew';
 import { SortableList } from '../components/SortableList';
 import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
@@ -338,10 +338,90 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                     keyExtractor={(p) => p.id}
                     className="grid grid-cols-1 md:grid-cols-3 gap-6"
                     renderItem={(p) => (
-                        <div className={`bg-white rounded-xl p-6 relative group transition-all duration-300 hover:-translate-y-1 h-full ${p.isPopular ? 'border-2 border-tivro-primary shadow-xl' : 'border border-slate-200 shadow-sm hover:shadow-md'}`}>
-                            {p.isPopular && <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-tivro-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">{t('admin.form.popular')}</div>}
-                            <div className="text-center mb-4 pt-2"><h3 className="font-bold text-xl text-slate-800 mb-1">{p.name[lang]}</h3><div className="text-3xl font-bold text-tivro-dark">{p.price}</div></div>
-                            <div className="absolute top-3 right-3 hidden group-hover:flex gap-1"><button onClick={()=>setEditing(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16}/></button><button onClick={()=>handleDelete(p.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button></div>
+                        <div className={`relative group transition-all duration-300 ${p.isPopular ? 'scale-105' : ''}`}>
+                            {/* Popular Badge */}
+                            {p.isPopular && (
+                                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                                    <div className="bg-gradient-to-r from-tivro-primary to-emerald-600 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                                        <Star size={16} className="fill-current" />
+                                        {t('admin.form.popular')}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Package Card */}
+                            <div className={`bg-white rounded-2xl p-8 h-full relative overflow-hidden transition-all duration-300 hover:-translate-y-2 ${
+                                p.isPopular 
+                                    ? 'border-2 border-tivro-primary shadow-2xl ring-4 ring-tivro-primary/10' 
+                                    : 'border border-slate-200 shadow-lg hover:shadow-xl'
+                            }`}>
+                                {/* Background Pattern for Popular */}
+                                {p.isPopular && (
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-tivro-primary/5 rounded-full -mr-16 -mt-16"></div>
+                                )}
+                                
+                                {/* Header */}
+                                <div className="text-center mb-6 relative z-10">
+                                    <div className={`inline-block px-4 py-2 rounded-full text-sm font-bold mb-4 ${
+                                        p.isPopular 
+                                            ? 'bg-tivro-primary text-white' 
+                                            : 'bg-slate-100 text-slate-600'
+                                    }`}>
+                                        {p.id === 'new' ? 'باقة جديدة' : 'باقة مميزة'}
+                                    </div>
+                                    <h3 className={`text-2xl font-bold mb-3 ${
+                                        p.isPopular ? 'text-tivro-primary' : 'text-slate-800'
+                                    }`}>
+                                        {p.name[lang]}
+                                    </h3>
+                                    <div className="flex items-center justify-center gap-2 mb-4">
+                                        <span className="text-4xl font-bold text-slate-900">{p.price}</span>
+                                        <span className="text-slate-500 font-medium">/شهرياً</span>
+                                    </div>
+                                </div>
+                                
+                                {/* Features List */}
+                                <div className="space-y-3 mb-6">
+                                    {p.features.slice(0, 3).map((feature, idx) => (
+                                        <div key={idx} className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full ${
+                                                p.isPopular ? 'bg-tivro-primary' : 'bg-slate-300'
+                                            }`}></div>
+                                            <span className="text-slate-600 text-sm">{feature[lang]}</span>
+                                        </div>
+                                    ))}
+                                    {p.features.length > 3 && (
+                                        <div className="text-center text-sm text-slate-500 font-medium">
+                                            +{p.features.length - 3} ميزات أخرى
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 justify-center">
+                                    <button 
+                                        onClick={() => setEditing(p)}
+                                        className={`px-4 py-2 rounded-lg font-bold transition-all duration-200 flex items-center gap-2 ${
+                                            p.isPopular
+                                                ? 'bg-tivro-primary text-white hover:bg-emerald-600'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <Edit2 size={16} />
+                                        تعديل
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDelete(p.id)}
+                                        className="px-4 py-2 rounded-lg font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-all duration-200 flex items-center gap-2"
+                                    >
+                                        <Trash2 size={16} />
+                                        حذف
+                                    </button>
+                                </div>
+                                
+                                {/* Hover Effect Overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+                            </div>
                         </div>
                     )}
                 />
@@ -351,12 +431,6 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 };
 
 const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
-    const { t, lang } = useApp();
-    const [items, setItems] = useState<CaseStudy[]>([]);
-    const [editing, setEditing] = useState<CaseStudy | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [sectionSettings, setSectionSettings] = useState<any>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
-    const [settingsSaving, setSettingsSaving] = useState(false);
 
     useEffect(() => { 
         db.caseStudies.getAll().then(setItems); 
