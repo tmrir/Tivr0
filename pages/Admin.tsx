@@ -685,6 +685,9 @@ export const Admin = () => {
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{t('admin.menu.main')}</h3>
             <nav className="space-y-1">
               <SidebarLink icon={<BarChart2 size={20}/>} label={t('admin.tab.dashboard')} active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+              <SidebarLink icon={<List size={20}/>} label={t('admin.tab.services')} active={activeTab === 'services'} onClick={() => setActiveTab('services')} />
+              <SidebarLink icon={<UsersIcon size={20}/>} label={t('admin.tab.team')} active={activeTab === 'team'} onClick={() => setActiveTab('team')} />
+              <SidebarLink icon={<PackageIcon size={20}/>} label={t('admin.tab.packages')} active={activeTab === 'packages'} onClick={() => setActiveTab('packages')} />
               <SidebarLink icon={<Briefcase size={20}/>} label={t('admin.tab.work')} active={activeTab === 'work'} onClick={() => setActiveTab('work')} />
               <SidebarLink icon={<FileText size={20}/>} label={t('admin.tab.blog')} active={activeTab === 'blog'} onClick={() => setActiveTab('blog')} />
               <SidebarLink icon={<Phone size={20}/>} label={lang === 'ar' ? 'تواصل معنا' : 'Contact Us'} active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} />
