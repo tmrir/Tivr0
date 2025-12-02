@@ -431,6 +431,12 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 };
 
 const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
+    const { t, lang } = useApp();
+    const [items, setItems] = useState<CaseStudy[]>([]);
+    const [editing, setEditing] = useState<CaseStudy | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [sectionSettings, setSectionSettings] = useState<any>({workTitle: {ar:'', en:''}, workSubtitle: {ar:'', en:''}});
+    const [settingsSaving, setSettingsSaving] = useState(false);
 
     useEffect(() => { 
         db.caseStudies.getAll().then(setItems); 
