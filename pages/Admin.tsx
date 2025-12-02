@@ -661,51 +661,6 @@ const BlogManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     );
 };
 
-const statCards = [
-    { 
-        key: 'services', 
-        icon: <List size={24} />, 
-        color: 'bg-blue-500', 
-        label: t('admin.tab.services'),
-        count: stats.services
-    },
-    { 
-        key: 'team', 
-        icon: <UsersIcon size={24} />, 
-        color: 'bg-green-500', 
-        label: t('admin.tab.team'),
-        count: stats.team
-    },
-    { 
-        key: 'packages', 
-        icon: <PackageIcon size={24} />, 
-        color: 'bg-purple-500', 
-        label: t('admin.tab.packages'),
-        count: stats.packages
-    },
-    { 
-        key: 'caseStudies', 
-        icon: <Briefcase size={24} />, 
-        color: 'bg-orange-500', 
-        label: t('admin.tab.work'),
-        count: stats.caseStudies
-    },
-    { 
-        key: 'blog', 
-        icon: <FileText size={24} />, 
-        color: 'bg-pink-500', 
-        label: t('admin.tab.blog'),
-        count: stats.blog
-    },
-    { 
-        key: 'messages', 
-        icon: <MessageCircle size={24} />, 
-        color: 'bg-red-500', 
-        label: t('admin.tab.messages'),
-        count: stats.messages
-    }
-];
-
 const DashboardOverview: React.FC = () => {
     const { t, lang } = useApp();
     const [stats, setStats] = useState({
@@ -747,6 +702,51 @@ const DashboardOverview: React.FC = () => {
 
         loadStats();
     }, []);
+
+    const statCards = [
+        { 
+            key: 'services', 
+            icon: <List size={24} />, 
+            color: 'bg-blue-500', 
+            label: t('admin.tab.services'),
+            count: stats.services
+        },
+        { 
+            key: 'team', 
+            icon: <UsersIcon size={24} />, 
+            color: 'bg-green-500', 
+            label: t('admin.tab.team'),
+            count: stats.team
+        },
+        { 
+            key: 'packages', 
+            icon: <PackageIcon size={24} />, 
+            color: 'bg-purple-500', 
+            label: t('admin.tab.packages'),
+            count: stats.packages
+        },
+        { 
+            key: 'caseStudies', 
+            icon: <Briefcase size={24} />, 
+            color: 'bg-orange-500', 
+            label: t('admin.tab.work'),
+            count: stats.caseStudies
+        },
+        { 
+            key: 'blog', 
+            icon: <FileText size={24} />, 
+            color: 'bg-pink-500', 
+            label: t('admin.tab.blog'),
+            count: stats.blog
+        },
+        { 
+            key: 'messages', 
+            icon: <MessageCircle size={24} />, 
+            color: 'bg-red-500', 
+            label: t('admin.tab.messages'),
+            count: stats.messages
+        }
+    ];
 
     return (
         <div>
