@@ -661,7 +661,7 @@ const BlogManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     );
 };
 
-const DashboardOverview: React.FC = () => {
+const DashboardOverview: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTab }) => {
     const { t, lang } = useApp();
     const [stats, setStats] = useState({
         services: 0,
@@ -938,7 +938,7 @@ export const Admin = () => {
           </div>
         </aside>
         <main className="flex-1 overflow-y-auto p-8">
-          {activeTab === 'dashboard' && <DashboardOverview />}
+          {activeTab === 'dashboard' && <DashboardOverview setActiveTab={setActiveTab} />}
           {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'packages' && <PackagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
