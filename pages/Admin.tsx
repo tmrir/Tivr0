@@ -661,6 +661,166 @@ const BlogManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     );
 };
 
+const DashboardOverview: React.FC = () => {
+    const { t, lang } = useApp();
+    const [stats, setStats] = useState({
+        services: 0,
+        team: 0,
+        packages: 0,
+        caseStudies: 0,
+        blog: 0,
+        messages: 0
+    });
+
+    useEffect(() => {
+        const loadStats = async () => {
+            const [
+                services,
+                team,
+                packages,
+                caseStudies,
+                blog,
+                messages
+            ] = await Promise.all([
+                db.services.getAll(),
+                db.team.getAll(),
+                db.packages.getAll(),
+                db.caseStudies.getAll(),
+                db.blog.getAll(),
+                db.messages.getAll()
+            ]);
+
+            setStats({
+                services: services.length,
+                team: team.length,
+                packages: packages.length,
+                caseStudies: caseStudies.length,
+                blog: blog.length,
+                messages: messages.length
+            });
+        };
+
+        loadStats();
+    }, []);
+
+    const statCards = [
+        { 
+            key: 'services', 
+            icon: <List size={24} />, 
+            color: 'bg-blue-500', 
+            label: t('admin.tab.services'),
+            count: stats.services
+        },
+        { 
+            key: 'team', 
+            icon: <UsersIcon size={24} />, 
+            color: 'bg-green-500', 
+            label: t('admin.tab.team'),
+            count: stats.team
+        },
+        { 
+            key: 'packages', 
+            icon: <PackageIcon size={24} />, 
+            color: 'bg-purple-500', 
+            label: t('admin.tab.packages'),
+            count: stats.packages
+        },
+        { 
+            key: 'caseStudies', 
+            icon: <Briefcase size={24} />, 
+            color: 'bg-orange-500', 
+            label: t('admin.tab.work'),
+            count: stats.caseStudies
+        },
+        { 
+            key: 'blog', 
+            icon: <FileText size={24} />, 
+            color: 'bg-pink-500', 
+            label: t('admin.tab.blog'),
+            count: stats.blog
+        },
+        { 
+            key: 'messages', 
+            icon: <MessageCircle size={24} />, 
+            color: 'bg-red-500', 
+            label: t('admin.tab.messages'),
+            count: stats.messages
+        }
+    ];
+
+    return (
+        <div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-8">{t('admin.tab.dashboard')}</h1>
+            
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {statCards.map((card) => (
+                    <div key={card.key} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-slate-600 mb-1">{card.label}</p>
+                                <p className="text-3xl font-bold text-slate-900">{card.count}</p>
+                            </div>
+                            <div className={`${card.color} p-3 rounded-lg text-white`}>
+                                {card.icon}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 className="text-xl font-bold text-slate-800 mb-4">إجراءات سريعة</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <button 
+                        onClick={() => window.location.hash = '#services'}
+                        className="flex items-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                        <List size={20} />
+                        <span className="font-medium">إضافة خدمة جديدة</span>
+                    </button>
+                    <button 
+                        onClick={() => window.location.hash = '#team'}
+                        className="flex items-center gap-3 p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+                    >
+                        <UsersIcon size={20} />
+                        <span className="font-medium">إضافة عضو فريق</span>
+                    </button>
+                    <button 
+                        onClick={() => window.location.hash = '#packages'}
+                        className="flex items-center gap-3 p-4 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                        <PackageIcon size={20} />
+                        <span className="font-medium">إضافة باقة جديدة</span>
+                    </button>
+                    <button 
+                        onClick={() => window.location.hash = '#work'}
+                        className="flex items-center gap-3 p-4 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
+                    >
+                        <Briefcase size={20} />
+                        <span className="font-medium">إضافة عمل جديد</span>
+                    </button>
+                    <button 
+                        onClick={() => window.location.hash = '#blog'}
+                        className="flex items-center gap-3 p-4 bg-pink-50 text-pink-700 rounded-lg hover:bg-pink-100 transition-colors"
+                    >
+                        <FileText size={20} />
+                        <span className="font-medium">إضافة مقال جديد</span>
+                    </button>
+                    <button 
+                        onClick={() => window.location.hash = '#settings'}
+                        className="flex items-center gap-3 p-4 bg-slate-50 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
+                        <SettingsIcon size={20} />
+                        <span className="font-medium">إعدادات الموقع</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const MessagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const { t } = useApp();
     const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -778,6 +938,7 @@ export const Admin = () => {
           </div>
         </aside>
         <main className="flex-1 overflow-y-auto p-8">
+          {activeTab === 'dashboard' && <DashboardOverview />}
           {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'packages' && <PackagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
