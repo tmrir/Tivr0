@@ -264,37 +264,9 @@ export interface SectionTemplate {
   name: string;
   displayName: LocalizedString;
   description: LocalizedString;
-  category: 'gallery' | 'testimonials' | 'cta' | 'pricing' | 'faq' | 'hero' | 'features' | 'contact';
+  category: 'gallery' | 'testimonials' | 'cta' | 'pricing' | 'faq' | 'hero' | 'features' | 'contact' | 'blog' | 'about';
   defaultComponents: PageComponent[];
   previewImage?: string;
-}
-
-export interface SiteSectionControl {
-  id: string;
-  name: string;
-  isVisible: boolean;
-  canBeRemoved: boolean;
-  customPageId?: string; // If replaced with custom page
-}
-
-export interface ExtendedSiteSettings extends SiteSettings {
-  // Page Management
-  customPages: CustomPage[];
-  sectionTemplates: SectionTemplate[];
-  
-  // Section Visibility Controls
-  sectionControls: {
-    hero: SiteSectionControl;
-    services: SiteSectionControl;
-    work: SiteSectionControl;
-    team: SiteSectionControl;
-    packages: SiteSectionControl;
-    contact: SiteSectionControl;
-    footer: SiteSectionControl;
-  };
-  
-  // Navigation Management
-  navigationItems: NavigationItem[];
 }
 
 export interface NavigationItem {

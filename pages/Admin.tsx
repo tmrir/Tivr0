@@ -11,7 +11,6 @@ import { SortableList } from '../components/SortableList';
 import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
 import ContactUsManager from '../components/ContactUsManager';
 import { PageManager } from '../components/PageManager';
-import { SectionManager } from '../components/SectionManager';
 
 interface ManagerProps {
   onUpdate: () => void;
@@ -634,7 +633,7 @@ export const Admin = () => {
   const { isAdmin, t, loading, dir, lang } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'contact' | 'messages' | 'settings' | 'pages' | 'sections'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'contact' | 'messages' | 'settings' | 'pages'>('dashboard');
   const [refresh, setRefresh] = useState(0);
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -686,21 +685,16 @@ export const Admin = () => {
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{t('admin.menu.main')}</h3>
             <nav className="space-y-1">
               <SidebarLink icon={<BarChart2 size={20}/>} label={t('admin.tab.dashboard')} active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-              <SidebarLink icon={<List size={20}/>} label={t('admin.tab.services')} active={activeTab === 'services'} onClick={() => setActiveTab('services')} />
-              <SidebarLink icon={<UsersIcon size={20}/>} label={t('admin.tab.team')} active={activeTab === 'team'} onClick={() => setActiveTab('team')} />
-              <SidebarLink icon={<PackageIcon size={20}/>} label={t('admin.tab.packages')} active={activeTab === 'packages'} onClick={() => setActiveTab('packages')} />
               <SidebarLink icon={<Briefcase size={20}/>} label={t('admin.tab.work')} active={activeTab === 'work'} onClick={() => setActiveTab('work')} />
               <SidebarLink icon={<FileText size={20}/>} label={t('admin.tab.blog')} active={activeTab === 'blog'} onClick={() => setActiveTab('blog')} />
               <SidebarLink icon={<Phone size={20}/>} label={lang === 'ar' ? 'تواصل معنا' : 'Contact Us'} active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} />
               <SidebarLink icon={<MessageCircle size={20}/>} label={t('admin.tab.messages')} active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
               <SidebarLink icon={<LayoutIcon size={20}/>} label={lang === 'ar' ? 'مدير الصفحات' : 'Page Manager'} active={activeTab === 'pages'} onClick={() => setActiveTab('pages')} />
-              <SidebarLink icon={<Eye size={20}/>} label={lang === 'ar' ? 'مدير الأقسام' : 'Section Manager'} active={activeTab === 'sections'} onClick={() => setActiveTab('sections')} />
               <SidebarLink icon={<SettingsIcon size={20}/>} label={t('admin.tab.settings')} active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
             </nav>
           </div>
         </aside>
         <main className="flex-1 overflow-y-auto p-8">
-          {activeTab === 'dashboard' && <DashboardTab />}
           {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'packages' && <PackagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
@@ -709,7 +703,6 @@ export const Admin = () => {
           {activeTab === 'contact' && <ContactUsManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'messages' && <MessagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'pages' && <PageManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
-          {activeTab === 'sections' && <SectionManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'settings' && (
             <SettingsProvider>
               <SettingsNewPage />
