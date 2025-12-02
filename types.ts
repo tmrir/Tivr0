@@ -193,3 +193,116 @@ export interface ContactUsSettings {
   };
   cssClasses?: string;
 }
+
+export interface PageComponent {
+  id: string;
+  type: 'text' | 'video' | 'image' | 'link' | 'button' | 'html' | 'slider' | 'interactive' | 'custom';
+  content: any;
+  display: 'modal' | 'banner' | 'box' | 'section';
+  styles: {
+    colors?: ComponentColors;
+    sizes?: ComponentSizes;
+    margins?: ComponentMargins;
+    backgrounds?: ComponentBackgrounds;
+    layout?: ComponentLayout;
+  };
+  orderIndex: number;
+  isVisible: boolean;
+}
+
+export interface ComponentColors {
+  primary?: string;
+  secondary?: string;
+  background?: string;
+  text?: string;
+  accent?: string;
+}
+
+export interface ComponentSizes {
+  width?: string;
+  height?: string;
+  fontSize?: string;
+  padding?: string;
+}
+
+export interface ComponentMargins {
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
+}
+
+export interface ComponentBackgrounds {
+  color?: string;
+  image?: string;
+  gradient?: string;
+  video?: string;
+}
+
+export interface ComponentLayout {
+  direction?: 'row' | 'column';
+  alignment?: 'start' | 'center' | 'end';
+  spacing?: string;
+}
+
+export interface CustomPage {
+  id: string;
+  name: string;
+  slug: string;
+  title: LocalizedString;
+  description?: LocalizedString;
+  components: PageComponent[];
+  isVisible: boolean;
+  showInNavigation: boolean;
+  navigationOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SectionTemplate {
+  id: string;
+  name: string;
+  displayName: LocalizedString;
+  description: LocalizedString;
+  category: 'gallery' | 'testimonials' | 'cta' | 'pricing' | 'faq' | 'hero' | 'features' | 'contact';
+  defaultComponents: PageComponent[];
+  previewImage?: string;
+}
+
+export interface SiteSectionControl {
+  id: string;
+  name: string;
+  isVisible: boolean;
+  canBeRemoved: boolean;
+  customPageId?: string; // If replaced with custom page
+}
+
+export interface ExtendedSiteSettings extends SiteSettings {
+  // Page Management
+  customPages: CustomPage[];
+  sectionTemplates: SectionTemplate[];
+  
+  // Section Visibility Controls
+  sectionControls: {
+    hero: SiteSectionControl;
+    services: SiteSectionControl;
+    work: SiteSectionControl;
+    team: SiteSectionControl;
+    packages: SiteSectionControl;
+    contact: SiteSectionControl;
+    footer: SiteSectionControl;
+  };
+  
+  // Navigation Management
+  navigationItems: NavigationItem[];
+}
+
+export interface NavigationItem {
+  id: string;
+  type: 'page' | 'section' | 'external';
+  label: LocalizedString;
+  href: string;
+  orderIndex: number;
+  isVisible: boolean;
+  pageId?: string; // For custom pages
+}

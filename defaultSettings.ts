@@ -1,4 +1,4 @@
-import { SiteSettings } from './types';
+import { SiteSettings, ExtendedSiteSettings } from './types';
 
 // النموذج الافتراضي الكامل للإعدادات
 export const defaultSettings: SiteSettings = {
@@ -157,6 +157,29 @@ export const defaultSettings: SiteSettings = {
     privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
     terms: { ar: 'شروط الخدمة', en: 'Terms of Service' }
   }
+};
+
+// الإعدادات الموسعة للنظام الجديد
+export const extendedDefaultSettings: ExtendedSiteSettings = {
+  ...defaultSettings,
+  
+  // Page Management
+  customPages: [],
+  sectionTemplates: [],
+  
+  // Section Visibility Controls
+  sectionControls: {
+    hero: { id: 'hero', name: 'Hero Section', isVisible: true, canBeRemoved: false },
+    services: { id: 'services', name: 'Services', isVisible: true, canBeRemoved: true },
+    work: { id: 'work', name: 'Work', isVisible: true, canBeRemoved: true },
+    team: { id: 'team', name: 'Team', isVisible: true, canBeRemoved: true },
+    packages: { id: 'packages', name: 'Packages', isVisible: true, canBeRemoved: true },
+    contact: { id: 'contact', name: 'Contact', isVisible: true, canBeRemoved: false },
+    footer: { id: 'footer', name: 'Footer', isVisible: true, canBeRemoved: false }
+  },
+  
+  // Navigation Management
+  navigationItems: []
 };
 
 // دالة لدمج الإعدادات مع الإعدادات الافتراضية

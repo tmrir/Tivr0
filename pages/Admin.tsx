@@ -5,11 +5,13 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare, Layout as LayoutIcon, Eye, EyeOff } from 'lucide-react';
 import SettingsNewPage from './SettingsNew';
 import { SortableList } from '../components/SortableList';
 import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
 import ContactUsManager from '../components/ContactUsManager';
+import { PageManager } from '../components/PageManager';
+import { SectionManager } from '../components/SectionManager';
 
 interface ManagerProps {
   onUpdate: () => void;
@@ -632,7 +634,7 @@ export const Admin = () => {
   const { isAdmin, t, loading, dir, lang } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'contact' | 'messages' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'contact' | 'messages' | 'settings' | 'pages' | 'sections'>('dashboard');
   const [refresh, setRefresh] = useState(0);
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -691,6 +693,8 @@ export const Admin = () => {
               <SidebarLink icon={<FileText size={20}/>} label={t('admin.tab.blog')} active={activeTab === 'blog'} onClick={() => setActiveTab('blog')} />
               <SidebarLink icon={<Phone size={20}/>} label={lang === 'ar' ? 'تواصل معنا' : 'Contact Us'} active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} />
               <SidebarLink icon={<MessageCircle size={20}/>} label={t('admin.tab.messages')} active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
+              <SidebarLink icon={<LayoutIcon size={20}/>} label={lang === 'ar' ? 'مدير الصفحات' : 'Page Manager'} active={activeTab === 'pages'} onClick={() => setActiveTab('pages')} />
+              <SidebarLink icon={<Eye size={20}/>} label={lang === 'ar' ? 'مدير الأقسام' : 'Section Manager'} active={activeTab === 'sections'} onClick={() => setActiveTab('sections')} />
               <SidebarLink icon={<SettingsIcon size={20}/>} label={t('admin.tab.settings')} active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
             </nav>
           </div>
@@ -704,6 +708,8 @@ export const Admin = () => {
           {activeTab === 'blog' && <BlogManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'contact' && <ContactUsManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'messages' && <MessagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'pages' && <PageManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'sections' && <SectionManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'settings' && (
             <SettingsProvider>
               <SettingsNewPage />

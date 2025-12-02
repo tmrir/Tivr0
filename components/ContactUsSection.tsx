@@ -83,7 +83,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
   }
 
   return (
-    <section id="contact" className={`py-24 bg-tivro-dark text-white ${contactSettings.cssClasses || ''}`}>
+    <div className={`py-24 bg-tivro-dark text-white ${contactSettings.cssClasses || ''}`}>
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl md:text-5xl font-bold mb-6">
           {contactSettings.title?.[lang] || (lang === 'ar' ? 'تواصل معنا' : 'Contact Us')}
@@ -102,7 +102,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
                     className="text-tivro-primary"
                   />
                 ) : (
-                  <IconComponent name={card.iconSVG} className="text-tivro-primary" size={24} />
+                  <IconComponent name={card.iconSVG} className="text-tivro-primary" />
                 )}
                 {card.heading?.[lang] || (lang === 'ar' ? 'حجز استشارة' : 'Book Consultation')}
               </h4>
@@ -116,7 +116,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
                     rel="noopener noreferrer" 
                     className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition text-white"
                   >
-                    <IconComponent name={link.iconSVG_or_name} size={16} />
+                    <IconComponent name={link.iconSVG_or_name} className="w-4 h-4" />
                   </a>
                 ))}
               </div>
@@ -153,7 +153,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 

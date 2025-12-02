@@ -5,7 +5,8 @@ import { db } from '../services/db';
 import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Loader2, User } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { Service, CaseStudy, TeamMember, Package, SiteSettings } from '../types';
-import ContactUsSection from '../components/ContactUsSection';
+import { ContactUsSection } from '../components/ContactUsSection';
+import { defaultSettings } from '../defaultSettings';
 
 export const Home = () => {
   const { t, lang, dir } = useApp();
@@ -307,49 +308,7 @@ export const Home = () => {
 
       {/* CTA / Contact */}
       <section id="contact" className="py-24 bg-tivro-dark text-white">
-         <div className="container mx-auto px-4 text-center">
-           <h2 className="text-3xl md:text-5xl font-bold mb-6">
-               {settings?.homeSections?.contactTitle?.[lang] || (lang === 'ar' ? 'جاهز لنقل مشروعك للمستوى التالي؟' : 'Ready to take your business to the next level?')}
-           </h2>
-           <p className="text-slate-300 mb-10 max-w-2xl mx-auto text-lg">
-               {settings?.homeSections?.contactSubtitle?.[lang] || (lang === 'ar' ? 'دعنا نناقش أهدافك ونضع استراتيجية مخصصة لنجاحك.' : 'Let\'s discuss your goals and craft a custom strategy for your success.')}
-           </p>
-           <div className="flex flex-col md:flex-row justify-center gap-6">
-             <div className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
-               <h4 className="text-xl font-bold mb-4 flex items-center gap-2"><TrendingUp className="text-tivro-primary"/> {lang === 'ar' ? 'حجز استشارة' : 'Consultation'}</h4>
-               {/* Social Links Display - Using Settings */}
-               <div className="flex gap-4 mt-4 mb-6">
-                  {settings?.socialLinks?.map((link, idx) => (
-                    <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition text-white">
-                      <IconComponent name={link.platform} className="w-4 h-4" />
-                    </a>
-                  ))}
-               </div>
-               <form className="space-y-4 w-full md:w-80" onSubmit={handleContactSubmit}>
-                 <input 
-                    type="text" 
-                    placeholder={lang === 'ar' ? 'الاسم' : 'Name'} 
-                    className="w-full bg-slate-800 border-none rounded-lg p-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-tivro-primary outline-none" 
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    required
-                 />
-                 <input 
-                    type="tel" 
-                    placeholder={lang === 'ar' ? 'رقم الجوال' : 'Phone'} 
-                    className="w-full bg-slate-800 border-none rounded-lg p-3 text-white placeholder-slate-500 focus:ring-2 focus:ring-tivro-primary outline-none" 
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    required
-                 />
-                 <button disabled={contactSending} className="w-full bg-tivro-primary hover:bg-emerald-500 py-3 rounded-lg font-bold transition flex items-center justify-center gap-2 text-white">
-                    {contactSending && <Loader2 className="animate-spin" size={18}/>}
-                    {lang === 'ar' ? 'إرسال الطلب' : 'Send Request'}
-                 </button>
-               </form>
-             </div>
-           </div>
-         </div>
+         <ContactUsSection settings={settings?.contactUs} fallbackSettings={defaultSettings.contactUs} />
       </section>
 
             
