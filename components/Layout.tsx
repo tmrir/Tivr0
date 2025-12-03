@@ -24,6 +24,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [settings, setSettings] = useState<SiteSettings | any>(DEFAULT_SETTINGS);
   const [footerServices, setFooterServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
+  
+  // State for navigation visibility and labels from admin panel
+  const [navigationState, setNavigationState] = useState<any[]>([
+    { key: 'services', visible: true },
+    { key: 'team', visible: true },
+    { key: 'packages', visible: true },
+    { key: 'work', visible: true },
+    { key: 'blog', visible: true }
+  ]);
+  
+  const [navigationLabels, setNavigationLabels] = useState<any>({
+    services: t('nav.services'),
+    team: t('nav.team'),
+    packages: lang === 'ar' ? 'الباقات' : 'Packages',
+    work: t('nav.work'),
+    blog: t('nav.blog')
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,8 +62,85 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             setPackages(packagesData);
         } catch(e) { console.error(e); }
     };
+    
+    // Load navigation state from admin panel
+    const savedNavigation = localStorage.getItem('adminNavigation');
+    if (savedNavigation) {
+      try {
+        const navigationItems = JSON.parse(savedNavigation);
+        // Update visibility state
+        const visibilityState = navigationItems.map((item: any) => ({
+          key: item.key,
+          visible: item.visible
+        }));
+        setNavigationState(visibilityState);
+        
+        // Update labels state
+        const labelsState: any = {};
+        navigationItems.forEach((item: any) => {
+          labelsState[item.key] = item.label;
+        });
+        setNavigationLabels(labelsState);
+      } catch (error) {
+        console.error('Failed to load navigation state:', error);
+      }
+    }
+    
+    // Listen for admin navigation updates
+    const handleAdminNavigationUpdate = (event: any) => {
+      console.log(' [Layout] Admin navigation update detected:', event.detail);
+      const { navigationItems } = event.detail;
+      
+      // Update visibility state
+      const visibilityState = navigationItems.map((item: any) => ({
+        key: item.key,
+        visible: item.visible
+      }));
+      setNavigationState(visibilityState);
+      
+      // Update labels state
+      const labelsState: any = {};
+      navigationItems.forEach((item: any) => {
+        labelsState[item.key] = item.label;
+      });
+      setNavigationLabels(labelsState);
+    };
+
+    // Listen for storage changes in navigation
+    const handleStorageNavigationUpdate = (event: StorageEvent) => {
+      if (event.key === 'adminNavigation' && event.newValue) {
+        try {
+          const navigationItems = JSON.parse(event.newValue);
+          
+          // Update visibility state
+          const visibilityState = navigationItems.map((item: any) => ({
+            key: item.key,
+            visible: item.visible
+          }));
+          setNavigationState(visibilityState);
+          
+          // Update labels state
+          const labelsState: any = {};
+          navigationItems.forEach((item: any) => {
+            labelsState[item.key] = item.label;
+          });
+          setNavigationLabels(labelsState);
+        } catch (error) {
+          console.error('Failed to parse navigation update:', error);
+        }
+      }
+    };
+
+    window.addEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
+    window.addEventListener('storage', handleStorageNavigationUpdate);
+    
     fetchData();
-  }, []);
+    
+    return () => {
+      window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
+      window.removeEventListener('storage', handleStorageNavigationUpdate);
+    };
+  }, [lang]);
 
   const toggleLang = () => setLang(lang === 'ar' ? 'en' : 'ar');
   const handleLogout = async () => {
@@ -111,11 +205,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
           <nav className="hidden md:flex items-center gap-8">
             <NavLink href="#" label={t('nav.home')} />
-            <NavLink href="#services" label={t('nav.services')} />
-            {packages.length > 0 && <NavLink href="#packages" label={lang === 'ar' ? 'الباقات' : 'Packages'} />}
-            <NavLink href="#work" label={t('nav.work')} />
-            <NavLink href="#team" label={t('nav.team')} />
-            <NavLink href="#blog" label={t('nav.blog')} />
+            {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={navigationLabels.services || t('nav.services')} />}
+            {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={navigationLabels.packages || (lang === 'ar' ? 'الباقات' : 'Packages')} />}
+            {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={navigationLabels.work || t('nav.work')} />}
+            {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={navigationLabels.team || t('nav.team')} />}
+            {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={navigationLabels.blog || t('nav.blog')} />}
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
@@ -135,22 +229,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
           <button className="md:hidden text-slate-700" onClick={() => setIsMenuOpen(!isMenuOpen)}>{isMenuOpen ? <X size={28} /> : <Menu size={28} />}</button>
         </div>
-
-        {isMenuOpen && (
-          <div className="md:hidden absolute top-20 left-0 w-full bg-white border-b border-slate-100 p-6 shadow-xl flex flex-col gap-6 animate-fade-in">
-            <NavLink href="#" label={t('nav.home')} />
-            <NavLink href="#services" label={t('nav.services')} />
-            {packages.length > 0 && <NavLink href="#packages" label={lang === 'ar' ? 'الباقات' : 'Packages'} />}
-            <NavLink href="#work" label={t('nav.work')} />
-            <NavLink href="#team" label={t('nav.team')} />
-            <NavLink href="#blog" label={t('nav.blog')} />
-            <div className="h-px bg-slate-100 my-2"></div>
-            <div className="flex justify-between items-center">
-               <button onClick={toggleLang} className="flex items-center gap-2 font-bold text-slate-600"><Globe size={20} /> {lang === 'ar' ? 'English' : 'العربية'}</button>
-               {isAdmin && <a href="#admin" className="text-tivro-primary font-bold flex gap-2 items-center"><LayoutDashboard size={20}/> Admin</a>}
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Main Content */}

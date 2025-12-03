@@ -40,15 +40,82 @@ const StatCard = ({ title, value }: any) => (
   </div>
 );
 
-const SidebarLink = ({ icon, label, active, onClick }: any) => (
-  <button 
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition ${active ? 'bg-tivro-primary/10 text-tivro-primary' : 'text-slate-600 hover:bg-slate-50'}`}
-  >
-    {icon}
-    {label}
-  </button>
-);
+const SidebarLink = ({ icon, label, active, onClick, editable = false, onLabelChange, visible = true, onVisibilityToggle }: any) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(label);
+
+  const handleLabelClick = (e: React.MouseEvent) => {
+    if (editable) {
+      e.stopPropagation();
+      setIsEditing(true);
+      setEditValue(label);
+    }
+  };
+
+  const handleLabelSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onLabelChange && editValue.trim() !== label) {
+      onLabelChange(editValue.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleLabelKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditValue(label);
+    }
+  };
+
+  const handleVisibilityToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onVisibilityToggle) {
+      onVisibilityToggle();
+    }
+  };
+
+  return (
+    <button 
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition ${active ? 'bg-tivro-primary/10 text-tivro-primary' : 'text-slate-600 hover:bg-slate-50'}`}
+    >
+      {icon}
+      {isEditing && editable ? (
+        <form onSubmit={handleLabelSubmit} className="flex-1">
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleLabelSubmit}
+            onKeyDown={handleLabelKeyDown}
+            className="flex-1 bg-transparent border-b border-tivro-primary outline-none text-inherit"
+            autoFocus
+          />
+        </form>
+      ) : (
+        <span 
+          onClick={handleLabelClick}
+          className={`flex-1 text-left ${editable ? 'cursor-text hover:text-tivro-primary' : ''}`}
+        >
+          {label}
+        </span>
+      )}
+      {editable && (
+        <button
+          onClick={handleVisibilityToggle}
+          className={`p-1 rounded hover:bg-slate-200 transition ${visible ? 'text-slate-600' : 'text-slate-300'}`}
+          title={visible ? 'إخفاء' : 'إظهار'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      )}
+    </button>
+  );
+};
 
 const DashboardTab = () => {
   const { t } = useApp();
@@ -878,6 +945,72 @@ export const Admin = () => {
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  // Navigation state for editable sidebar
+  const [navigationItems, setNavigationItems] = useState([
+    { key: 'dashboard', label: t('admin.tab.dashboard'), visible: true },
+    { key: 'services', label: t('admin.tab.services'), visible: true },
+    { key: 'team', label: t('admin.tab.team'), visible: true },
+    { key: 'packages', label: t('admin.tab.packages'), visible: true },
+    { key: 'work', label: t('admin.tab.work'), visible: true },
+    { key: 'blog', label: t('admin.tab.blog'), visible: true },
+    { key: 'contact', label: lang === 'ar' ? 'تواصل معنا' : 'Contact Us', visible: true },
+    { key: 'messages', label: t('admin.tab.messages'), visible: true },
+    { key: 'pages', label: lang === 'ar' ? 'مدير الصفحات' : 'Page Manager', visible: true },
+    { key: 'settings', label: t('admin.tab.settings'), visible: true }
+  ]);
+
+  // Load navigation state from localStorage
+  useEffect(() => {
+    const savedNavigation = localStorage.getItem('adminNavigation');
+    if (savedNavigation) {
+      try {
+        setNavigationItems(JSON.parse(savedNavigation));
+      } catch (error) {
+        console.error('Failed to load navigation state:', error);
+      }
+    }
+  }, []);
+
+  // Save navigation state to localStorage
+  const saveNavigationState = (newItems: typeof navigationItems) => {
+    setNavigationItems(newItems);
+    localStorage.setItem('adminNavigation', JSON.stringify(newItems));
+  };
+
+  const updateNavigationLabel = (key: string, newLabel: string) => {
+    const newItems = navigationItems.map(item => 
+      item.key === key ? { ...item, label: newLabel } : item
+    );
+    saveNavigationState(newItems);
+    
+    // Trigger immediate update in Home page
+    window.dispatchEvent(new CustomEvent('adminNavigationUpdated', { detail: { navigationItems: newItems } }));
+    
+    // Also trigger storage event for cross-tab sync
+    window.localStorage.setItem('adminNavigation', JSON.stringify(newItems));
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'adminNavigation',
+      newValue: JSON.stringify(newItems)
+    }));
+  };
+
+  const toggleNavigationVisibility = (key: string) => {
+    const newItems = navigationItems.map(item => 
+      item.key === key ? { ...item, visible: !item.visible } : item
+    );
+    saveNavigationState(newItems);
+    
+    // Trigger immediate update in Home page
+    window.dispatchEvent(new CustomEvent('adminNavigationUpdated', { detail: { navigationItems: newItems } }));
+    
+    // Also trigger storage event for cross-tab sync
+    window.localStorage.setItem('adminNavigation', JSON.stringify(newItems));
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'adminNavigation',
+      newValue: JSON.stringify(newItems)
+    }));
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoggingIn(true);
@@ -917,6 +1050,22 @@ export const Admin = () => {
     );
   }
 
+  const getIconForItem = (key: string) => {
+    switch (key) {
+      case 'dashboard': return <BarChart2 size={20}/>;
+      case 'services': return <List size={20}/>;
+      case 'team': return <UsersIcon size={20}/>;
+      case 'packages': return <PackageIcon size={20}/>;
+      case 'work': return <Briefcase size={20}/>;
+      case 'blog': return <FileText size={20}/>;
+      case 'contact': return <Phone size={20}/>;
+      case 'messages': return <MessageCircle size={20}/>;
+      case 'pages': return <LayoutIcon size={20}/>;
+      case 'settings': return <SettingsIcon size={20}/>;
+      default: return <LayoutIcon size={20}/>;
+    }
+  };
+
   return (
     <Layout hideFooter>
       <div className="flex h-[calc(100vh-80px)] bg-slate-50" dir={dir}>
@@ -924,16 +1073,19 @@ export const Admin = () => {
           <div className="p-6">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{t('admin.menu.main')}</h3>
             <nav className="space-y-1">
-              <SidebarLink icon={<BarChart2 size={20}/>} label={t('admin.tab.dashboard')} active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-              <SidebarLink icon={<List size={20}/>} label={t('admin.tab.services')} active={activeTab === 'services'} onClick={() => setActiveTab('services')} />
-              <SidebarLink icon={<UsersIcon size={20}/>} label={t('admin.tab.team')} active={activeTab === 'team'} onClick={() => setActiveTab('team')} />
-              <SidebarLink icon={<PackageIcon size={20}/>} label={t('admin.tab.packages')} active={activeTab === 'packages'} onClick={() => setActiveTab('packages')} />
-              <SidebarLink icon={<Briefcase size={20}/>} label={t('admin.tab.work')} active={activeTab === 'work'} onClick={() => setActiveTab('work')} />
-              <SidebarLink icon={<FileText size={20}/>} label={t('admin.tab.blog')} active={activeTab === 'blog'} onClick={() => setActiveTab('blog')} />
-              <SidebarLink icon={<Phone size={20}/>} label={lang === 'ar' ? 'تواصل معنا' : 'Contact Us'} active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} />
-              <SidebarLink icon={<MessageCircle size={20}/>} label={t('admin.tab.messages')} active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
-              <SidebarLink icon={<LayoutIcon size={20}/>} label={lang === 'ar' ? 'مدير الصفحات' : 'Page Manager'} active={activeTab === 'pages'} onClick={() => setActiveTab('pages')} />
-              <SidebarLink icon={<SettingsIcon size={20}/>} label={t('admin.tab.settings')} active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+              {navigationItems.map(item => (
+                <SidebarLink 
+                  key={item.key}
+                  icon={getIconForItem(item.key)} 
+                  label={item.label} 
+                  active={activeTab === item.key} 
+                  onClick={() => setActiveTab(item.key as any)}
+                  editable={true}
+                  onLabelChange={(newLabel) => updateNavigationLabel(item.key, newLabel)}
+                  visible={item.visible}
+                  onVisibilityToggle={() => toggleNavigationVisibility(item.key)}
+                />
+              ))}
             </nav>
           </div>
         </aside>
