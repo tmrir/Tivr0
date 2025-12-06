@@ -77,6 +77,18 @@ export const Home = () => {
       }
     }
 
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(`/api/settings/get?ts=${Date.now()}`);
+        const result = await response.json();
+        if (result.ok && result.data) {
+          setSettings(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch settings:', error);
+      }
+    };
+
     const loadData = async () => {
         try {
             const [s, c, tData, p, set] = await Promise.all([
@@ -216,12 +228,26 @@ export const Home = () => {
     // الاستماع لتغييرات الهاش
     window.addEventListener('hashchange', handleHashScroll);
 
-    // تنظيف event listeners عند unmount
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchSettings();
+      }
+    };
+
+    const handleFocus = () => {
+      fetchSettings();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
         window.removeEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
         window.removeEventListener('hashchange', handleHashScroll);
         window.removeEventListener('storage', handleCustomPagesUpdate);
         window.removeEventListener('customPagesUpdated', handleCustomPagesUpdate);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
         window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
         window.removeEventListener('storage', handleStorageNavigationUpdate);
     };
