@@ -31,6 +31,73 @@ const LocalizedInput = ({ label, value, onChange }: { label: string, value: Loca
     );
 };
 
+/* --- EXTRACTED SIDEBAR ITEM COMPONENT TO FIX RE-RENDER/FOCUS ISSUE --- */
+interface AdminSidebarItemProps {
+    id: string;
+    icon: React.ReactNode;
+    label: string;
+    activeTab: string;
+    setActiveTab: (id: string) => void;
+    sectionKey?: string;
+    settings?: SiteSettings | null;
+    editingSection?: string | null;
+    setEditingSection?: (key: string | null) => void;
+    tempTitle?: LocalizedString;
+    setTempTitle?: (val: LocalizedString) => void;
+    saveRename?: (key: string) => void;
+    startRename?: (key: string, current: LocalizedString) => void;
+    toggleVisibility?: (key: string) => void;
+    getSectionTitle?: (key: string) => LocalizedString;
+}
+
+const AdminSidebarItem: React.FC<AdminSidebarItemProps> = ({ 
+    id, icon, label, activeTab, setActiveTab, 
+    sectionKey, settings, 
+    editingSection, setEditingSection, 
+    tempTitle, setTempTitle, 
+    saveRename, startRename, toggleVisibility, getSectionTitle
+}) => {
+    const isVisible = sectionKey && settings ? settings.sectionVisibility?.[sectionKey] !== false : true;
+    const isEditing = editingSection === sectionKey && sectionKey;
+    
+    // Use the DB title if available, otherwise fallback to label
+    const dbTitle = (sectionKey && settings && getSectionTitle) ? getSectionTitle(sectionKey) : null;
+    const displayLabel = dbTitle?.ar || label;
+    const safeTempTitle = tempTitle || { ar: '', en: '' };
+
+    return (
+        <div className={`group flex items-center justify-between pr-2 rounded-lg transition mb-1 ${activeTab === id ? 'bg-tivro-primary/10' : 'hover:bg-slate-50'}`}>
+            <button onClick={() => setActiveTab(id)} className={`flex-1 flex items-center gap-3 px-4 py-3 text-sm font-medium transition text-left ${activeTab === id ? 'text-tivro-primary' : 'text-slate-600'} ${!isVisible ? 'opacity-50 grayscale' : ''}`}>
+                {icon}
+                {isEditing && setTempTitle ? (
+                    <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                        <input className="w-20 border rounded text-xs p-1" value={safeTempTitle.ar} onChange={e => setTempTitle({...safeTempTitle, ar: e.target.value})} placeholder="Ar" autoFocus />
+                        <input className="w-20 border rounded text-xs p-1" value={safeTempTitle.en} onChange={e => setTempTitle({...safeTempTitle, en: e.target.value})} placeholder="En"/>
+                    </div>
+                ) : <span className={`flex-1 text-left ${!isVisible ? 'line-through decoration-slate-400' : ''}`}>{displayLabel}</span>}
+            </button>
+
+            {sectionKey && settings && (
+                 <div className="flex items-center gap-1">
+                     {isEditing ? (
+                         <>
+                              <button onClick={() => saveRename && saveRename(sectionKey)} className="p-1 text-green-600 hover:bg-green-100 rounded"><Check size={14}/></button>
+                              <button onClick={() => setEditingSection && setEditingSection(null)} className="p-1 text-red-600 hover:bg-red-100 rounded"><X size={14}/></button>
+                         </>
+                     ) : (
+                         <>
+                              <button onClick={() => startRename && startRename(sectionKey, dbTitle!)} className="p-1 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition" title="تعديل اسم القسم"><Edit2 size={14}/></button>
+                              <button onClick={() => toggleVisibility && toggleVisibility(sectionKey)} className={`p-1 rounded transition ${!isVisible ? 'text-red-500 bg-red-50' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-100'}`} title={isVisible ? "إخفاء القسم" : "إظهار القسم"}>
+                                  {isVisible ? <Eye size={14}/> : <EyeOff size={14}/>}
+                              </button>
+                         </>
+                     )}
+                 </div>
+             )}
+        </div>
+    );
+};
+
 /* --- MANAGERS --- */
 
 const DashboardTab = ({ setActiveTab }: { setActiveTab: (t: any) => void }) => {
@@ -230,20 +297,15 @@ export const Admin = () => {
 
   const toggleVisibility = async (key: string) => {
       if(!settings) return;
-      
       const newVisibility = { ...settings.sectionVisibility, [key]: !settings.sectionVisibility[key] };
-      
-      // Optimistic update
       const updatedSettings = { ...settings, sectionVisibility: newVisibility };
       setSettings(updatedSettings);
 
       try {
         await db.settings.save(updatedSettings);
-        console.log(`Visibility for ${key} saved:`, newVisibility[key]);
       } catch (e) {
         console.error("Failed to save visibility", e);
-        // Revert on error
-        setSettings(settings);
+        setSettings(settings); // Revert on error
       }
   };
 
@@ -255,11 +317,9 @@ export const Admin = () => {
   const saveRename = async (key: string) => {
       if(!settings) return;
       
-      // Deep copy to ensure immutability
       let newHomeSections = JSON.parse(JSON.stringify(settings.homeSections));
       let newSectionTexts = JSON.parse(JSON.stringify(settings.sectionTexts));
 
-      // Correctly map key to the actual TITLE field in DB
       if(key === 'services') newHomeSections.servicesTitle = tempTitle;
       else if(key === 'team') newHomeSections.teamTitle = tempTitle;
       else if(key === 'packages') newHomeSections.packagesTitle = tempTitle;
@@ -284,52 +344,11 @@ export const Admin = () => {
           case 'services': return settings.homeSections.servicesTitle;
           case 'team': return settings.homeSections.teamTitle;
           case 'packages': return settings.homeSections.packagesTitle;
-          case 'work': return settings.sectionTexts.workTitle; // Note: 'work' uses sectionTexts
+          case 'work': return settings.sectionTexts.workTitle;
           case 'contact': return settings.homeSections.contactTitle;
           case 'hero': return settings.homeSections.heroTitle;
           default: return {ar: key, en: key};
       }
-  };
-
-  const SidebarItem = ({ id, icon, label, sectionKey }: any) => {
-      const isVisible = sectionKey && settings ? settings.sectionVisibility?.[sectionKey] !== false : true;
-      const isEditing = editingSection === sectionKey && sectionKey;
-      
-      // Use the DB title if available, otherwise fallback to label
-      const dbTitle = sectionKey && settings ? getSectionTitle(sectionKey) : null;
-      const displayLabel = dbTitle?.ar || label;
-
-      return (
-          <div className={`group flex items-center justify-between pr-2 rounded-lg transition mb-1 ${activeTab === id ? 'bg-tivro-primary/10' : 'hover:bg-slate-50'}`}>
-              <button onClick={() => setActiveTab(id)} className={`flex-1 flex items-center gap-3 px-4 py-3 text-sm font-medium transition text-left ${activeTab === id ? 'text-tivro-primary' : 'text-slate-600'} ${!isVisible ? 'opacity-50 grayscale' : ''}`}>
-                  {icon}
-                  {isEditing ? (
-                      <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                          <input className="w-20 border rounded text-xs p-1" value={tempTitle.ar} onChange={e => setTempTitle({...tempTitle, ar: e.target.value})} placeholder="Ar"/>
-                          <input className="w-20 border rounded text-xs p-1" value={tempTitle.en} onChange={e => setTempTitle({...tempTitle, en: e.target.value})} placeholder="En"/>
-                      </div>
-                  ) : <span className={`flex-1 text-left ${!isVisible ? 'line-through decoration-slate-400' : ''}`}>{displayLabel}</span>}
-              </button>
-
-              {sectionKey && settings && (
-                   <div className="flex items-center gap-1">
-                       {isEditing ? (
-                           <>
-                                <button onClick={() => saveRename(sectionKey)} className="p-1 text-green-600 hover:bg-green-100 rounded"><Check size={14}/></button>
-                                <button onClick={() => setEditingSection(null)} className="p-1 text-red-600 hover:bg-red-100 rounded"><X size={14}/></button>
-                           </>
-                       ) : (
-                           <>
-                                <button onClick={() => startRename(sectionKey, getSectionTitle(sectionKey))} className="p-1 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition" title="تعديل اسم القسم"><Edit2 size={14}/></button>
-                                <button onClick={() => toggleVisibility(sectionKey)} className={`p-1 rounded transition ${!isVisible ? 'text-red-500 bg-red-50' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-100'}`} title={isVisible ? "إخفاء القسم" : "إظهار القسم"}>
-                                    {isVisible ? <Eye size={14}/> : <EyeOff size={14}/>}
-                                </button>
-                           </>
-                       )}
-                   </div>
-               )}
-          </div>
-      );
   };
 
   if (!isAdmin) return <div className="p-20 text-center">Please login</div>;
@@ -341,16 +360,16 @@ export const Admin = () => {
           <div className="p-6">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">القائمة الرئيسية</h3>
             <nav className="space-y-1">
-              <SidebarItem id="dashboard" icon={<ChartNoAxesColumn size={20}/>} label="نظرة عامة" />
-              <SidebarItem id="services" icon={<List size={20}/>} label="الخدمات" sectionKey="services" />
-              <SidebarItem id="work" icon={<Briefcase size={20}/>} label="أعمالنا" sectionKey="work" />
-              <SidebarItem id="packages" icon={<PackageIcon size={20}/>} label="الباقات" sectionKey="packages" />
-              <SidebarItem id="team" icon={<UsersIcon size={20}/>} label="الفريق" sectionKey="team" />
-              <SidebarItem id="blog" icon={<FileText size={20}/>} label="المدونة" sectionKey="blog" />
-              <SidebarItem id="messages" icon={<MessageCircle size={20}/>} label="رسائل التواصل" sectionKey="contact" />
-              <SidebarItem id="requests" icon={<Inbox size={20}/>} label="طلبات الباقات" />
-              <SidebarItem id="brand" icon={<PanelsTopLeft size={20}/>} label="مدير الصفحات" />
-              <SidebarItem id="settings" icon={<SettingsIcon size={20}/>} label="الإعدادات" />
+              <AdminSidebarItem id="dashboard" icon={<ChartNoAxesColumn size={20}/>} label="نظرة عامة" activeTab={activeTab} setActiveTab={setActiveTab} />
+              <AdminSidebarItem id="services" icon={<List size={20}/>} label="الخدمات" sectionKey="services" activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} editingSection={editingSection} setEditingSection={setEditingSection} tempTitle={tempTitle} setTempTitle={setTempTitle} saveRename={saveRename} startRename={startRename} toggleVisibility={toggleVisibility} getSectionTitle={getSectionTitle} />
+              <AdminSidebarItem id="work" icon={<Briefcase size={20}/>} label="أعمالنا" sectionKey="work" activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} editingSection={editingSection} setEditingSection={setEditingSection} tempTitle={tempTitle} setTempTitle={setTempTitle} saveRename={saveRename} startRename={startRename} toggleVisibility={toggleVisibility} getSectionTitle={getSectionTitle} />
+              <AdminSidebarItem id="packages" icon={<PackageIcon size={20}/>} label="الباقات" sectionKey="packages" activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} editingSection={editingSection} setEditingSection={setEditingSection} tempTitle={tempTitle} setTempTitle={setTempTitle} saveRename={saveRename} startRename={startRename} toggleVisibility={toggleVisibility} getSectionTitle={getSectionTitle} />
+              <AdminSidebarItem id="team" icon={<UsersIcon size={20}/>} label="الفريق" sectionKey="team" activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} editingSection={editingSection} setEditingSection={setEditingSection} tempTitle={tempTitle} setTempTitle={setTempTitle} saveRename={saveRename} startRename={startRename} toggleVisibility={toggleVisibility} getSectionTitle={getSectionTitle} />
+              <AdminSidebarItem id="blog" icon={<FileText size={20}/>} label="المدونة" sectionKey="blog" activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} editingSection={editingSection} setEditingSection={setEditingSection} tempTitle={tempTitle} setTempTitle={setTempTitle} saveRename={saveRename} startRename={startRename} toggleVisibility={toggleVisibility} getSectionTitle={getSectionTitle} />
+              <AdminSidebarItem id="messages" icon={<MessageCircle size={20}/>} label="رسائل التواصل" sectionKey="contact" activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} editingSection={editingSection} setEditingSection={setEditingSection} tempTitle={tempTitle} setTempTitle={setTempTitle} saveRename={saveRename} startRename={startRename} toggleVisibility={toggleVisibility} getSectionTitle={getSectionTitle} />
+              <AdminSidebarItem id="requests" icon={<Inbox size={20}/>} label="طلبات الباقات" activeTab={activeTab} setActiveTab={setActiveTab} />
+              <AdminSidebarItem id="brand" icon={<PanelsTopLeft size={20}/>} label="مدير الصفحات" activeTab={activeTab} setActiveTab={setActiveTab} />
+              <AdminSidebarItem id="settings" icon={<SettingsIcon size={20}/>} label="الإعدادات" activeTab={activeTab} setActiveTab={setActiveTab} />
             </nav>
           </div>
         </aside>

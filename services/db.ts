@@ -1,13 +1,27 @@
 
 import { supabase } from './supabase';
-import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page, PackageRequest } from '../types';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page, PackageRequest, LocalizedString } from '../types';
+
+/* --- HELPER: SAFE LOCALIZED STRING --- */
+const ensureLocalized = (val: any): LocalizedString => {
+    if (!val) return { ar: '', en: '' };
+    if (typeof val === 'string') {
+        try {
+            const parsed = JSON.parse(val);
+            return { ar: parsed.ar || '', en: parsed.en || '' };
+        } catch {
+            return { ar: val, en: val };
+        }
+    }
+    return { ar: val.ar || '', en: val.en || '' };
+};
 
 /* --- DATA MAPPERS --- */
 const mapServiceFromDB = (row: any): Service => ({
   id: row.id,
-  title: row.title || { ar: '', en: '' },
-  description: row.description || { ar: '', en: '' },
-  features: row.features || [],
+  title: ensureLocalized(row.title),
+  description: ensureLocalized(row.description),
+  features: Array.isArray(row.features) ? row.features.map(ensureLocalized) : [],
   iconName: row.icon_name || 'HelpCircle',
   orderIndex: row.order_index
 });
@@ -15,9 +29,9 @@ const mapServiceToDB = (item: Service) => ({ title: item.title, description: ite
 
 const mapPackageFromDB = (row: any): Package => ({
   id: row.id,
-  name: row.name || { ar: '', en: '' },
+  name: ensureLocalized(row.name),
   price: row.price || '',
-  features: row.features || [],
+  features: Array.isArray(row.features) ? row.features.map(ensureLocalized) : [],
   isPopular: row.is_popular || false,
   orderIndex: row.order_index
 });
@@ -25,8 +39,8 @@ const mapPackageToDB = (item: Package) => ({ name: item.name, price: item.price,
 
 const mapTeamFromDB = (row: any): TeamMember => ({
   id: row.id,
-  name: row.name || { ar: '', en: '' },
-  role: row.role || { ar: '', en: '' },
+  name: ensureLocalized(row.name),
+  role: ensureLocalized(row.role),
   image: row.image || '',
   linkedin: row.linkedin || '',
   orderIndex: row.order_index
@@ -36,20 +50,20 @@ const mapTeamToDB = (item: TeamMember) => ({ name: item.name, role: item.role, i
 const mapCaseFromDB = (row: any): CaseStudy => ({
   id: row.id,
   client: row.client || '',
-  title: row.title || { ar: '', en: '' },
-  category: row.category || { ar: '', en: '' },
-  result: row.result || { ar: '', en: '' },
+  title: ensureLocalized(row.title),
+  category: ensureLocalized(row.category),
+  result: ensureLocalized(row.result),
   image: row.image || '',
-  stats: Array.isArray(row.stats) ? row.stats : [],
+  stats: Array.isArray(row.stats) ? row.stats.map((s: any) => ({ value: s.value, label: ensureLocalized(s.label) })) : [],
   orderIndex: row.order_index
 });
 const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, stats: item.stats });
 
 const mapBlogFromDB = (row: any): BlogPost => ({
   id: row.id,
-  title: row.title || { ar: '', en: '' },
-  excerpt: row.excerpt || { ar: '', en: '' },
-  content: row.content || { ar: '', en: '' },
+  title: ensureLocalized(row.title),
+  excerpt: ensureLocalized(row.excerpt),
+  content: ensureLocalized(row.content),
   image: row.image || '',
   author: row.author || '',
   date: row.date || new Date().toISOString().split('T')[0]
@@ -82,23 +96,44 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
       });
   }
 
-  const defaultVisibility = {
-      hero: true,
-      services: true,
-      work: true,
-      packages: true,
-      team: true,
-      contact: true
+  // DEFAULTS
+  const defaultHomeSections = {
+      heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
+      servicesTitle: { ar: '', en: '' }, servicesSubtitle: { ar: '', en: '' },
+      teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
+      packagesTitle: { ar: '', en: '' },
+      contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
   };
 
+  const defaultSectionTexts = { 
+      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
+      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
+  };
+
+  const defaultVisibility = { hero: true, services: true, work: true, packages: true, team: true, contact: true };
   const defaultFont = { heroTitle: 'text-5xl', heroSubtitle: 'text-xl', sectionTitle: 'text-4xl', sectionDesc: 'text-lg', cardTitle: 'text-xl' };
   const defaultFooter = { description: {ar:'',en:''}, copyright: {ar:'',en:''}, links: {privacyLabel: {ar:'',en:''}, termsLabel: {ar:'',en:''}} };
+  const defaultBanner = { enabled: false, title: {ar:'',en:''} };
+
+  // DEEP MERGE to ensure no keys are missing
+  const homeSections = { ...defaultHomeSections, ...(row.home_sections || {}) };
+  // Ensure nested localized strings in homeSections are valid
+  Object.keys(homeSections).forEach(key => {
+      // @ts-ignore
+      if(typeof homeSections[key] === 'object') homeSections[key] = ensureLocalized(homeSections[key]);
+  });
+
+  const sectionTexts = { ...defaultSectionTexts, ...(row.section_texts || {}) };
+  Object.keys(sectionTexts).forEach(key => {
+       // @ts-ignore
+      if(typeof sectionTexts[key] === 'object') sectionTexts[key] = ensureLocalized(sectionTexts[key]);
+  });
 
   return {
-    siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
+    siteName: ensureLocalized(row.site_name || { ar: 'Tivro', en: 'Tivro' }),
     contactEmail: row.contact_email || '',
     contactPhone: row.contact_phone || '',
-    address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
+    address: ensureLocalized(row.address),
     socialLinks: socialLinks,
     
     logoUrl: row.logo_url || '',
@@ -106,27 +141,18 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     footerLogoUrl: row.footer_logo_url || row.logo_url || '',
     faviconUrl: row.favicon_url || '',
 
-    topBanner: row.top_banner || { enabled: false, title: {ar:'',en:''} },
-    bottomBanner: row.bottom_banner || { enabled: false, title: {ar:'',en:''} },
+    topBanner: { ...defaultBanner, ...(row.top_banner || {}) },
+    bottomBanner: { ...defaultBanner, ...(row.bottom_banner || {}) },
 
-    sectionTexts: row.section_texts || { 
-      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
-      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
-    },
-    homeSections: row.home_sections || {
-        heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
-        servicesTitle: { ar: '', en: '' }, servicesSubtitle: { ar: '', en: '' },
-        teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
-        packagesTitle: { ar: '', en: '' },
-        contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
-    },
+    sectionTexts: sectionTexts,
+    homeSections: homeSections,
 
     sectionVisibility: { ...defaultVisibility, ...(row.section_visibility || {}) },
     fontSettings: { ...defaultFont, ...(row.font_settings || {}) },
     footerSettings: { ...defaultFooter, ...(row.footer_settings || {}) },
 
-    privacyPolicy: row.privacy_policy || { ar: '', en: '' },
-    termsOfService: row.terms_of_service || { ar: '', en: '' }
+    privacyPolicy: ensureLocalized(row.privacy_policy),
+    termsOfService: ensureLocalized(row.terms_of_service)
   };
 };
 
