@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page, PackageRequest } from '../types';
 
@@ -150,37 +151,21 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   terms_of_service: item.termsOfService
 });
 
-/* --- SERVER SEED TRIGGER --- */
-const triggerServerSeed = async () => {
-  try {
-    const res = await fetch('/api/seed', { method: 'POST' });
-    return res.ok;
-  } catch (e) {
-    return false;
-  }
+/* --- API HELPER FOR CONTENT --- */
+const apiContentAction = async (table: string, action: 'upsert' | 'delete', data?: any, id?: string) => {
+    try {
+        const res = await fetch('/api/content/action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ table, action, data, id })
+        });
+        if (!res.ok) throw new Error('API Action Failed');
+        return await res.json();
+    } catch (e) {
+        console.error(`Failed to ${action} on ${table}`, e);
+        throw e;
+    }
 };
-
-/* --- SAFE FETCH HELPER WITH FALLBACK --- */
-const fetchWithOrder = async (table: string, mapper: Function) => {
-    let { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .order('order_index', { ascending: true });
-
-    if (error || !data) {
-        const res = await supabase.from(table).select('*').order('created_at', { ascending: true });
-        data = res.data;
-        error = res.error;
-    }
-
-    if (!error && (!data || data.length === 0)) {
-        await triggerServerSeed();
-        const { data: retry } = await supabase.from(table).select('*').order('created_at', { ascending: true });
-        return retry?.map(row => mapper(row)) || [];
-    }
-
-    return data?.map(row => mapper(row)) || [];
-}
 
 /* --- DB SERVICE EXPORT --- */
 export const db = {
@@ -197,61 +182,68 @@ export const db = {
   },
 
   services: {
-    getAll: async () => await fetchWithOrder('services', mapServiceFromDB),
+    getAll: async () => {
+        const { data } = await supabase.from('services').select('*').order('order_index', { ascending: true });
+        return data?.map(mapServiceFromDB) || [];
+    },
     save: async (item: Service) => {
       const payload = mapServiceToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
-      return await supabase.from('services').upsert([payload]);
+      return await apiContentAction('services', 'upsert', payload);
     },
-    delete: async (id: string) => await supabase.from('services').delete().eq('id', id)
+    delete: async (id: string) => await apiContentAction('services', 'delete', undefined, id)
   },
 
   packages: {
-    getAll: async () => await fetchWithOrder('packages', mapPackageFromDB),
+    getAll: async () => {
+        const { data } = await supabase.from('packages').select('*').order('order_index', { ascending: true });
+        return data?.map(mapPackageFromDB) || [];
+    },
     save: async (item: Package) => {
       const payload = mapPackageToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
-      return await supabase.from('packages').upsert([payload]);
+      return await apiContentAction('packages', 'upsert', payload);
     },
-    delete: async (id: string) => await supabase.from('packages').delete().eq('id', id)
+    delete: async (id: string) => await apiContentAction('packages', 'delete', undefined, id)
   },
 
   team: {
-    getAll: async () => await fetchWithOrder('team_members', mapTeamFromDB),
+    getAll: async () => {
+        const { data } = await supabase.from('team_members').select('*').order('order_index', { ascending: true });
+        return data?.map(mapTeamFromDB) || [];
+    },
     save: async (item: TeamMember) => {
       const payload = mapTeamToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
-      return await supabase.from('team_members').upsert([payload]);
+      return await apiContentAction('team_members', 'upsert', payload);
     },
-    delete: async (id: string) => await supabase.from('team_members').delete().eq('id', id)
+    delete: async (id: string) => await apiContentAction('team_members', 'delete', undefined, id)
   },
 
   caseStudies: {
-    getAll: async () => await fetchWithOrder('case_studies', mapCaseFromDB),
+    getAll: async () => {
+        const { data } = await supabase.from('case_studies').select('*').order('order_index', { ascending: true });
+        return data?.map(mapCaseFromDB) || [];
+    },
     save: async (item: CaseStudy) => {
       const payload = mapCaseToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
-      return await supabase.from('case_studies').upsert([payload]);
+      return await apiContentAction('case_studies', 'upsert', payload);
     },
-    delete: async (id: string) => await supabase.from('case_studies').delete().eq('id', id)
+    delete: async (id: string) => await apiContentAction('case_studies', 'delete', undefined, id)
   },
 
   blog: {
     getAll: async () => {
-        const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
-        if (!error && (!data || data.length === 0)) {
-            await triggerServerSeed();
-            const { data: retry } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
-            return retry?.map(mapBlogFromDB) || [];
-        }
+        const { data } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
         return data?.map(mapBlogFromDB) || [];
     },
     save: async (item: BlogPost) => {
       const payload = mapBlogToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
-      return await supabase.from('blog_posts').upsert([payload]);
+      return await apiContentAction('blog_posts', 'upsert', payload);
     },
-    delete: async (id: string) => await supabase.from('blog_posts').delete().eq('id', id)
+    delete: async (id: string) => await apiContentAction('blog_posts', 'delete', undefined, id)
   },
 
   messages: {
@@ -262,7 +254,7 @@ export const db = {
     send: async (name: string, phone: string) => {
         return await supabase.from('contact_messages').insert([{ name, phone }]);
     },
-    delete: async (id: string) => await supabase.from('contact_messages').delete().eq('id', id)
+    delete: async (id: string) => await apiContentAction('contact_messages', 'delete', undefined, id)
   },
 
   packageRequests: {
@@ -277,41 +269,25 @@ export const db = {
               body: JSON.stringify({ name, phone, email, packageName })
           });
       },
-      delete: async (id: string) => await supabase.from('package_requests').delete().eq('id', id)
+      delete: async (id: string) => await apiContentAction('package_requests', 'delete', undefined, id)
   },
 
   settings: {
     get: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase.from('site_settings').select('*').single();
-      if (!data || error) {
-          const shouldSeed = !data; 
-          if (shouldSeed) {
-              await triggerServerSeed(); 
-              const { data: retry } = await supabase.from('site_settings').select('*').single();
-              return mapSettingsFromDB(retry || {});
-          }
-      }
       return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
-      const { data: currentDB } = await supabase.from('site_settings').select('*').single();
-      const current = currentDB ? mapSettingsFromDB(currentDB) : null;
+      const payload = { ...mapSettingsToDB(newSettings), id: 1 };
       
-      const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
+      const res = await fetch('/api/settings/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+      });
       
-      // Merge nested objects specifically to avoid overwrite
-      if (current) {
-          if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
-          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
-          if (newSettings.sectionVisibility) mergedSettings.sectionVisibility = { ...current.sectionVisibility, ...newSettings.sectionVisibility };
-          if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
-          if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
-          if (newSettings.fontSettings) mergedSettings.fontSettings = { ...current.fontSettings, ...newSettings.fontSettings };
-          if (newSettings.footerSettings) mergedSettings.footerSettings = { ...current.footerSettings, ...newSettings.footerSettings };
-      }
-      
-      const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };
-      return await supabase.from('site_settings').upsert(payload);
+      if (!res.ok) throw new Error('Failed to save settings via API');
+      return await res.json();
     }
   },
 
