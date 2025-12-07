@@ -2,14 +2,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-  }
+  // STRICT CACHE CONTROL FOR MOBILE BROWSERS & VERCEL EDGE
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache'); // HTTP 1.0
+  res.setHeader('Expires', '0'); // Proxies
+  res.setHeader('Surrogate-Control', 'no-store');
 
   try {
     const { data, error } = await supabaseAdmin
@@ -19,13 +16,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (error) {
-      console.error('❌ [API] Supabase Get Error:', error);
-      return res.status(500).json({ ok: false, error: error.message, details: error });
+      if (error.code === 'PGRST116') return res.status(200).json({ ok: true, data: {} });
+      throw error;
     }
 
     return res.status(200).json({ ok: true, data });
   } catch (err: any) {
-    console.error('❌ [API] Fatal Get Error:', err);
-    return res.status(500).json({ ok: false, error: 'Internal Server Error', message: err.message || 'Unknown error' });
+    console.error('Get Settings API Error:', err);
+    return res.status(500).json({ ok: false, error: err.message });
   }
 }

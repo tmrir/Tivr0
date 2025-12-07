@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter, Facebook } from 'lucide-react';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
-import { SiteSettings, Service, Package } from '../types';
+import { SiteSettings, Service } from '../types';
 import * as Icons from 'lucide-react';
 
 interface LayoutProps {
@@ -23,24 +23,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [settings, setSettings] = useState<SiteSettings | any>(DEFAULT_SETTINGS);
   const [footerServices, setFooterServices] = useState<Service[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
-  
-  // State for navigation visibility and labels from admin panel
-  const [navigationState, setNavigationState] = useState<any[]>([
-    { key: 'services', visible: true },
-    { key: 'team', visible: true },
-    { key: 'packages', visible: true },
-    { key: 'work', visible: true },
-    { key: 'blog', visible: true }
-  ]);
-  
-  const [navigationLabels, setNavigationLabels] = useState<any>({
-    services: t('nav.services'),
-    team: t('nav.team'),
-    packages: lang === 'ar' ? 'الباقات' : 'Packages',
-    work: t('nav.work'),
-    blog: t('nav.blog')
-  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,89 +40,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             }
             const services = await db.services.getAll();
             setFooterServices(services.slice(0, 4));
-            const packagesData = await db.packages.getAll();
-            setPackages(packagesData);
         } catch(e) { console.error(e); }
     };
-    
-    // Load navigation state from admin panel
-    const savedNavigation = localStorage.getItem('adminNavigation');
-    if (savedNavigation) {
-      try {
-        const navigationItems = JSON.parse(savedNavigation);
-        // Update visibility state
-        const visibilityState = navigationItems.map((item: any) => ({
-          key: item.key,
-          visible: item.visible
-        }));
-        setNavigationState(visibilityState);
-        
-        // Update labels state
-        const labelsState: any = {};
-        navigationItems.forEach((item: any) => {
-          labelsState[item.key] = item.label;
-        });
-        setNavigationLabels(labelsState);
-      } catch (error) {
-        console.error('Failed to load navigation state:', error);
-      }
-    }
-    
-    // Listen for admin navigation updates
-    const handleAdminNavigationUpdate = (event: any) => {
-      console.log(' [Layout] Admin navigation update detected:', event.detail);
-      const { navigationItems } = event.detail;
-      
-      // Update visibility state
-      const visibilityState = navigationItems.map((item: any) => ({
-        key: item.key,
-        visible: item.visible
-      }));
-      setNavigationState(visibilityState);
-      
-      // Update labels state
-      const labelsState: any = {};
-      navigationItems.forEach((item: any) => {
-        labelsState[item.key] = item.label;
-      });
-      setNavigationLabels(labelsState);
-    };
-
-    // Listen for storage changes in navigation
-    const handleStorageNavigationUpdate = (event: StorageEvent) => {
-      if (event.key === 'adminNavigation' && event.newValue) {
-        try {
-          const navigationItems = JSON.parse(event.newValue);
-          
-          // Update visibility state
-          const visibilityState = navigationItems.map((item: any) => ({
-            key: item.key,
-            visible: item.visible
-          }));
-          setNavigationState(visibilityState);
-          
-          // Update labels state
-          const labelsState: any = {};
-          navigationItems.forEach((item: any) => {
-            labelsState[item.key] = item.label;
-          });
-          setNavigationLabels(labelsState);
-        } catch (error) {
-          console.error('Failed to parse navigation update:', error);
-        }
-      }
-    };
-
-    window.addEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
-    window.addEventListener('storage', handleStorageNavigationUpdate);
-    
     fetchData();
-    
-    return () => {
-      window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
-      window.removeEventListener('storage', handleStorageNavigationUpdate);
-    };
-  }, [lang]);
+  }, []);
 
   const toggleLang = () => setLang(lang === 'ar' ? 'en' : 'ar');
   const handleLogout = async () => {
@@ -150,22 +53,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   };
 
   const NavLink = ({ href, label }: { href: string; label: string }) => (
-    <a href={href} className="text-slate-600 hover:text-tivro-primary font-medium transition-colors duration-200 text-sm md:text-base" onClick={(e) => {
-      if (href.startsWith('#')) {
-        e.preventDefault();
-        if (href === '#') {
-          // Return to top of page
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          const targetId = href.substring(1);
-          const targetElement = document.getElementById(targetId);
-          if (targetElement) {
-            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }
-        setIsMenuOpen(false);
-      }
-    }}>{label}</a>
+    <a href={href} className="text-slate-600 hover:text-tivro-primary font-medium transition-colors duration-200 text-sm md:text-base" onClick={() => setIsMenuOpen(false)}>{label}</a>
   );
 
   const IconComponent = ({ name }: { name: string }) => {
@@ -197,19 +85,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             ) : (
                 <div className="w-10 h-10 bg-tivro-dark rounded-lg flex items-center justify-center text-white font-bold text-xl">T</div>
             )}
-            <div className="flex flex-col items-start">
-              <span className="text-2xl font-bold text-tivro-dark tracking-tight leading-tight">{settings?.siteName?.[lang] || 'Tivro'}</span>
-              <span className="text-xs text-slate-500 font-medium leading-none">لخدمات الأعمال</span>
-            </div>
+            <span className="text-2xl font-bold text-tivro-dark tracking-tight">{settings?.siteName?.[lang] || 'Tivro'}</span>
           </a>
 
           <nav className="hidden md:flex items-center gap-8">
             <NavLink href="#" label={t('nav.home')} />
-            {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={navigationLabels.services || t('nav.services')} />}
-            {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={navigationLabels.packages || (lang === 'ar' ? 'الباقات' : 'Packages')} />}
-            {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={navigationLabels.work || t('nav.work')} />}
-            {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={navigationLabels.team || t('nav.team')} />}
-            {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={navigationLabels.blog || t('nav.blog')} />}
+            <NavLink href="#services" label={t('nav.services')} />
+            <NavLink href="#work" label={t('nav.work')} />
+            <NavLink href="#team" label={t('nav.team')} />
+            <NavLink href="#blog" label={t('nav.blog')} />
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
@@ -229,6 +113,21 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
           <button className="md:hidden text-slate-700" onClick={() => setIsMenuOpen(!isMenuOpen)}>{isMenuOpen ? <X size={28} /> : <Menu size={28} />}</button>
         </div>
+
+        {isMenuOpen && (
+          <div className="md:hidden absolute top-20 left-0 w-full bg-white border-b border-slate-100 p-6 shadow-xl flex flex-col gap-6 animate-fade-in">
+            <NavLink href="#" label={t('nav.home')} />
+            <NavLink href="#services" label={t('nav.services')} />
+            <NavLink href="#work" label={t('nav.work')} />
+            <NavLink href="#team" label={t('nav.team')} />
+            <NavLink href="#blog" label={t('nav.blog')} />
+            <div className="h-px bg-slate-100 my-2"></div>
+            <div className="flex justify-between items-center">
+               <button onClick={toggleLang} className="flex items-center gap-2 font-bold text-slate-600"><Globe size={20} /> {lang === 'ar' ? 'English' : 'العربية'}</button>
+               {isAdmin && <a href="#admin" className="text-tivro-primary font-bold flex gap-2 items-center"><LayoutDashboard size={20}/> Admin</a>}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
@@ -249,7 +148,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                   <span className="text-2xl font-bold">{settings?.siteName?.[lang]}</span>
                 </div>
                 <p className="text-slate-400 max-w-md leading-relaxed mb-6">
-                  {settings?.footerDescription?.[lang] || (lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.')}
+                  {lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.'}
                 </p>
                 <div className="flex gap-4">
                   {settings?.socialLinks?.map((link: any, i: number) => (
@@ -278,22 +177,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             </div>
             
             <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
-              <p>{settings?.copyrightText?.[lang] || t('footer.rights')}</p>
+              <p>{t('footer.rights')}</p>
               <div className="flex gap-6 mt-4 md:mt-0">
-                <a href="#privacy" className="hover:text-white" onClick={(e) => {
-                  e.preventDefault();
-                  const targetElement = document.getElementById('privacy');
-                  if (targetElement) {
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }}>{settings?.footerLinks?.privacy?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</a>
-                <a href="#terms" className="hover:text-white" onClick={(e) => {
-                  e.preventDefault();
-                  const targetElement = document.getElementById('terms');
-                  if (targetElement) {
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }}>{settings?.footerLinks?.terms?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service')}</a>
+                <a href="#privacy" className="hover:text-white">{t('nav.privacy')}</a>
+                <a href="#terms" className="hover:text-white">{t('nav.terms')}</a>
               </div>
             </div>
           </div>

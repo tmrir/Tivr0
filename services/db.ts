@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page } from '../types';
-import { settingsService } from './settingsService';
 
 /* --- DATA MAPPERS --- */
 const mapServiceFromDB = (row: any): Service => ({
@@ -240,14 +239,32 @@ export const db = {
 
   settings: {
     get: async (): Promise<SiteSettings> => {
-      console.log('🔧 [db.settings] Getting unified settings from settingsService...');
-      // استخدام نفس المصدر الموحد الذي تستخدمه لوحة التحكم
-      return await settingsService.getSettings();
+      const { data, error } = await supabase.from('site_settings').select('*').single();
+      if (!data || error) {
+          const shouldSeed = !data; 
+          if (shouldSeed) {
+              await triggerServerSeed(); 
+              const { data: retry } = await supabase.from('site_settings').select('*').single();
+              return mapSettingsFromDB(retry || {});
+          }
+      }
+      return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
-      console.log('🔧 [db.settings] Saving through settingsService...');
-      // استخدام نفس الحفظ الموحد
-      return await settingsService.saveSettings(newSettings);
+      const { data: currentDB } = await supabase.from('site_settings').select('*').single();
+      const current = currentDB ? mapSettingsFromDB(currentDB) : null;
+      
+      const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
+      
+      if (current) {
+          if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
+          if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
+          if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
+          if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
+      }
+      
+      const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };
+      return await supabase.from('site_settings').upsert(payload);
     }
   },
 

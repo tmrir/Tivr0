@@ -1,89 +1,118 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { SiteSettings } from '../types';
+// REMOVED: import { supabaseAdmin } ... This was the cause of the build error!
 
-interface SettingsData {
-  contact_email: string;
-  contact_phone: string;
-  social_links: any[];
-  address: any;
-  logo_url?: string;
-  icon_url?: string;
-  footer_logo_url?: string;
-  favicon_url?: string;
-  [key: string]: any;
-}
+const DEFAULT_SETTINGS: SiteSettings = {
+    siteName: { ar: '', en: '' },
+    contactEmail: '',
+    contactPhone: '',
+    address: { ar: '', en: '' },
+    socialLinks: [],
+    logoUrl: '',
+    iconUrl: '',
+    footerLogoUrl: '',
+    faviconUrl: '',
+    topBanner: { enabled: false, title: {ar:'',en:''} },
+    bottomBanner: { enabled: false, title: {ar:'',en:''} },
+    sectionTexts: { workTitle: {ar:'',en:''}, workSubtitle: {ar:'',en:''} },
+    homeSections: {
+        heroTitle: {ar:'',en:''}, heroSubtitle: {ar:'',en:''},
+        servicesTitle: {ar:'',en:''}, servicesSubtitle: {ar:'',en:''},
+        teamTitle: {ar:'',en:''}, teamSubtitle: {ar:'',en:''},
+        packagesTitle: {ar:'',en:''},
+        contactTitle: {ar:'',en:''}, contactSubtitle: {ar:'',en:''}
+    },
+    privacyPolicy: { ar: '', en: '' },
+    termsOfService: { ar: '', en: '' }
+};
 
-export function useSettings() {
-  const [settings, setSettings] = useState<SettingsData | null>(null);
-  const [loading, setLoading] = useState(false);
+export const useSettings = () => {
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function fetchSettings() {
+  const fetchSettings = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
-      const res = await fetch('/api/settings/get');
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        throw new Error('Invalid response from server');
-      }
+      const res = await fetch(`/api/settings/get?t=${Date.now()}`);
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Failed to fetch settings');
-      setSettings(json.data);
+      
+      if (json.ok && json.data) {
+          // Deep merge to ensure no UI crashes
+          const data = json.data;
+          const merged: SiteSettings = { 
+              ...DEFAULT_SETTINGS, 
+              ...data,
+              siteName: { ...DEFAULT_SETTINGS.siteName, ...(data.site_name || data.siteName || {}) },
+              address: { ...DEFAULT_SETTINGS.address, ...(data.address || {}) },
+              topBanner: { ...DEFAULT_SETTINGS.topBanner, ...(data.top_banner || data.topBanner || {}) },
+              bottomBanner: { ...DEFAULT_SETTINGS.bottomBanner, ...(data.bottom_banner || data.bottomBanner || {}) },
+              sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || data.sectionTexts || {}) },
+              homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || data.homeSections || {}) },
+              privacyPolicy: { ...DEFAULT_SETTINGS.privacyPolicy, ...(data.privacy_policy || data.privacyPolicy || {}) },
+              termsOfService: { ...DEFAULT_SETTINGS.termsOfService, ...(data.terms_of_service || data.termsOfService || {}) },
+          };
+          setSettings(merged);
+      }
     } catch (err: any) {
-      console.error('❌ [Hook] Fetch Settings Error:', err);
-      setError(err.message || 'Unknown error');
+      console.error('Fetch error:', err);
+      // On error, keep default settings
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  async function saveSettings(payload: Partial<SettingsData>) {
-    setLoading(true);
+  const saveSettings = async (newData: SiteSettings) => {
+    setSaving(true);
     setError(null);
     try {
-      const res = await fetch('/api/settings/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        throw new Error('Invalid response from server');
-      }
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Failed to save settings');
-      setSettings(json.data);
-    } catch (err: any) {
-      console.error('❌ [Hook] Save Settings Error:', err);
-      setError(err.message || 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  }
+        // Flatten structure for API if needed, but passing full object usually works if API expects it
+        // We'll pass the structured object and let API/DB handle JSON columns
+        
+        const res = await fetch('/api/settings/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newData)
+        });
+        
+        const json = await res.json();
+        
+        if (!res.ok || !json.ok) {
+            throw new Error(json.error || 'Save failed');
+        }
 
-  async function restoreSettings() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/settings/restore', { method: 'POST' });
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        throw new Error('Invalid response from server');
-      }
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Failed to restore settings');
-      setSettings(json.data);
+        await fetchSettings();
+        return true;
     } catch (err: any) {
-      console.error('❌ [Hook] Restore Settings Error:', err);
-      setError(err.message || 'Unknown error');
+        console.error('Save error:', err);
+        setError(err.message);
+        return false;
     } finally {
-      setLoading(false);
+        setSaving(false);
     }
-  }
+  };
+
+  const restoreDefaultSettings = async () => {
+      setSaving(true);
+      try {
+          const res = await fetch('/api/settings/restore', { method: 'POST' });
+          const json = await res.json();
+          if (res.ok && json.ok) {
+              await fetchSettings();
+              return true;
+          }
+          return false;
+      } catch (e) {
+          return false;
+      } finally {
+          setSaving(false);
+      }
+  };
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
-  return { settings, loading, error, fetchSettings, saveSettings, restoreSettings };
-}
+  return { settings, setSettings, loading, saving, error, saveSettings, restoreDefaultSettings };
+};
