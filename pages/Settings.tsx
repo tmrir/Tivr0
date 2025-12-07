@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useSettings } from '../hooks/useSettings';
 import { useApp } from '../context/AppContext';
@@ -143,8 +144,8 @@ export const SettingsPage: React.FC = () => {
         <div className="flex flex-col md:flex-row gap-8">
             <div className="w-full md:w-64 flex-shrink-0 space-y-2">
                 <TabButton id="general" icon={Globe} label={t('admin.settings.general')} />
-                <TabButton id="logos" icon={ImageIcon} label="Logos & Branding" />
-                <TabButton id="home_content" icon={LayoutTemplate} label="Home Content & Visibility" />
+                <TabButton id="logos" icon={ImageIcon} label="Header & Footer" />
+                <TabButton id="home_content" icon={LayoutTemplate} label="Home Content" />
                 <TabButton id="banners" icon={Flag} label="Banners" />
                 <TabButton id="legal" icon={FileText} label={t('admin.settings.legal')} />
                 <TabButton id="db" icon={Database} label={t('admin.settings.db')} />
@@ -181,9 +182,9 @@ export const SettingsPage: React.FC = () => {
 
                 {activeTab === 'logos' && (
                     <div className="space-y-6 animate-fade-in">
-                        <h3 className="font-bold text-lg border-b pb-3 mb-4">Logos & Branding</h3>
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">Header, Footer & Branding</h3>
                         <div>
-                            <label className="block text-sm font-bold mb-1">Main Logo URL</label>
+                            <label className="block text-sm font-bold mb-1">Header Logo URL</label>
                             <input className="w-full border p-2 rounded" value={settings.logoUrl || ''} onChange={e => setSettings({...settings, logoUrl: e.target.value})} />
                             {settings.logoUrl && <img src={settings.logoUrl} className="h-10 mt-2 border p-1"/>}
                         </div>

@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
-import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, PackageRequest } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, Inbox, Send } from 'lucide-react';
+import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, PackageRequest, SiteSettings } from '../types';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, Inbox, Send, Eye, EyeOff, Check, X } from 'lucide-react';
 import { SettingsPage } from './Settings';
 import { SortableList } from '../components/SortableList';
 import { BrandIdentity } from './BrandIdentity';
@@ -38,18 +39,8 @@ const StatCard = ({ title, value, icon, onClick }: any) => (
         <p className="text-sm text-slate-500 mb-1 font-bold">{title}</p>
         <h3 className="text-3xl font-bold text-slate-900">{value}</h3>
     </div>
-    {icon && <div className="absolute -bottom-4 -right-4 text-slate-50 opacity-50 group-hover:text-tivro-primary/10 transition-colors">{React.cloneElement(icon, { size: 80 })}</div>}
+    {icon && <div className="absolute -bottom-4 -right-4 text-slate-50 opacity-10 group-hover:text-tivro-primary/20 transition-colors">{React.cloneElement(icon, { size: 80 })}</div>}
   </div>
-);
-
-const SidebarLink = ({ icon, label, active, onClick }: any) => (
-  <button 
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition ${active ? 'bg-tivro-primary/10 text-tivro-primary' : 'text-slate-600 hover:bg-slate-50'}`}
-  >
-    {icon}
-    {label}
-  </button>
 );
 
 /* --- MANAGERS --- */
@@ -81,7 +72,7 @@ const DashboardTab = ({ setActiveTab }: { setActiveTab: (t: any) => void }) => {
         <StatCard title={t('admin.dash.packages')} value={stats.packages} icon={<PackageIcon/>} onClick={() => setActiveTab('packages')} />
       </div>
       <div className="bg-green-50 border border-green-100 p-4 rounded-lg text-green-800">
-          <strong>System Status:</strong> Package Request System Active.
+          <strong>System Status:</strong> All systems operational.
       </div>
     </div>
   );
@@ -140,9 +131,6 @@ const PackageRequestsManager: React.FC<ManagerProps> = ({ onUpdate }) => {
         </div>
     );
 };
-
-// ... (Keep other Managers: ServicesManager, TeamManager, PackagesManager, CaseStudiesManager, BlogManager, MessagesManager EXACTLY as they were. I will omit them for brevity in this output but assume they are there in the real file. 
-// WAIT, "Real Hard Update" means full file. I must include everything.)
 
 const ServicesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
   const { t, lang } = useApp();
@@ -373,11 +361,8 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     const [items, setItems] = useState<CaseStudy[]>([]);
     const [editing, setEditing] = useState<CaseStudy | null>(null);
     const [saving, setSaving] = useState(false);
-    // Removed sectionSettings handling from here as it should be in Settings page according to new requirements
-
-    useEffect(() => { 
-        db.caseStudies.getAll().then(setItems); 
-    }, []);
+    
+    useEffect(() => { db.caseStudies.getAll().then(setItems); }, []);
 
     const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.caseStudies.save(editing); setSaving(false); setEditing(null); onUpdate(); setItems(await db.caseStudies.getAll()); };
     const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.caseStudies.delete(id); onUpdate(); setItems(items.filter(x=>x.id!==id)); }};
@@ -616,10 +601,19 @@ export const Admin = () => {
   const { isAdmin, t, loading, dir } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'messages' | 'requests' | 'settings' | 'brand'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'messages' | 'requests' | 'brand' | 'settings'>('dashboard');
   const [refresh, setRefresh] = useState(0);
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // Settings for Sidebar Visibility toggles
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [tempTitle, setTempTitle] = useState<{ar:string, en:string}>({ar:'', en:''});
+
+  useEffect(() => {
+      if(isAdmin) db.settings.get().then(setSettings);
+  }, [isAdmin, refresh]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -629,6 +623,90 @@ export const Admin = () => {
     if (error) setAuthError(error.message);
     setIsLoggingIn(false);
   };
+
+  const toggleVisibility = async (key: string) => {
+      if(!settings) return;
+      const newVisibility = { ...settings.sectionVisibility, [key]: !settings.sectionVisibility[key] };
+      // Save directly
+      await db.settings.save({ ...settings, sectionVisibility: newVisibility });
+      setSettings({ ...settings, sectionVisibility: newVisibility });
+  };
+
+  const startRename = (key: string, current: LocalizedString) => {
+      setEditingSection(key);
+      setTempTitle(current);
+  };
+
+  const saveRename = async (key: string) => {
+      if(!settings) return;
+      
+      let newHomeSections = { ...settings.homeSections };
+      let newSectionTexts = { ...settings.sectionTexts };
+
+      // Map keys to actual settings properties
+      if(key === 'services') newHomeSections.servicesTitle = tempTitle;
+      else if(key === 'team') newHomeSections.teamTitle = tempTitle;
+      else if(key === 'packages') newHomeSections.packagesTitle = tempTitle;
+      else if(key === 'contact') newHomeSections.contactTitle = tempTitle;
+      else if(key === 'work') newSectionTexts.workTitle = tempTitle;
+      else if(key === 'hero') newHomeSections.heroTitle = tempTitle;
+
+      await db.settings.save({ ...settings, homeSections: newHomeSections, sectionTexts: newSectionTexts });
+      setSettings({ ...settings, homeSections: newHomeSections, sectionTexts: newSectionTexts });
+      setEditingSection(null);
+  };
+
+  const SidebarItem = ({ id, label, icon, sectionKey }: any) => {
+      const isVisible = settings?.sectionVisibility?.[sectionKey] !== false;
+      const isEditing = editingSection === sectionKey;
+      
+      return (
+          <div className={`group flex items-center justify-between pr-2 rounded-lg transition mb-1 ${activeTab === id ? 'bg-tivro-primary/10' : 'hover:bg-slate-50'}`}>
+               <button 
+                  onClick={() => setActiveTab(id)}
+                  className={`flex-1 flex items-center gap-3 px-4 py-3 text-sm font-medium transition text-left ${activeTab === id ? 'text-tivro-primary' : 'text-slate-600'}`}
+               >
+                  {icon}
+                  {isEditing ? (
+                      <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                          <input className="w-16 border rounded text-xs p-1" value={tempTitle.ar} onChange={e => setTempTitle({...tempTitle, ar: e.target.value})} placeholder="Ar"/>
+                          <input className="w-16 border rounded text-xs p-1" value={tempTitle.en} onChange={e => setTempTitle({...tempTitle, en: e.target.value})} placeholder="En"/>
+                      </div>
+                  ) : label}
+               </button>
+
+               {sectionKey && settings && (
+                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                       {isEditing ? (
+                           <>
+                                <button onClick={() => saveRename(sectionKey)} className="p-1 text-green-600 hover:bg-green-100 rounded"><Check size={14}/></button>
+                                <button onClick={() => setEditingSection(null)} className="p-1 text-red-600 hover:bg-red-100 rounded"><X size={14}/></button>
+                           </>
+                       ) : (
+                           <>
+                                <button onClick={() => startRename(sectionKey, getSectionTitle(sectionKey))} className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Rename"><Edit2 size={14}/></button>
+                                <button onClick={() => toggleVisibility(sectionKey)} className={`p-1 rounded hover:bg-slate-200 ${isVisible ? 'text-slate-400 hover:text-slate-600' : 'text-red-400 hover:text-red-600'}`} title="Toggle Visibility">
+                                    {isVisible ? <Eye size={14}/> : <EyeOff size={14}/>}
+                                </button>
+                           </>
+                       )}
+                   </div>
+               )}
+          </div>
+      );
+  };
+
+  const getSectionTitle = (key: string): LocalizedString => {
+      if(!settings) return {ar:'', en:''};
+      switch(key) {
+          case 'services': return settings.homeSections.servicesTitle;
+          case 'team': return settings.homeSections.teamTitle;
+          case 'packages': return settings.homeSections.packagesTitle;
+          case 'work': return settings.sectionTexts.workTitle;
+          case 'contact': return settings.homeSections.contactTitle;
+          default: return {ar:'', en:''};
+      }
+  }
 
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin"/></div>;
 
@@ -667,23 +745,30 @@ export const Admin = () => {
           <div className="p-6">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{t('admin.menu.main')}</h3>
             <nav className="space-y-1">
-              <SidebarLink icon={<BarChart2 size={20}/>} label={t('admin.tab.dashboard')} active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-              <SidebarLink icon={<List size={20}/>} label={t('admin.tab.services')} active={activeTab === 'services'} onClick={() => setActiveTab('services')} />
-              <SidebarLink icon={<Inbox size={20}/>} label={t('admin.tab.requests')} active={activeTab === 'requests'} onClick={() => setActiveTab('requests')} />
-              <SidebarLink icon={<UsersIcon size={20}/>} label={t('admin.tab.team')} active={activeTab === 'team'} onClick={() => setActiveTab('team')} />
-              <SidebarLink icon={<PackageIcon size={20}/>} label={t('admin.tab.packages')} active={activeTab === 'packages'} onClick={() => setActiveTab('packages')} />
-              <SidebarLink icon={<Briefcase size={20}/>} label={t('admin.tab.work')} active={activeTab === 'work'} onClick={() => setActiveTab('work')} />
-              <SidebarLink icon={<FileText size={20}/>} label={t('admin.tab.blog')} active={activeTab === 'blog'} onClick={() => setActiveTab('blog')} />
-              <SidebarLink icon={<MessageCircle size={20}/>} label={t('admin.tab.messages')} active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
-              <SidebarLink icon={<Type size={20}/>} label={t('admin.tab.brand')} active={activeTab === 'brand'} onClick={() => setActiveTab('brand')} />
-              <SidebarLink icon={<SettingsIcon size={20}/>} label={t('admin.tab.settings')} active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+              <SidebarItem id="dashboard" label={t('admin.tab.dashboard')} icon={<BarChart2 size={20}/>} />
+              <SidebarItem id="requests" label={t('admin.tab.requests')} icon={<Inbox size={20}/>} />
+              
+              <div className="my-4 h-px bg-slate-100"></div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sections</h3>
+              
+              <SidebarItem id="services" label={t('admin.tab.services')} icon={<List size={20}/>} sectionKey="services" />
+              <SidebarItem id="packages" label={t('admin.tab.packages')} icon={<PackageIcon size={20}/>} sectionKey="packages" />
+              <SidebarItem id="work" label={t('admin.tab.work')} icon={<Briefcase size={20}/>} sectionKey="work" />
+              <SidebarItem id="team" label={t('admin.tab.team')} icon={<UsersIcon size={20}/>} sectionKey="team" />
+              <SidebarItem id="messages" label={t('admin.tab.messages')} icon={<MessageCircle size={20}/>} sectionKey="contact" />
+              
+              <div className="my-4 h-px bg-slate-100"></div>
+              
+              <SidebarItem id="blog" label={t('admin.tab.blog')} icon={<FileText size={20}/>} />
+              <SidebarItem id="brand" label={t('admin.tab.brand')} icon={<Type size={20}/>} />
+              <SidebarItem id="settings" label={t('admin.tab.settings')} icon={<SettingsIcon size={20}/>} />
             </nav>
           </div>
         </aside>
         <main className="flex-1 overflow-y-auto p-8">
           {activeTab === 'dashboard' && <DashboardTab setActiveTab={setActiveTab} />}
-          {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'requests' && <PackageRequestsManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
+          {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'packages' && <PackagesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'work' && <CaseStudiesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}

@@ -129,7 +129,7 @@ export interface SiteSettings {
       [key: string]: boolean; // e.g. 'hero': true, 'services': false
   };
 
-  // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
+  // CMS - Legal Pages
   privacyPolicy: LocalizedString; 
   termsOfService: LocalizedString; 
 }
