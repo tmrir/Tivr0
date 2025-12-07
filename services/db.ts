@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page } from '../types';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page, PackageRequest } from '../types';
 
 /* --- DATA MAPPERS --- */
 const mapServiceFromDB = (row: any): Service => ({
@@ -62,6 +62,15 @@ const mapMessageFromDB = (row: any): ContactMessage => ({
   createdAt: row.created_at
 });
 
+const mapPackageRequestFromDB = (row: any): PackageRequest => ({
+  id: row.id,
+  name: row.name || '',
+  phone: row.phone || '',
+  email: row.email || '',
+  packageName: row.package_name || '',
+  createdAt: row.created_at
+});
+
 const mapSettingsFromDB = (row: any): SiteSettings => {
   let socialLinks: SocialLink[] = [];
   if (Array.isArray(row.social_links)) {
@@ -71,6 +80,16 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
           socialLinks.push({ platform: key, url: row.social_links[key] });
       });
   }
+
+  // Default Visibility (All true by default if not set)
+  const defaultVisibility = {
+      hero: true,
+      services: true,
+      work: true,
+      packages: true,
+      team: true,
+      contact: true
+  };
 
   return {
     siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
@@ -99,6 +118,8 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
         contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
     },
 
+    sectionVisibility: { ...defaultVisibility, ...(row.section_visibility || {}) },
+
     privacyPolicy: row.privacy_policy || { ar: '', en: '' },
     termsOfService: row.terms_of_service || { ar: '', en: '' }
   };
@@ -118,6 +139,7 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   bottom_banner: item.bottomBanner,
   section_texts: item.sectionTexts,
   home_sections: item.homeSections,
+  section_visibility: item.sectionVisibility,
   privacy_policy: item.privacyPolicy,
   terms_of_service: item.termsOfService
 });
@@ -237,6 +259,21 @@ export const db = {
     delete: async (id: string) => await supabase.from('contact_messages').delete().eq('id', id)
   },
 
+  packageRequests: {
+      getAll: async (): Promise<PackageRequest[]> => {
+          const { data } = await supabase.from('package_requests').select('*').order('created_at', { ascending: false });
+          return data?.map(mapPackageRequestFromDB) || [];
+      },
+      create: async (name: string, phone: string, email: string, packageName: string) => {
+          return await fetch('/api/package-requests/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, phone, email, packageName })
+          });
+      },
+      delete: async (id: string) => await supabase.from('package_requests').delete().eq('id', id)
+  },
+
   settings: {
     get: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase.from('site_settings').select('*').single();
@@ -259,6 +296,7 @@ export const db = {
       if (current) {
           if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
           if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
+          if (newSettings.sectionVisibility) mergedSettings.sectionVisibility = { ...current.sectionVisibility, ...newSettings.sectionVisibility };
           if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
           if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
       }

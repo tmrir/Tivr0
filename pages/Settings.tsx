@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSettings } from '../hooks/useSettings';
 import { useApp } from '../context/AppContext';
-import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, Globe, Phone, Share2, Image as ImageIcon, Database, FileText, LayoutTemplate, Flag } from 'lucide-react';
+import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, Globe, Phone, Share2, Image as ImageIcon, Database, FileText, LayoutTemplate, Flag, Eye, EyeOff, Edit2 } from 'lucide-react';
 import { SiteSettings, LocalizedString } from '../types';
 
 const LocalizedArea = ({ label, value, onChange }: {label:string, value: LocalizedString, onChange: (v: LocalizedString)=>void}) => (
@@ -29,6 +29,76 @@ const LocalizedInput = ({ label, value, onChange }: {label:string, value: Locali
         </div>
     </div>
 );
+
+// New component for managing a section (Visibility + Inline Edit)
+const SectionManager = ({ 
+    id, 
+    titleKey, 
+    subTitleKey, 
+    titleValue, 
+    subTitleValue, 
+    visibility, 
+    onToggle, 
+    onUpdateTitle, 
+    onUpdateSub 
+}: any) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempTitle, setTempTitle] = useState(titleValue);
+    const [tempSub, setTempSub] = useState(subTitleValue);
+
+    const handleSave = () => {
+        onUpdateTitle(tempTitle);
+        if(subTitleKey) onUpdateSub(tempSub);
+        setIsEditing(false);
+    };
+
+    return (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+            <div className="flex justify-between items-center mb-4 border-b pb-2 border-slate-200">
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => onToggle(!visibility)}
+                        className={`p-2 rounded-full transition ${visibility ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+                        title={visibility ? "Hide Section" : "Show Section"}
+                    >
+                        {visibility ? <Eye size={18}/> : <EyeOff size={18}/>}
+                    </button>
+                    <span className={`font-bold uppercase text-sm ${visibility ? 'text-slate-800' : 'text-slate-400'}`}>{id} Section</span>
+                </div>
+                <button 
+                    onClick={() => {
+                        if(isEditing) handleSave();
+                        else setIsEditing(true);
+                    }}
+                    className={`p-2 rounded transition flex items-center gap-2 text-sm font-bold ${isEditing ? 'bg-tivro-dark text-white' : 'text-slate-500 hover:bg-slate-200'}`}
+                >
+                    {isEditing ? <CheckCircle size={16}/> : <Edit2 size={16}/>}
+                    {isEditing ? "Save" : "Edit Name"}
+                </button>
+            </div>
+            
+            {isEditing ? (
+                <div className="animate-fade-in space-y-3">
+                    <LocalizedInput label="Section Title" value={tempTitle} onChange={setTempTitle} />
+                    {subTitleKey && <LocalizedInput label="Section Subtitle" value={tempSub} onChange={setTempSub} />}
+                </div>
+            ) : (
+                <div className={`space-y-1 ${!visibility && 'opacity-50'}`}>
+                    <div className="flex gap-2">
+                        <span className="text-xs font-bold w-12 text-slate-400">Title:</span>
+                        <span className="text-sm">{titleValue?.ar} / {titleValue?.en}</span>
+                    </div>
+                    {subTitleKey && (
+                        <div className="flex gap-2">
+                            <span className="text-xs font-bold w-12 text-slate-400">Desc:</span>
+                            <span className="text-sm text-slate-600">{subTitleValue?.ar?.substring(0,30)}...</span>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const SettingsPage: React.FC = () => {
   const { t } = useApp();
@@ -74,7 +144,7 @@ export const SettingsPage: React.FC = () => {
             <div className="w-full md:w-64 flex-shrink-0 space-y-2">
                 <TabButton id="general" icon={Globe} label={t('admin.settings.general')} />
                 <TabButton id="logos" icon={ImageIcon} label="Logos & Branding" />
-                <TabButton id="home_content" icon={LayoutTemplate} label="Home Content" />
+                <TabButton id="home_content" icon={LayoutTemplate} label="Home Content & Visibility" />
                 <TabButton id="banners" icon={Flag} label="Banners" />
                 <TabButton id="legal" icon={FileText} label={t('admin.settings.legal')} />
                 <TabButton id="db" icon={Database} label={t('admin.settings.db')} />
@@ -132,21 +202,71 @@ export const SettingsPage: React.FC = () => {
 
                 {activeTab === 'home_content' && (
                     <div className="space-y-6 animate-fade-in">
-                        <h3 className="font-bold text-lg border-b pb-3 mb-4">Home Page Content</h3>
-                        <LocalizedInput label="Hero Title" value={settings.homeSections.heroTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, heroTitle: v}})} />
-                        <LocalizedInput label="Hero Subtitle" value={settings.homeSections.heroSubtitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, heroSubtitle: v}})} />
-                        <hr/>
-                        <LocalizedInput label="Services Title" value={settings.homeSections.servicesTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, servicesTitle: v}})} />
-                        <hr/>
-                        <LocalizedInput label="Work (Case Studies) Title" value={settings.sectionTexts.workTitle} onChange={v => setSettings({...settings, sectionTexts: {...settings.sectionTexts, workTitle: v}})} />
-                        <LocalizedInput label="Work Subtitle" value={settings.sectionTexts.workSubtitle} onChange={v => setSettings({...settings, sectionTexts: {...settings.sectionTexts, workSubtitle: v}})} />
-                        <hr/>
-                        <LocalizedInput label="Packages Title" value={settings.homeSections.packagesTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, packagesTitle: v}})} />
-                        <hr/>
-                        <LocalizedInput label="Team Title" value={settings.homeSections.teamTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, teamTitle: v}})} />
-                        <hr/>
-                        <LocalizedInput label="Contact Title" value={settings.homeSections.contactTitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, contactTitle: v}})} />
-                        <LocalizedInput label="Contact Subtitle" value={settings.homeSections.contactSubtitle} onChange={v => setSettings({...settings, homeSections: {...settings.homeSections, contactSubtitle: v}})} />
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">Home Page Content & Visibility</h3>
+                        
+                        <SectionManager 
+                            id="Hero" 
+                            titleValue={settings.homeSections.heroTitle}
+                            subTitleKey="sub"
+                            subTitleValue={settings.homeSections.heroSubtitle}
+                            visibility={settings.sectionVisibility?.hero !== false}
+                            onToggle={(v: boolean) => setSettings({...settings, sectionVisibility: {...settings.sectionVisibility, hero: v}})}
+                            onUpdateTitle={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, heroTitle: v}})}
+                            onUpdateSub={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, heroSubtitle: v}})}
+                        />
+
+                        <SectionManager 
+                            id="Services" 
+                            titleValue={settings.homeSections.servicesTitle}
+                            subTitleKey="sub"
+                            subTitleValue={settings.homeSections.servicesSubtitle}
+                            visibility={settings.sectionVisibility?.services !== false}
+                            onToggle={(v: boolean) => setSettings({...settings, sectionVisibility: {...settings.sectionVisibility, services: v}})}
+                            onUpdateTitle={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, servicesTitle: v}})}
+                            onUpdateSub={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, servicesSubtitle: v}})}
+                        />
+
+                        <SectionManager 
+                            id="Work" 
+                            titleValue={settings.sectionTexts.workTitle}
+                            subTitleKey="sub"
+                            subTitleValue={settings.sectionTexts.workSubtitle}
+                            visibility={settings.sectionVisibility?.work !== false}
+                            onToggle={(v: boolean) => setSettings({...settings, sectionVisibility: {...settings.sectionVisibility, work: v}})}
+                            onUpdateTitle={(v: LocalizedString) => setSettings({...settings, sectionTexts: {...settings.sectionTexts, workTitle: v}})}
+                            onUpdateSub={(v: LocalizedString) => setSettings({...settings, sectionTexts: {...settings.sectionTexts, workSubtitle: v}})}
+                        />
+
+                        <SectionManager 
+                            id="Packages" 
+                            titleValue={settings.homeSections.packagesTitle}
+                            visibility={settings.sectionVisibility?.packages !== false}
+                            onToggle={(v: boolean) => setSettings({...settings, sectionVisibility: {...settings.sectionVisibility, packages: v}})}
+                            onUpdateTitle={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, packagesTitle: v}})}
+                            onUpdateSub={()=>{}}
+                        />
+
+                        <SectionManager 
+                            id="Team" 
+                            titleValue={settings.homeSections.teamTitle}
+                            subTitleKey="sub"
+                            subTitleValue={settings.homeSections.teamSubtitle}
+                            visibility={settings.sectionVisibility?.team !== false}
+                            onToggle={(v: boolean) => setSettings({...settings, sectionVisibility: {...settings.sectionVisibility, team: v}})}
+                            onUpdateTitle={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, teamTitle: v}})}
+                            onUpdateSub={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, teamSubtitle: v}})}
+                        />
+
+                        <SectionManager 
+                            id="Contact" 
+                            titleValue={settings.homeSections.contactTitle}
+                            subTitleKey="sub"
+                            subTitleValue={settings.homeSections.contactSubtitle}
+                            visibility={settings.sectionVisibility?.contact !== false}
+                            onToggle={(v: boolean) => setSettings({...settings, sectionVisibility: {...settings.sectionVisibility, contact: v}})}
+                            onUpdateTitle={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, contactTitle: v}})}
+                            onUpdateSub={(v: LocalizedString) => setSettings({...settings, homeSections: {...settings.homeSections, contactSubtitle: v}})}
+                        />
                     </div>
                 )}
 

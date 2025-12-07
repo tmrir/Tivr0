@@ -22,6 +22,14 @@ const DEFAULT_SETTINGS: SiteSettings = {
         packagesTitle: {ar:'',en:''},
         contactTitle: {ar:'',en:''}, contactSubtitle: {ar:'',en:''}
     },
+    sectionVisibility: {
+        hero: true,
+        services: true,
+        work: true,
+        packages: true,
+        team: true,
+        contact: true
+    },
     privacyPolicy: { ar: '', en: '' },
     termsOfService: { ar: '', en: '' }
 };
@@ -50,6 +58,7 @@ export const useSettings = () => {
               bottomBanner: { ...DEFAULT_SETTINGS.bottomBanner, ...(data.bottom_banner || data.bottomBanner || {}) },
               sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || data.sectionTexts || {}) },
               homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || data.homeSections || {}) },
+              sectionVisibility: { ...DEFAULT_SETTINGS.sectionVisibility, ...(data.section_visibility || data.sectionVisibility || {}) },
               privacyPolicy: { ...DEFAULT_SETTINGS.privacyPolicy, ...(data.privacy_policy || data.privacyPolicy || {}) },
               termsOfService: { ...DEFAULT_SETTINGS.termsOfService, ...(data.terms_of_service || data.termsOfService || {}) },
           };

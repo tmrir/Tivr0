@@ -1,5 +1,4 @@
 
-// ... (keeping existing imports)
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Language, Translations } from '../types';
 import { supabase } from '../services/supabase';
@@ -32,6 +31,15 @@ const TRANSLATIONS: Translations = {
   'section.team': { ar: 'عقول تيفرو', en: 'Tivro Minds' },
   'footer.rights': { ar: 'جميع الحقوق محفوظة لشركة تيفرو © 2024', en: 'All rights reserved Tivro © 2024' },
   
+  // Package Modal
+  'pkg.request_title': { ar: 'طلب الباقة', en: 'Request Package' },
+  'pkg.name_placeholder': { ar: 'اسمك طال عمرك', en: 'Your Name' },
+  'pkg.phone_placeholder': { ar: 'رقم التواصل', en: 'Phone Number' },
+  'pkg.email_placeholder': { ar: 'البريد الإلكتروني', en: 'Email Address' },
+  'pkg.selected_package': { ar: 'الباقة المختارة', en: 'Selected Package' },
+  'pkg.send_btn': { ar: 'أرسل طلبك', en: 'Send Request' },
+  'pkg.success': { ar: 'تم استلام طلبك بنجاح! سنتواصل معك قريباً.', en: 'Request received! We will contact you soon.' },
+
   // Admin Auth
   'admin.login': { ar: 'دخول المشرفين', en: 'Admin Login' },
   'admin.dashboard': { ar: 'لوحة التحكم', en: 'Dashboard' },
@@ -49,6 +57,7 @@ const TRANSLATIONS: Translations = {
   'admin.tab.work': { ar: 'أعمالنا', en: 'Case Studies' },
   'admin.tab.blog': { ar: 'المدونة', en: 'Blog' },
   'admin.tab.messages': { ar: 'رسائل التواصل', en: 'Contact Messages' },
+  'admin.tab.requests': { ar: 'طلبات الباقات', en: 'Package Requests' },
   'admin.tab.settings': { ar: 'الإعدادات', en: 'Settings' },
   'admin.tab.brand': { ar: 'الهوية البصرية', en: 'Brand Identity' },
 
@@ -57,6 +66,7 @@ const TRANSLATIONS: Translations = {
   'admin.dash.team_members': { ar: 'أعضاء الفريق', en: 'Team Members' },
   'admin.dash.case_studies': { ar: 'دراسات الحالة', en: 'Case Studies' },
   'admin.dash.packages': { ar: 'باقات الأسعار', en: 'Packages' },
+  'admin.dash.requests': { ar: 'طلبات الباقات', en: 'Package Requests' },
   'admin.dash.info': { ar: 'معلومات النظام', en: 'System Info' },
   'admin.dash.connected': { ar: 'متصل بقاعدة البيانات. استخدم القوائم الجانبية لإدارة المحتوى.', en: 'Connected to Database. Use sidebar to manage content.' },
 

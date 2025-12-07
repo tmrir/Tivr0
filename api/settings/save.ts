@@ -15,6 +15,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const payload = req.body;
     
     // Ensure ID is 1 for the single settings row
+    // payload should contain mapped fields like section_visibility from the client logic or mapped there
+    // If client sends snake_case keys (which our useSettings hook does), this passes through cleanly
     const dataToSave = { ...payload, id: 1, updated_at: new Date().toISOString() };
 
     const { data, error } = await supabaseAdmin

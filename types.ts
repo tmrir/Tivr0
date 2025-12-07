@@ -63,6 +63,15 @@ export interface ContactMessage {
   createdAt: string;
 }
 
+export interface PackageRequest {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  packageName: string;
+  createdAt: string;
+}
+
 export interface SocialLink {
   platform: string;
   url: string;
@@ -114,6 +123,11 @@ export interface SiteSettings {
   
   // CMS - Home Page General Content
   homeSections: HomeSectionsSettings;
+  
+  // CMS - Section Visibility
+  sectionVisibility: {
+      [key: string]: boolean; // e.g. 'hero': true, 'services': false
+  };
 
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
   privacyPolicy: LocalizedString; 
