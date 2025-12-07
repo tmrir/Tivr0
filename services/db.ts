@@ -81,7 +81,6 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
       });
   }
 
-  // Default Visibility (All true by default if not set)
   const defaultVisibility = {
       hero: true,
       services: true,
@@ -90,6 +89,9 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
       team: true,
       contact: true
   };
+
+  const defaultFont = { heroTitle: 'text-5xl', heroSubtitle: 'text-xl', sectionTitle: 'text-4xl', sectionDesc: 'text-lg', cardTitle: 'text-xl' };
+  const defaultFooter = { description: {ar:'',en:''}, copyright: {ar:'',en:''}, links: {privacyLabel: {ar:'',en:''}, termsLabel: {ar:'',en:''}} };
 
   return {
     siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
@@ -119,6 +121,8 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     },
 
     sectionVisibility: { ...defaultVisibility, ...(row.section_visibility || {}) },
+    fontSettings: { ...defaultFont, ...(row.font_settings || {}) },
+    footerSettings: { ...defaultFooter, ...(row.footer_settings || {}) },
 
     privacyPolicy: row.privacy_policy || { ar: '', en: '' },
     termsOfService: row.terms_of_service || { ar: '', en: '' }
@@ -140,6 +144,8 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   section_texts: item.sectionTexts,
   home_sections: item.homeSections,
   section_visibility: item.sectionVisibility,
+  font_settings: item.fontSettings,
+  footer_settings: item.footerSettings,
   privacy_policy: item.privacyPolicy,
   terms_of_service: item.termsOfService
 });
@@ -293,12 +299,15 @@ export const db = {
       
       const mergedSettings = current ? { ...current, ...newSettings } : newSettings;
       
+      // Merge nested objects specifically to avoid overwrite
       if (current) {
           if (newSettings.sectionTexts) mergedSettings.sectionTexts = { ...current.sectionTexts, ...newSettings.sectionTexts };
           if (newSettings.homeSections) mergedSettings.homeSections = { ...current.homeSections, ...newSettings.homeSections };
           if (newSettings.sectionVisibility) mergedSettings.sectionVisibility = { ...current.sectionVisibility, ...newSettings.sectionVisibility };
           if (newSettings.topBanner) mergedSettings.topBanner = { ...current.topBanner, ...newSettings.topBanner };
           if (newSettings.bottomBanner) mergedSettings.bottomBanner = { ...current.bottomBanner, ...newSettings.bottomBanner };
+          if (newSettings.fontSettings) mergedSettings.fontSettings = { ...current.fontSettings, ...newSettings.fontSettings };
+          if (newSettings.footerSettings) mergedSettings.footerSettings = { ...current.footerSettings, ...newSettings.footerSettings };
       }
       
       const payload = { id: 1, ...mapSettingsToDB(mergedSettings) };

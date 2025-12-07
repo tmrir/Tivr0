@@ -98,6 +98,23 @@ export interface HomeSectionsSettings {
     contactSubtitle: LocalizedString;
 }
 
+export interface FontSettings {
+    heroTitle: string; // e.g., 'text-5xl'
+    heroSubtitle: string;
+    sectionTitle: string;
+    sectionDesc: string;
+    cardTitle: string;
+}
+
+export interface FooterSettings {
+    description: LocalizedString;
+    copyright: LocalizedString;
+    links: {
+        privacyLabel: LocalizedString;
+        termsLabel: LocalizedString;
+    }
+}
+
 export interface SiteSettings {
   siteName: LocalizedString;
   contactEmail: string;
@@ -123,6 +140,10 @@ export interface SiteSettings {
   
   // CMS - Home Page General Content
   homeSections: HomeSectionsSettings;
+  
+  // CMS - Fonts & Footer
+  fontSettings: FontSettings;
+  footerSettings: FooterSettings;
   
   // CMS - Section Visibility
   sectionVisibility: {

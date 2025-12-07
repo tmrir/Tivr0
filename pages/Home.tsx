@@ -41,6 +41,8 @@ export const Home = () => {
     }
 
     const defaultVisibility = { hero: true, services: true, work: true, packages: true, team: true, contact: true };
+    const defaultFont = { heroTitle: 'text-5xl', heroSubtitle: 'text-xl', sectionTitle: 'text-4xl', sectionDesc: 'text-lg', cardTitle: 'text-xl' };
+    const defaultFooter = { description: {ar:'',en:''}, copyright: {ar:'',en:''}, links: {privacyLabel: {ar:'',en:''}, termsLabel: {ar:'',en:''}} };
 
     return {
         siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
@@ -69,6 +71,8 @@ export const Home = () => {
             contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
         },
         sectionVisibility: { ...defaultVisibility, ...(row.section_visibility || {}) },
+        fontSettings: { ...defaultFont, ...(row.font_settings || {}) },
+        footerSettings: { ...defaultFooter, ...(row.footer_settings || {}) },
 
         privacyPolicy: row.privacy_policy || { ar: '', en: '' },
         termsOfService: row.terms_of_service || { ar: '', en: '' }

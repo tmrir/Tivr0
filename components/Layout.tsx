@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter, Facebook } from 'lucide-react';
+import { Menu, X, Globe, LayoutDashboard, LogOut } from 'lucide-react';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { SiteSettings, Service } from '../types';
@@ -11,17 +11,10 @@ interface LayoutProps {
   hideFooter?: boolean;
 }
 
-const DEFAULT_SETTINGS: Partial<SiteSettings> = {
-    siteName: { ar: 'Tivro', en: 'Tivro' },
-    contactEmail: '',
-    contactPhone: '',
-    socialLinks: []
-};
-
 export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) => {
   const { t, lang, setLang, isAdmin } = useApp();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [settings, setSettings] = useState<SiteSettings | any>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [footerServices, setFooterServices] = useState<Service[]>([]);
 
   useEffect(() => {
@@ -113,25 +106,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
           <button className="md:hidden text-slate-700" onClick={() => setIsMenuOpen(!isMenuOpen)}>{isMenuOpen ? <X size={28} /> : <Menu size={28} />}</button>
         </div>
-
-        {isMenuOpen && (
-          <div className="md:hidden absolute top-20 left-0 w-full bg-white border-b border-slate-100 p-6 shadow-xl flex flex-col gap-6 animate-fade-in">
-            <NavLink href="#" label={t('nav.home')} />
-            <NavLink href="#services" label={t('nav.services')} />
-            <NavLink href="#work" label={t('nav.work')} />
-            <NavLink href="#team" label={t('nav.team')} />
-            <NavLink href="#blog" label={t('nav.blog')} />
-            <div className="h-px bg-slate-100 my-2"></div>
-            <div className="flex justify-between items-center">
-               <button onClick={toggleLang} className="flex items-center gap-2 font-bold text-slate-600"><Globe size={20} /> {lang === 'ar' ? 'English' : 'العربية'}</button>
-               {isAdmin && <a href="#admin" className="text-tivro-primary font-bold flex gap-2 items-center"><LayoutDashboard size={20}/> Admin</a>}
-            </div>
-          </div>
-        )}
       </header>
 
-      {/* Main Content */}
-      <main className="flex-grow">{children}</main>
+      {/* Main Content - Inject Font Settings via CSS Variables or Direct Classes */}
+      <main className="flex-grow">
+          {children}
+      </main>
 
       {/* Footer */}
       {!hideFooter && (
@@ -148,7 +128,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                   <span className="text-2xl font-bold">{settings?.siteName?.[lang]}</span>
                 </div>
                 <p className="text-slate-400 max-w-md leading-relaxed mb-6">
-                  {lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.'}
+                  {settings?.footerSettings?.description?.[lang] || (lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.')}
                 </p>
                 <div className="flex gap-4">
                   {settings?.socialLinks?.map((link: any, i: number) => (
@@ -177,7 +157,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             </div>
             
             <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
-              <p>{t('footer.rights')}</p>
+              <p>{settings?.footerSettings?.copyright?.[lang] || t('footer.rights')}</p>
               <div className="flex gap-6 mt-4 md:mt-0">
                 <a href="#privacy" className="hover:text-white">{t('nav.privacy')}</a>
                 <a href="#terms" className="hover:text-white">{t('nav.terms')}</a>

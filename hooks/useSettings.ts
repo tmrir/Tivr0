@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SiteSettings } from '../types';
-// REMOVED: import { supabaseAdmin } ... This was the cause of the build error!
 
 const DEFAULT_SETTINGS: SiteSettings = {
     siteName: { ar: '', en: '' },
@@ -29,6 +28,21 @@ const DEFAULT_SETTINGS: SiteSettings = {
         packages: true,
         team: true,
         contact: true
+    },
+    fontSettings: {
+        heroTitle: 'text-5xl',
+        heroSubtitle: 'text-xl',
+        sectionTitle: 'text-4xl',
+        sectionDesc: 'text-lg',
+        cardTitle: 'text-xl'
+    },
+    footerSettings: {
+        description: { ar: '', en: '' },
+        copyright: { ar: '', en: '' },
+        links: {
+            privacyLabel: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+            termsLabel: { ar: 'شروط الخدمة', en: 'Terms of Service' }
+        }
     },
     privacyPolicy: { ar: '', en: '' },
     termsOfService: { ar: '', en: '' }
@@ -59,6 +73,12 @@ export const useSettings = () => {
               sectionTexts: { ...DEFAULT_SETTINGS.sectionTexts, ...(data.section_texts || data.sectionTexts || {}) },
               homeSections: { ...DEFAULT_SETTINGS.homeSections, ...(data.home_sections || data.homeSections || {}) },
               sectionVisibility: { ...DEFAULT_SETTINGS.sectionVisibility, ...(data.section_visibility || data.sectionVisibility || {}) },
+              fontSettings: { ...DEFAULT_SETTINGS.fontSettings, ...(data.font_settings || data.fontSettings || {}) },
+              footerSettings: { 
+                  description: { ...DEFAULT_SETTINGS.footerSettings.description, ...(data.footer_settings?.description || data.footerSettings?.description || {}) },
+                  copyright: { ...DEFAULT_SETTINGS.footerSettings.copyright, ...(data.footer_settings?.copyright || data.footerSettings?.copyright || {}) },
+                  links: { ...DEFAULT_SETTINGS.footerSettings.links, ...(data.footer_settings?.links || data.footerSettings?.links || {}) }
+              },
               privacyPolicy: { ...DEFAULT_SETTINGS.privacyPolicy, ...(data.privacy_policy || data.privacyPolicy || {}) },
               termsOfService: { ...DEFAULT_SETTINGS.termsOfService, ...(data.terms_of_service || data.termsOfService || {}) },
           };
@@ -76,13 +96,16 @@ export const useSettings = () => {
     setSaving(true);
     setError(null);
     try {
-        // Flatten structure for API if needed, but passing full object usually works if API expects it
-        // We'll pass the structured object and let API/DB handle JSON columns
-        
+        const payload = {
+            ...newData,
+            font_settings: newData.fontSettings,
+            footer_settings: newData.footerSettings
+        };
+
         const res = await fetch('/api/settings/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newData)
+            body: JSON.stringify(payload)
         });
         
         const json = await res.json();
