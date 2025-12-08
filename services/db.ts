@@ -5,15 +5,24 @@ import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, Contac
 /* --- HELPER: SAFE LOCALIZED STRING --- */
 const ensureLocalized = (val: any): LocalizedString => {
     if (!val) return { ar: '', en: '' };
-    if (typeof val === 'string') {
-        try {
-            const parsed = JSON.parse(val);
-            return { ar: parsed.ar || '', en: parsed.en || '' };
-        } catch {
-            return { ar: val, en: val };
-        }
+    if (typeof val === 'object' && val !== null) {
+        return {
+            ar: val.ar || val.ar === '' ? val.ar : '',
+            en: val.en || val.en === '' ? val.en : ''
+        };
     }
-    return { ar: val.ar || '', en: val.en || '' };
+    if (typeof val === 'string') {
+        if (val.trim().startsWith('{')) {
+            try {
+                const parsed = JSON.parse(val);
+                if (typeof parsed === 'object') {
+                    return { ar: parsed.ar || '', en: parsed.en || '' };
+                }
+            } catch { }
+        }
+        return { ar: val, en: val };
+    }
+    return { ar: '', en: '' };
 };
 
 /* --- DATA MAPPERS --- */
@@ -79,14 +88,26 @@ const mapMessageFromDB = (row: any): ContactMessage => ({
 
 const mapPackageRequestFromDB = (row: any): PackageRequest => ({
   id: row.id,
-  name: row.name || '',
-  phone: row.phone || '',
+  name: row.name || row.customer_name || '',
+  phone: row.phone || row.phone_number || '',
   email: row.email || '',
   packageName: row.package_name || '',
   createdAt: row.created_at
 });
 
 const mapSettingsFromDB = (row: any): SiteSettings => {
+  if (!row) row = {};
+  const safeMerge = (defaultObj: any, sourceObj: any) => {
+      if (!sourceObj) return defaultObj;
+      const result = { ...defaultObj };
+      for (const key in defaultObj) {
+          if (sourceObj[key] !== undefined && sourceObj[key] !== null) {
+              result[key] = sourceObj[key];
+          }
+      }
+      return result;
+  };
+
   let socialLinks: SocialLink[] = [];
   if (Array.isArray(row.social_links)) {
       socialLinks = row.social_links;
@@ -96,13 +117,16 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
       });
   }
 
-  // DEFAULTS
   const defaultHomeSections = {
-      heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
-      servicesTitle: { ar: '', en: '' }, servicesSubtitle: { ar: '', en: '' },
-      teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
-      packagesTitle: { ar: '', en: '' },
-      contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
+      heroTitle: { ar: 'شريكك الاستراتيجي للنمو الرقمي', en: 'Your Strategic Partner for Digital Growth' },
+      heroSubtitle: { ar: 'نحول الأفكار إلى أرقام.', en: 'We turn ideas into numbers.' },
+      servicesTitle: { ar: 'خدمات نصنع بها الفرق', en: 'Services That Make a Difference' },
+      servicesSubtitle: { ar: '', en: '' },
+      teamTitle: { ar: 'عقول تيفرو', en: 'Tivro Minds' },
+      teamSubtitle: { ar: '', en: '' },
+      packagesTitle: { ar: 'باقات تناسب الجميع', en: 'Packages for Everyone' },
+      contactTitle: { ar: 'تواصل معنا', en: 'Contact Us' },
+      contactSubtitle: { ar: '', en: '' }
   };
 
   const defaultSectionTexts = { 
@@ -115,19 +139,28 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
   const defaultFooter = { description: {ar:'',en:''}, copyright: {ar:'',en:''}, links: {privacyLabel: {ar:'',en:''}, termsLabel: {ar:'',en:''}} };
   const defaultBanner = { enabled: false, title: {ar:'',en:''} };
 
-  // DEEP MERGE to ensure no keys are missing
-  const homeSections = { ...defaultHomeSections, ...(row.home_sections || {}) };
-  // Ensure nested localized strings in homeSections are valid
+  const rawHomeSections = row.home_sections || {};
+  const homeSections = safeMerge(defaultHomeSections, rawHomeSections);
   Object.keys(homeSections).forEach(key => {
       // @ts-ignore
-      if(typeof homeSections[key] === 'object') homeSections[key] = ensureLocalized(homeSections[key]);
+      homeSections[key] = ensureLocalized(homeSections[key]);
   });
 
-  const sectionTexts = { ...defaultSectionTexts, ...(row.section_texts || {}) };
+  const rawSectionTexts = row.section_texts || {};
+  const sectionTexts = safeMerge(defaultSectionTexts, rawSectionTexts);
   Object.keys(sectionTexts).forEach(key => {
        // @ts-ignore
-      if(typeof sectionTexts[key] === 'object') sectionTexts[key] = ensureLocalized(sectionTexts[key]);
+      sectionTexts[key] = ensureLocalized(sectionTexts[key]);
   });
+
+  const rawFooter = row.footer_settings || {};
+  const footerSettings = safeMerge(defaultFooter, rawFooter);
+  footerSettings.description = ensureLocalized(footerSettings.description);
+  footerSettings.copyright = ensureLocalized(footerSettings.copyright);
+  if(footerSettings.links) {
+     footerSettings.links.privacyLabel = ensureLocalized(footerSettings.links?.privacyLabel);
+     footerSettings.links.termsLabel = ensureLocalized(footerSettings.links?.termsLabel);
+  }
 
   return {
     siteName: ensureLocalized(row.site_name || { ar: 'Tivro', en: 'Tivro' }),
@@ -141,15 +174,26 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     footerLogoUrl: row.footer_logo_url || row.logo_url || '',
     faviconUrl: row.favicon_url || '',
 
-    topBanner: { ...defaultBanner, ...(row.top_banner || {}) },
-    bottomBanner: { ...defaultBanner, ...(row.bottom_banner || {}) },
+    topBanner: { 
+        ...defaultBanner, 
+        ...(row.top_banner || {}), 
+        title: ensureLocalized(row.top_banner?.title),
+        buttonText: ensureLocalized(row.top_banner?.buttonText),
+        subtitle: ensureLocalized(row.top_banner?.subtitle)
+    },
+    bottomBanner: {
+        ...defaultBanner,
+        ...(row.bottom_banner || {}),
+        title: ensureLocalized(row.bottom_banner?.title),
+        subtitle: ensureLocalized(row.bottom_banner?.subtitle)
+    },
 
     sectionTexts: sectionTexts,
     homeSections: homeSections,
 
     sectionVisibility: { ...defaultVisibility, ...(row.section_visibility || {}) },
     fontSettings: { ...defaultFont, ...(row.font_settings || {}) },
-    footerSettings: { ...defaultFooter, ...(row.footer_settings || {}) },
+    footerSettings: footerSettings,
 
     privacyPolicy: ensureLocalized(row.privacy_policy),
     termsOfService: ensureLocalized(row.terms_of_service)
@@ -177,7 +221,6 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   terms_of_service: item.termsOfService
 });
 
-/* --- API HELPER FOR CONTENT --- */
 const apiContentAction = async (table: string, action: 'upsert' | 'delete', data?: any, id?: string) => {
     try {
         const res = await fetch('/api/content/action', {
@@ -193,7 +236,6 @@ const apiContentAction = async (table: string, action: 'upsert' | 'delete', data
     }
 };
 
-/* --- DB SERVICE EXPORT --- */
 export const db = {
   reorder: async (table: string, items: any[]) => {
     try {
@@ -289,29 +331,54 @@ export const db = {
           return data?.map(mapPackageRequestFromDB) || [];
       },
       create: async (name: string, phone: string, email: string, packageName: string) => {
-          return await fetch('/api/package-requests/create', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name, phone, email, packageName })
-          });
+          // DIRECT SUPABASE INSERT
+          // Mapped to standard 'name' and 'phone' columns as 'customer_name'/'phone_number' failed schema check
+          
+          const safeName = email ? `${name} | ${email}` : name;
+
+          const payload = {
+              name: safeName,
+              phone: phone,
+              package_name: packageName
+              // created_at is automatic default usually
+          };
+
+          const { data, error } = await supabase
+              .from('package_requests')
+              .insert([payload])
+              .select();
+          
+          if (error) {
+              console.error("Supabase Direct Insert Error:", error);
+              throw error;
+          }
+          return data;
       },
       delete: async (id: string) => await apiContentAction('package_requests', 'delete', undefined, id)
   },
 
   settings: {
     get: async (): Promise<SiteSettings> => {
+      try {
+        const res = await fetch('/api/settings/get?t='+Date.now());
+        if(res.ok) {
+            const json = await res.json();
+            if(json.ok && json.data) {
+                return mapSettingsFromDB(json.data);
+            }
+        }
+      } catch (e) { console.warn("API Settings fetch failed, falling back to client DB", e); }
+
       const { data, error } = await supabase.from('site_settings').select('*').single();
       return mapSettingsFromDB(data || {});
     },
     save: async (newSettings: SiteSettings) => {
       const payload = { ...mapSettingsToDB(newSettings), id: 1 };
-      
       const res = await fetch('/api/settings/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
       });
-      
       if (!res.ok) throw new Error('Failed to save settings via API');
       return await res.json();
     }
@@ -323,18 +390,14 @@ export const db = {
             const res = await fetch(`/api/pages/${slug}`);
             if (!res.ok) return null;
             return await res.json();
-        } catch {
-            return null;
-        }
+        } catch { return null; }
     },
     getAll: async (): Promise<Page[]> => {
         try {
             const res = await fetch('/api/pages/list');
             if (!res.ok) return [];
             return await res.json();
-        } catch {
-            return [];
-        }
+        } catch { return []; }
     },
     save: async (slug: string, title: string, content: string) => {
         const res = await fetch('/api/pages/save', {

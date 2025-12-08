@@ -45,8 +45,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     window.location.reload();
   };
 
-  const NavLink = ({ href, label }: { href: string; label: string }) => (
-    <a href={href} className="text-slate-600 hover:text-tivro-primary font-medium transition-colors duration-200 text-sm md:text-base" onClick={() => setIsMenuOpen(false)}>{label}</a>
+  const NavLink = ({ href, label, mobile = false }: { href: string; label: string; mobile?: boolean }) => (
+    <a 
+        href={href} 
+        className={`text-slate-600 hover:text-tivro-primary font-medium transition-colors duration-200 ${mobile ? 'block text-lg py-3 border-b border-slate-50' : 'text-sm md:text-base'}`} 
+        onClick={() => setIsMenuOpen(false)}
+    >
+        {label}
+    </a>
   );
 
   const IconComponent = ({ name }: { name: string }) => {
@@ -70,9 +76,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
-        <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
+        <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between relative">
+          <a href="#" className="flex items-center gap-2 z-50">
             {settings?.logoUrl ? (
                 <img src={settings.logoUrl} alt="Logo" className="h-10 object-contain" />
             ) : (
@@ -81,6 +87,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <span className="text-2xl font-bold text-tivro-dark tracking-tight">{settings?.siteName?.[lang] || 'Tivro'}</span>
           </a>
 
+          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
             <NavLink href="#" label={t('nav.home')} />
             <NavLink href="#services" label={t('nav.services')} />
@@ -89,6 +96,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <NavLink href="#blog" label={t('nav.blog')} />
           </nav>
 
+          {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
             <button onClick={toggleLang} className="flex items-center gap-1 text-slate-500 hover:text-tivro-primary transition">
               <Globe size={18} /> <span className="uppercase text-sm font-bold">{lang === 'ar' ? 'EN' : 'AR'}</span>
@@ -104,11 +112,43 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             )}
           </div>
 
-          <button className="md:hidden text-slate-700" onClick={() => setIsMenuOpen(!isMenuOpen)}>{isMenuOpen ? <X size={28} /> : <Menu size={28} />}</button>
+          {/* Mobile Menu Button */}
+          <button className="md:hidden text-slate-700 p-2 z-50" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
+             {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
         </div>
+
+        {/* Mobile Menu Dropdown - Increased Z-index */}
+        {isMenuOpen && (
+            <div className="md:hidden absolute top-20 left-0 w-full bg-white border-t border-slate-100 shadow-xl z-[70] h-[calc(100vh-80px)] overflow-y-auto">
+                <div className="flex flex-col p-6 space-y-2">
+                    <NavLink href="#" label={t('nav.home')} mobile />
+                    <NavLink href="#services" label={t('nav.services')} mobile />
+                    <NavLink href="#work" label={t('nav.work')} mobile />
+                    <NavLink href="#team" label={t('nav.team')} mobile />
+                    <NavLink href="#blog" label={t('nav.blog')} mobile />
+                    
+                    <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
+                        <button onClick={() => { toggleLang(); setIsMenuOpen(false); }} className="flex items-center gap-2 text-slate-600 font-bold text-lg">
+                            <Globe size={20} /> <span>{lang === 'ar' ? 'English' : 'العربية'}</span>
+                        </button>
+                        
+                        {isAdmin ? (
+                             <a href="#admin" className="bg-slate-100 text-slate-800 text-center py-4 rounded-xl font-bold" onClick={() => setIsMenuOpen(false)}>
+                                 {t('admin.dashboard')}
+                             </a>
+                        ) : (
+                             <a href="#contact" className="bg-tivro-dark text-white text-center py-4 rounded-xl font-bold shadow-lg" onClick={() => setIsMenuOpen(false)}>
+                                 {t('nav.contact')}
+                             </a>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
       </header>
 
-      {/* Main Content - Inject Font Settings via CSS Variables or Direct Classes */}
+      {/* Main Content */}
       <main className="flex-grow">
           {children}
       </main>

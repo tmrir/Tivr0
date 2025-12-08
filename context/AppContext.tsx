@@ -13,22 +13,38 @@ interface AppContextProps {
 }
 
 const TRANSLATIONS: Translations = {
-  // Nav & Public
+  // --- القائمة الرئيسية والعامة ---
   'nav.home': { ar: 'الرئيسية', en: 'Home' },
   'nav.services': { ar: 'خدماتنا', en: 'Services' },
   'nav.work': { ar: 'أعمالنا', en: 'Our Work' },
   'nav.team': { ar: 'الفريق', en: 'Team' },
   'nav.blog': { ar: 'المدونة', en: 'Blog' },
   'nav.contact': { ar: 'تواصل معنا', en: 'Contact' },
+  'nav.privacy': { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+  'nav.terms': { ar: 'الشروط والأحكام', en: 'Terms & Conditions' },
+
+  // --- واجهة الصفحة الرئيسية ---
   'hero.title': { ar: 'شريكك الاستراتيجي للنمو الرقمي', en: 'Your Strategic Partner for Digital Growth' },
   'hero.subtitle': { ar: 'نحول الأفكار إلى أرقام، ونقود علامتك التجارية نحو الصدارة في السوق السعودي.', en: 'We turn ideas into numbers, leading your brand to the forefront of the Saudi market.' },
-  'cta.start': { ar: 'ابدأ رحلة النمو', en: 'Start Growth Journey' },
+  'cta.start': { ar: 'ابدأ رحلتك الآن', en: 'Start Journey Now' },
   'section.services': { ar: 'خدمات نصنع بها الفرق', en: 'Services That Make a Difference' },
   'section.work': { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
   'section.team': { ar: 'عقول تيفرو', en: 'Tivro Minds' },
   'footer.rights': { ar: 'جميع الحقوق محفوظة لشركة تيفرو © 2024', en: 'All rights reserved Tivro © 2024' },
   
-  // Admin Auth
+  // --- نافذة طلب الباقات (نصوص مخصصة حسب الطلب) ---
+  'pkg.request_title': { ar: 'طلب اشتراك في الباقة', en: 'Request Package' },
+  'pkg.select_btn': { ar: 'اطلب الباقة الآن', en: 'Request Now' },
+  'pkg.name_placeholder': { ar: 'اسمك طال عمرك', en: 'Your Name' },
+  'pkg.phone_placeholder': { ar: 'رقم الجوال', en: 'Phone Number' },
+  'pkg.email_placeholder': { ar: 'البريد', en: 'Email' },
+  'pkg.send_btn': { ar: 'ارسل طلب', en: 'Send Request' },
+  'pkg.selected_package': { ar: 'الباقة المختارة', en: 'Selected Package' },
+  'pkg.sending': { ar: 'جاري الإرسال...', en: 'Sending...' },
+  'pkg.success': { ar: 'وصل طلبك وراح نتواصل معك في أسرع وقت', en: 'Request received! We will contact you soon.' },
+  'pkg.error': { ar: 'حدث خطأ أثناء الإرسال، حاول مرة أخرى.', en: 'Error sending request, try again.' },
+
+  // --- لوحة التحكم (Admin) ---
   'admin.login': { ar: 'دخول المشرفين', en: 'Admin Login' },
   'admin.dashboard': { ar: 'لوحة التحكم', en: 'Dashboard' },
   'admin.logout': { ar: 'تسجيل خروج', en: 'Logout' },
@@ -36,7 +52,6 @@ const TRANSLATIONS: Translations = {
   'admin.login.password': { ar: 'كلمة المرور', en: 'Password' },
   'admin.login.btn': { ar: 'دخول', en: 'Login' },
 
-  // Admin Sidebar
   'admin.menu.main': { ar: 'القائمة الرئيسية', en: 'Main Menu' },
   'admin.tab.dashboard': { ar: 'نظرة عامة', en: 'Overview' },
   'admin.tab.services': { ar: 'الخدمات', en: 'Services' },
@@ -45,17 +60,21 @@ const TRANSLATIONS: Translations = {
   'admin.tab.work': { ar: 'أعمالنا', en: 'Case Studies' },
   'admin.tab.blog': { ar: 'المدونة', en: 'Blog' },
   'admin.tab.messages': { ar: 'رسائل التواصل', en: 'Contact Messages' },
+  'admin.tab.requests': { ar: 'طلبات الباقات', en: 'Package Requests' },
   'admin.tab.settings': { ar: 'الإعدادات', en: 'Settings' },
+  'admin.tab.brand': { ar: 'الهوية البصرية', en: 'Brand Identity' },
 
-  // Admin Dashboard
   'admin.dash.active_services': { ar: 'الخدمات المفعلة', en: 'Active Services' },
   'admin.dash.team_members': { ar: 'أعضاء الفريق', en: 'Team Members' },
   'admin.dash.case_studies': { ar: 'دراسات الحالة', en: 'Case Studies' },
   'admin.dash.packages': { ar: 'باقات الأسعار', en: 'Packages' },
+  'admin.dash.requests': { ar: 'طلبات الباقات', en: 'Package Requests' },
   'admin.dash.info': { ar: 'معلومات النظام', en: 'System Info' },
-  'admin.dash.connected': { ar: 'متصل بقاعدة البيانات. استخدم القوائم الجانبية لإدارة المحتوى.', en: 'Connected to Database. Use sidebar to manage content.' },
+  'admin.dash.connected': { ar: 'متصل بقاعدة البيانات.', en: 'Connected to Database.' },
 
-  // Admin Common Actions
+  'admin.brand.assets': { ar: 'أصول الهوية', en: 'Brand Assets' },
+  'admin.brand.properties': { ar: 'الخصائص', en: 'Properties' },
+
   'admin.btn.add': { ar: 'إضافة جديد', en: 'Add New' },
   'admin.btn.save': { ar: 'حفظ التغييرات', en: 'Save Changes' },
   'admin.btn.cancel': { ar: 'إلغاء', en: 'Cancel' },
@@ -65,7 +84,6 @@ const TRANSLATIONS: Translations = {
   'admin.loading': { ar: 'جاري التحميل...', en: 'Loading...' },
   'admin.empty': { ar: 'لا توجد بيانات.', en: 'No data found.' },
 
-  // Admin Forms
   'admin.form.title_ar': { ar: 'العنوان (عربي)', en: 'Title (Arabic)' },
   'admin.form.title_en': { ar: 'العنوان (إنجليزي)', en: 'Title (English)' },
   'admin.form.desc_ar': { ar: 'الوصف (عربي)', en: 'Description (Arabic)' },
@@ -91,19 +109,17 @@ const TRANSLATIONS: Translations = {
   'admin.messages.phone': { ar: 'الجوال', en: 'Phone' },
   'admin.messages.date': { ar: 'التاريخ', en: 'Date' },
 
-  // Admin Settings & Seed
   'admin.settings.general': { ar: 'الإعدادات العامة', en: 'General Settings' },
   'admin.settings.contact': { ar: 'بيانات التواصل', en: 'Contact Info' },
   'admin.settings.social': { ar: 'التواصل الاجتماعي', en: 'Social Media' },
   'admin.settings.sections': { ar: 'نصوص الأقسام', en: 'Section Texts' },
   'admin.settings.db': { ar: 'إجراءات قاعدة البيانات', en: 'Database Actions' },
-  'admin.seed.desc': { ar: 'إذا كانت قاعدة البيانات فارغة، يمكنك استعادة المحتوى الافتراضي بضغطة زر.', en: 'If database is empty, you can restore default content with one click.' },
-  'admin.seed.btn': { ar: 'استعادة البيانات الافتراضية', en: 'Reset & Seed Database' },
-  'admin.seed.warning': { ar: 'سيتم إضافة البيانات الافتراضية إلى قاعدة البيانات. هل تود الاستمرار؟', en: 'Default data will be added to DB. Continue?' },
-  'admin.seed.success': { ar: 'تمت الاستعادة بنجاح! جاري التحديث...', en: 'Seeding successful! Refreshing...' },
+  'admin.settings.legal': { ar: 'الصفحات القانونية', en: 'Legal Pages' },
+  'admin.seed.desc': { ar: 'استعادة المحتوى الافتراضي', en: 'Restore Default Content' },
+  'admin.seed.btn': { ar: 'استعادة البيانات', en: 'Reset Database' },
+  'admin.seed.success': { ar: 'تمت الاستعادة بنجاح!', en: 'Seeding successful!' },
   'admin.settings.saved': { ar: 'تم حفظ الإعدادات بنجاح.', en: 'Settings saved successfully.' },
 
-  // Settings Fields
   'admin.set.email': { ar: 'البريد الإلكتروني', en: 'Contact Email' },
   'admin.set.phone': { ar: 'رقم الهاتف', en: 'Phone Number' },
   'admin.set.address_ar': { ar: 'العنوان (عربي)', en: 'Address (Arabic)' },
@@ -112,7 +128,10 @@ const TRANSLATIONS: Translations = {
   'admin.set.work_title_en': { ar: 'عنوان "أعمالنا" (إنجليزي)', en: 'Work Title (English)' },
   'admin.set.work_sub_ar': { ar: 'وصف "أعمالنا" (عربي)', en: 'Work Subtitle (Arabic)' },
   'admin.set.work_sub_en': { ar: 'وصف "أعمالنا" (إنجليزي)', en: 'Work Subtitle (English)' },
-  'admin.social.platform': { ar: 'اسم المنصة (لأيقونة Lucide)', en: 'Platform Name (for Lucide Icon)' },
+  'admin.set.privacy': { ar: 'محتوى سياسة الخصوصية', en: 'Privacy Policy Content' },
+  'admin.set.terms': { ar: 'محتوى الشروط والأحكام', en: 'Terms of Service Content' },
+
+  'admin.social.platform': { ar: 'المنصة', en: 'Platform' },
   'admin.social.url': { ar: 'الرابط', en: 'URL' },
   'admin.social.add': { ar: 'إضافة منصة', en: 'Add Platform' },
   'admin.section.settings': { ar: 'إعدادات القسم', en: 'Section Settings' },

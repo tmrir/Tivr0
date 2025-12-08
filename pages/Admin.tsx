@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
@@ -31,7 +31,7 @@ const LocalizedInput = ({ label, value, onChange }: { label: string, value: Loca
     );
 };
 
-/* --- EXTRACTED SIDEBAR ITEM COMPONENT TO FIX RE-RENDER/FOCUS ISSUE --- */
+/* --- EXTRACTED SIDEBAR ITEM (FIXES FOCUS LOSS & RE-RENDER ISSUES) --- */
 interface AdminSidebarItemProps {
     id: string;
     icon: React.ReactNode;
@@ -50,7 +50,7 @@ interface AdminSidebarItemProps {
     getSectionTitle?: (key: string) => LocalizedString;
 }
 
-const AdminSidebarItem: React.FC<AdminSidebarItemProps> = ({ 
+const AdminSidebarItem: React.FC<AdminSidebarItemProps> = React.memo(({ 
     id, icon, label, activeTab, setActiveTab, 
     sectionKey, settings, 
     editingSection, setEditingSection, 
@@ -60,8 +60,8 @@ const AdminSidebarItem: React.FC<AdminSidebarItemProps> = ({
     const isVisible = sectionKey && settings ? settings.sectionVisibility?.[sectionKey] !== false : true;
     const isEditing = editingSection === sectionKey && sectionKey;
     
-    // Use the DB title if available, otherwise fallback to label
-    const dbTitle = (sectionKey && settings && getSectionTitle) ? getSectionTitle(sectionKey) : null;
+    // Get actual DB title or fallback to label
+    const dbTitle = (sectionKey && getSectionTitle) ? getSectionTitle(sectionKey) : null;
     const displayLabel = dbTitle?.ar || label;
     const safeTempTitle = tempTitle || { ar: '', en: '' };
 
@@ -71,8 +71,8 @@ const AdminSidebarItem: React.FC<AdminSidebarItemProps> = ({
                 {icon}
                 {isEditing && setTempTitle ? (
                     <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                        <input className="w-20 border rounded text-xs p-1" value={safeTempTitle.ar} onChange={e => setTempTitle({...safeTempTitle, ar: e.target.value})} placeholder="Ar" autoFocus />
-                        <input className="w-20 border rounded text-xs p-1" value={safeTempTitle.en} onChange={e => setTempTitle({...safeTempTitle, en: e.target.value})} placeholder="En"/>
+                        <input className="w-20 border rounded text-xs p-1" value={safeTempTitle.ar} onChange={e => setTempTitle({...safeTempTitle, ar: e.target.value})} placeholder="Ar" autoFocus onClick={e=>e.stopPropagation()} />
+                        <input className="w-20 border rounded text-xs p-1" value={safeTempTitle.en} onChange={e => setTempTitle({...safeTempTitle, en: e.target.value})} placeholder="En" onClick={e=>e.stopPropagation()} />
                     </div>
                 ) : <span className={`flex-1 text-left ${!isVisible ? 'line-through decoration-slate-400' : ''}`}>{displayLabel}</span>}
             </button>
@@ -81,13 +81,13 @@ const AdminSidebarItem: React.FC<AdminSidebarItemProps> = ({
                  <div className="flex items-center gap-1">
                      {isEditing ? (
                          <>
-                              <button onClick={() => saveRename && saveRename(sectionKey)} className="p-1 text-green-600 hover:bg-green-100 rounded"><Check size={14}/></button>
-                              <button onClick={() => setEditingSection && setEditingSection(null)} className="p-1 text-red-600 hover:bg-red-100 rounded"><X size={14}/></button>
+                              <button onClick={(e) => { e.stopPropagation(); saveRename && saveRename(sectionKey); }} className="p-1 text-green-600 hover:bg-green-100 rounded"><Check size={14}/></button>
+                              <button onClick={(e) => { e.stopPropagation(); setEditingSection && setEditingSection(null); }} className="p-1 text-red-600 hover:bg-red-100 rounded"><X size={14}/></button>
                          </>
                      ) : (
                          <>
-                              <button onClick={() => startRename && startRename(sectionKey, dbTitle!)} className="p-1 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition" title="تعديل اسم القسم"><Edit2 size={14}/></button>
-                              <button onClick={() => toggleVisibility && toggleVisibility(sectionKey)} className={`p-1 rounded transition ${!isVisible ? 'text-red-500 bg-red-50' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-100'}`} title={isVisible ? "إخفاء القسم" : "إظهار القسم"}>
+                              <button onClick={(e) => { e.stopPropagation(); startRename && startRename(sectionKey, dbTitle!); }} className="p-1 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition" title="تعديل اسم القسم"><Edit2 size={14}/></button>
+                              <button onClick={(e) => { e.stopPropagation(); toggleVisibility && toggleVisibility(sectionKey); }} className={`p-1 rounded transition ${!isVisible ? 'text-red-500 bg-red-50' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-100'}`} title={isVisible ? "إخفاء القسم" : "إظهار القسم"}>
                                   {isVisible ? <Eye size={14}/> : <EyeOff size={14}/>}
                               </button>
                          </>
@@ -96,7 +96,7 @@ const AdminSidebarItem: React.FC<AdminSidebarItemProps> = ({
              )}
         </div>
     );
-};
+});
 
 /* --- MANAGERS --- */
 
@@ -295,7 +295,7 @@ export const Admin = () => {
       }
   }, [isAdmin, refresh]);
 
-  const toggleVisibility = async (key: string) => {
+  const toggleVisibility = useCallback(async (key: string) => {
       if(!settings) return;
       const newVisibility = { ...settings.sectionVisibility, [key]: !settings.sectionVisibility[key] };
       const updatedSettings = { ...settings, sectionVisibility: newVisibility };
@@ -307,19 +307,20 @@ export const Admin = () => {
         console.error("Failed to save visibility", e);
         setSettings(settings); // Revert on error
       }
-  };
+  }, [settings]);
 
-  const startRename = (key: string, current: LocalizedString) => {
+  const startRename = useCallback((key: string, current: LocalizedString) => {
       setEditingSection(key);
       setTempTitle(current || {ar: '', en: ''});
-  };
+  }, []);
 
-  const saveRename = async (key: string) => {
+  const saveRename = useCallback(async (key: string) => {
       if(!settings) return;
       
-      let newHomeSections = JSON.parse(JSON.stringify(settings.homeSections));
-      let newSectionTexts = JSON.parse(JSON.stringify(settings.sectionTexts));
+      let newHomeSections = { ...settings.homeSections };
+      let newSectionTexts = { ...settings.sectionTexts };
 
+      // Ensure we are updating the correct object key based on section
       if(key === 'services') newHomeSections.servicesTitle = tempTitle;
       else if(key === 'team') newHomeSections.teamTitle = tempTitle;
       else if(key === 'packages') newHomeSections.packagesTitle = tempTitle;
@@ -327,7 +328,11 @@ export const Admin = () => {
       else if(key === 'work') newSectionTexts.workTitle = tempTitle;
       else if(key === 'hero') newHomeSections.heroTitle = tempTitle;
 
-      const updatedSettings = { ...settings, homeSections: newHomeSections, sectionTexts: newSectionTexts };
+      const updatedSettings = { 
+          ...settings, 
+          homeSections: newHomeSections, 
+          sectionTexts: newSectionTexts 
+      };
       
       try {
           await db.settings.save(updatedSettings);
@@ -336,9 +341,9 @@ export const Admin = () => {
       } catch (e) {
           console.error("Failed to save rename", e);
       }
-  };
+  }, [settings, tempTitle]);
 
-  const getSectionTitle = (key: string): LocalizedString => {
+  const getSectionTitle = useCallback((key: string): LocalizedString => {
       if(!settings) return {ar:'', en:''};
       switch(key) {
           case 'services': return settings.homeSections.servicesTitle;
@@ -349,7 +354,7 @@ export const Admin = () => {
           case 'hero': return settings.homeSections.heroTitle;
           default: return {ar: key, en: key};
       }
-  };
+  }, [settings]);
 
   if (!isAdmin) return <div className="p-20 text-center">Please login</div>;
 
