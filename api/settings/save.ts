@@ -4,6 +4,11 @@ import { supabaseAdmin } from '../../utils/supabaseAdmin';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Ensure content type is JSON for all responses
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('Vary', '*');
 
   // Guard against invalid method
   if (req.method !== 'POST') {

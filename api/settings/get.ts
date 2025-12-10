@@ -3,9 +3,11 @@ import { supabaseAdmin } from '../utils/supabaseAdmin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('Vary', '*');
 
   if (req.method !== 'GET') {
     return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
