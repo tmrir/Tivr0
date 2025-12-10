@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Save Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold text-green-600 mb-6">🧪 اختبار حفظ الإعدادات</h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-xl font-semibold mb-4">اختبار حفظ أحجام الخطوط</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">حجم خط العنوان الرئيسي</label>
+                    <select id="heroTitle" class="w-full border p-2 rounded">
+                        <option value="text-2xl">صغير (text-2xl)</option>
+                        <option value="text-3xl">متوسط (text-3xl)</option>
+                        <option value="text-4xl" selected>كبير (text-4xl)</option>
+                        <option value="text-5xl">كبير جداً (text-5xl)</option>
+                        <option value="text-6xl">ضخم (text-6xl)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">حجم الخط الفرعي</label>
+                    <select id="heroSubtitle" class="w-full border p-2 rounded">
+                        <option value="text-sm">صغير جداً (text-sm)</option>
+                        <option value="text-base">صغير (text-base)</option>
+                        <option value="text-lg">متوسط (text-lg)</option>
+                        <option value="text-xl" selected>كبير (text-xl)</option>
+                        <option value="text-2xl">كبير جداً (text-2xl)</option>
+                    </select>
+                </div>
+                
+                <button onclick="testSave()" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
+                    💾 اختبار الحفظ
+                </button>
+                <button onclick="testLoad()" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 ml-2">
+                    📥 اختبار التحميل
+                </button>
+            </div>
+        </div>
+        
+        <div id="result" class="bg-gray-100 p-4 rounded-lg"></div>
+        
+        <div class="mt-6 bg-yellow-50 p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">🔍 Console Logs</h3>
+            <p class="text-sm">افتح Console (F12) لمشاهدة التفاصيل</p>
+        </div>
+    </div>
+    
+    <script>
+        async function testSave() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<div class="text-blue-600">جاري الحفظ...</div>';
+            
+            try {
+                const fontSizes = {
+                    heroTitle: document.getElementById('heroTitle').value,
+                    heroSubtitle: document.getElementById('heroSubtitle').value,
+                    servicesTitle: 'text-3xl',
+                    servicesSubtitle: 'text-lg',
+                    teamTitle: 'text-2xl'
+                };
+                
+                console.log('🔧 [Test] Saving font sizes:', fontSizes);
+                
+                const response = await fetch('/api/settings/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        font_sizes: fontSizes
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('📦 [Test] Save response:', data);
+                
+                if (data.ok) {
+                    result.innerHTML = `
+                        <div class="text-green-600">
+                            ✅ تم الحفظ بنجاح!
+                            <br><small>${JSON.stringify(data.data, null, 2)}</small>
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="text-red-600">
+                            ❌ فشل الحفظ: ${data.error}
+                            <br><small>${JSON.stringify(data, null, 2)}</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ [Test] Save error:', error);
+                result.innerHTML = `
+                    <div class="text-red-600">
+                        ❌ خطأ في الحفظ: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testLoad() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<div class="text-blue-600">جاري التحميل...</div>';
+            
+            try {
+                console.log('🔧 [Test] Loading settings...');
+                
+                const response = await fetch('/api/settings/get');
+                const data = await response.json();
+                
+                console.log('📦 [Test] Load response:', data);
+                
+                if (data.ok) {
+                    const fontSizes = data.data.font_sizes || {};
+                    console.log('🔍 [Test] Font sizes:', fontSizes);
+                    
+                    // Update UI
+                    if (fontSizes.heroTitle) document.getElementById('heroTitle').value = fontSizes.heroTitle;
+                    if (fontSizes.heroSubtitle) document.getElementById('heroSubtitle').value = fontSizes.heroSubtitle;
+                    
+                    result.innerHTML = `
+                        <div class="text-green-600">
+                            ✅ تم التحميل بنجاح!
+                            <br><small>Font Sizes: ${JSON.stringify(fontSizes, null, 2)}</small>
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="text-red-600">
+                            ❌ فشل التحميل: ${data.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ [Test] Load error:', error);
+                result.innerHTML = `
+                    <div class="text-red-600">
+                        ❌ خطأ في التحميل: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Test load on page load
+        window.addEventListener('load', testLoad);
+    </script>
+</body>
+</html>

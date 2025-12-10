@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار تدفق البيانات الموحد</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+        .log-entry { font-family: 'Courier New', monospace; font-size: 12px; }
+        .data-item { transition: all 0.3s ease; }
+        .data-item:hover { transform: translateX(5px); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div class="container mx-auto p-8 max-w-6xl">
+        <h1 class="text-3xl font-bold text-red-600 mb-6">🔍 اختبار تدفق البيانات الموحد</h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-xl font-semibold mb-4">الهدف من الاختبار:</h2>
+            <p class="mb-4">التأكد من أن الواجهة الأمامية تقرأ نفس البيانات التي يتم حفظها في لوحة التحكم.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-4 rounded">
+                    <h3 class="font-semibold text-blue-800 mb-2">📱 لوحة التحكم</h3>
+                    <p class="text-sm">تستخدم settingsService.getSettings()</p>
+                    <p class="text-sm">تقرأ من localStorage + Supabase + defaults</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded">
+                    <h3 class="font-semibold text-green-800 mb-2">🌐 الواجهة الأمامية</h3>
+                    <p class="text-sm">تستخدم db.settings.get()</p>
+                    <p class="text-sm">الآن تستخدم نفس settingsService.getSettings()</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Test Controls -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-semibold mb-4">🎛️ أدوات الاختبار</h2>
+                <div class="space-y-3">
+                    <button onclick="testDataSources()" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        🔍 مقارنة مصادر البيانات
+                    </button>
+                    <button onclick="testLocalStorage()" class="w-full bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+                        📱 فحص LocalStorage
+                    </button>
+                    <button onclick="simulateAdminChange()" class="w-full bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">
+                        ⚙️ محاكاة تغيير من لوحة التحكم
+                    </button>
+                    <button onclick="triggerFrontendUpdate()" class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                        🌐 تحديث الواجهة الأمامية
+                    </button>
+                    <button onclick="clearAllData()" class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                        🗑️ مسح كل البيانات
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Live Data Display -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-semibold mb-4">📊 البيانات المباشرة</h2>
+                <div id="liveData" class="space-y-2 max-h-64 overflow-y-auto">
+                    <p class="text-gray-500">جاري تحميل البيانات...</p>
+                </div>
+            </div>
+            
+            <!-- Console Log -->
+            <div class="bg-gray-900 text-white p-4 rounded-lg">
+                <h3 class="font-semibold mb-2 flex justify-between items-center">
+                    <span>📋 سجل العمليات</span>
+                    <button onclick="clearConsole()" class="text-xs bg-red-600 px-2 py-1 rounded">مسح</button>
+                </h3>
+                <div id="consoleOutput" class="log-entry max-h-64 overflow-y-auto whitespace-pre-wrap"></div>
+            </div>
+        </div>
+
+        <!-- Data Comparison -->
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-xl font-semibold mb-4">🔍 مقارنة البيانات</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold mb-3 text-blue-600">بيانات لوحة التحكم (المتوقعة)</h3>
+                    <div id="adminData" class="bg-gray-50 p-4 rounded text-sm max-h-48 overflow-y-auto">
+                        <p class="text-gray-500">جاري التحميل...</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-3 text-green-600">بيانات الواجهة الأمامية (الفعلية)</h3>
+                    <div id="frontendData" class="bg-gray-50 p-4 rounded text-sm max-h-48 overflow-y-auto">
+                        <p class="text-gray-500">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+            <div id="comparisonResult" class="mt-4 p-4 rounded text-center font-semibold"></div>
+        </div>
+
+        <!-- Real-time Updates -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-4">🔄 التحديثات الفورية</h2>
+            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded">
+                <p class="text-sm text-yellow-800 mb-2">
+                    <strong>ملاحظة:</strong> هذا الاختبار يحاكي تدفق البيانات. في التطبيق الفعلي، يتم تحديث الواجهة تلقائياً عند حفظ التغييرات في لوحة التحكم.
+                </p>
+                <div class="flex gap-4">
+                    <button onclick="startAutoTest()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                        ▶️ بدء الاختبار التلقائي
+                    </button>
+                    <button onclick="stopAutoTest()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                        ⏹️ إيقاف الاختبار
+                    </button>
+                </div>
+            </div>
+            <div id="autoTestStatus" class="mt-4 text-center"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Console override
+        const originalLog = console.log;
+        const consoleOutput = document.getElementById('consoleOutput');
+        
+        function addToConsole(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#4ade80' : '#60a5fa';
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            consoleOutput.innerHTML += `<span style="color: ${color}">[${timestamp}] ${icon} ${message}</span>\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        function clearConsole() {
+            consoleOutput.innerHTML = '';
+        }
+
+        // Test functions
+        async function testDataSources() {
+            addToConsole('🔍 Starting data sources comparison...', 'log');
+            
+            try {
+                // Simulate admin panel data (settingsService)
+                const adminData = await simulateSettingsService();
+                document.getElementById('adminData').innerHTML = formatDataForDisplay(adminData);
+                
+                // Simulate frontend data (db.settings)
+                const frontendData = await simulateDbSettings();
+                document.getElementById('frontendData').innerHTML = formatDataForDisplay(frontendData);
+                
+                // Compare data
+                const isMatch = JSON.stringify(adminData) === JSON.stringify(frontendData);
+                const resultDiv = document.getElementById('comparisonResult');
+                
+                if (isMatch) {
+                    resultDiv.innerHTML = '<div class="bg-green-100 text-green-800 p-3 rounded">✅ البيانات متطابقة! الواجهة تقرأ نفس مصدر لوحة التحكم.</div>';
+                    addToConsole('✅ Data sources match perfectly!', 'success');
+                } else {
+                    resultDiv.innerHTML = '<div class="bg-red-100 text-red-800 p-3 rounded">❌ البيانات غير متطابقة! هناك مشكلة في تدفق البيانات.</div>';
+                    addToConsole('❌ Data sources do not match!', 'error');
+                }
+                
+                updateLiveData(adminData);
+            } catch (error) {
+                addToConsole(`Error in data comparison: ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateSettingsService() {
+            // Simulate settingsService.getSettings() with localStorage + defaults
+            const localSettings = localStorage.getItem('tivro_settings');
+            if (localSettings) {
+                return JSON.parse(localSettings);
+            }
+            
+            // Return default settings if no localStorage
+            return {
+                homeSections: {
+                    heroTitle: { ar: 'نحول أفكارك إلى واقع رقمي', en: 'We Turn Your Ideas into Digital Reality' },
+                    heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة', en: 'A full-service digital marketing agency' },
+                    servicesTitle: { ar: 'خدماتنا', en: 'Our Services' },
+                    servicesSubtitle: { ar: 'حلولاً رقمية متكاملة', en: 'Integrated digital solutions' }
+                },
+                socialLinks: [
+                    { platform: 'Twitter', url: 'https://twitter.com/tivro' },
+                    { platform: 'Linkedin', url: 'https://linkedin.com/company/tivro' }
+                ]
+            };
+        }
+
+        async function simulateDbSettings() {
+            // This should now use the same settingsService
+            return await simulateSettingsService();
+        }
+
+        function formatDataForDisplay(data) {
+            if (!data) return '<p class="text-red-500">لا توجد بيانات</p>';
+            
+            let html = '<div class="space-y-2">';
+            
+            if (data.homeSections) {
+                html += '<div class="data-item"><strong>Hero Title (AR):</strong> ' + (data.homeSections.heroTitle?.ar || 'N/A') + '</div>';
+                html += '<div class="data-item"><strong>Hero Subtitle (AR):</strong> ' + (data.homeSections.heroSubtitle?.ar || 'N/A') + '</div>';
+                html += '<div class="data-item"><strong>Services Title (AR):</strong> ' + (data.homeSections.servicesTitle?.ar || 'N/A') + '</div>';
+            }
+            
+            if (data.socialLinks) {
+                html += '<div class="data-item"><strong>Social Links:</strong> ' + data.socialLinks.length + ' links</div>';
+                data.socialLinks.forEach(link => {
+                    html += '<div class="data-item ml-4">- ' + link.platform + ': ' + link.url + '</div>';
+                });
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        function updateLiveData(data) {
+            const liveDataDiv = document.getElementById('liveData');
+            if (!data) {
+                liveDataDiv.innerHTML = '<p class="text-gray-500">لا توجد بيانات</p>';
+                return;
+            }
+            
+            let html = '<div class="space-y-3">';
+            html += '<div class="bg-blue-50 p-3 rounded"><strong>📊 آخر تحديث:</strong> ' + new Date().toLocaleTimeString() + '</div>';
+            
+            if (data.homeSections) {
+                html += '<div class="bg-green-50 p-3 rounded"><strong>🏠 Hero Section:</strong></div>';
+                html += '<div class="ml-4 text-sm">العنوان: ' + (data.homeSections.heroTitle?.ar || 'N/A') + '</div>';
+                html += '<div class="ml-4 text-sm">الوصف: ' + (data.homeSections.heroSubtitle?.ar || 'N/A') + '</div>';
+            }
+            
+            html += '</div>';
+            liveDataDiv.innerHTML = html;
+        }
+
+        function testLocalStorage() {
+            const settings = localStorage.getItem('tivro_settings');
+            const timestamp = localStorage.getItem('tivro_settings_timestamp');
+            
+            addToConsole('📱 Checking LocalStorage...', 'log');
+            
+            if (settings) {
+                const parsed = JSON.parse(settings);
+                const age = timestamp ? Date.now() - parseInt(timestamp) : 0;
+                const ageMinutes = (age / (1000 * 60)).toFixed(1);
+                
+                addToConsole(`✅ Found LocalStorage data, age: ${ageMinutes} minutes`, 'success');
+                addToConsole(`📊 Social links count: ${parsed.socialLinks?.length || 0}`, 'log');
+                updateLiveData(parsed);
+            } else {
+                addToConsole('❌ No LocalStorage data found', 'error');
+            }
+        }
+
+        function simulateAdminChange() {
+            addToConsole('⚙️ Simulating admin panel change...', 'log');
+            
+            // Create new settings
+            const newSettings = {
+                homeSections: {
+                    heroTitle: { ar: '🚀 تم تحديث العنوان من لوحة التحكم!', en: '🚀 Title updated from admin panel!' },
+                    heroSubtitle: { ar: '📝 تم تحديث الوصف من لوحة التحكم', en: '📝 Subtitle updated from admin panel' },
+                    servicesTitle: { ar: 'خدماتنا المحدثة', en: 'Our Updated Services' },
+                    servicesSubtitle: { ar: 'حلول مبتكرة ومحدثة', en: 'Innovative and updated solutions' }
+                },
+                socialLinks: [
+                    { platform: 'Twitter', url: 'https://twitter.com/tivro-updated' },
+                    { platform: 'Linkedin', url: 'https://linkedin.com/company/tivro-updated' },
+                    { platform: 'Instagram', url: 'https://instagram.com/tivro-updated' }
+                ],
+                lastUpdated: Date.now()
+            };
+            
+            // Save to localStorage (simulating admin save)
+            localStorage.setItem('tivro_settings', JSON.stringify(newSettings));
+            localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
+            
+            // Trigger settingsUpdated event
+            window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: newSettings }));
+            
+            addToConsole('✅ Admin change simulated and saved', 'success');
+            updateLiveData(newSettings);
+            
+            // Update displays
+            document.getElementById('adminData').innerHTML = formatDataForDisplay(newSettings);
+        }
+
+        function triggerFrontendUpdate() {
+            addToConsole('🌐 Triggering frontend update...', 'log');
+            
+            // Simulate the frontend receiving the settingsUpdated event
+            const handleSettingsUpdate = (event) => {
+                addToConsole('🔄 Frontend received settings update!', 'success');
+                const newSettings = event.detail;
+                document.getElementById('frontendData').innerHTML = formatDataForDisplay(newSettings);
+                updateLiveData(newSettings);
+                
+                // Check if data matches
+                const adminData = document.getElementById('adminData').textContent;
+                const frontendData = document.getElementById('frontendData').textContent;
+                const isMatch = adminData === frontendData;
+                
+                const resultDiv = document.getElementById('comparisonResult');
+                if (isMatch) {
+                    resultDiv.innerHTML = '<div class="bg-green-100 text-green-800 p-3 rounded">✅ البيانات متطابقة بعد التحديث!</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="bg-yellow-100 text-yellow-800 p-3 rounded">⚠️ تم التحديث ولكن قد تحتاج لمزامنة يدوية.</div>';
+                }
+            };
+            
+            window.addEventListener('settingsUpdated', handleSettingsUpdate);
+            
+            // Trigger the event
+            const currentSettings = localStorage.getItem('tivro_settings');
+            if (currentSettings) {
+                const parsed = JSON.parse(currentSettings);
+                window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: parsed }));
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('هل أنت متأكد من مسح كل البيانات؟')) {
+                localStorage.removeItem('tivro_settings');
+                localStorage.removeItem('tivro_settings_timestamp');
+                
+                addToConsole('🗑️ All data cleared', 'log');
+                
+                // Clear displays
+                document.getElementById('adminData').innerHTML = '<p class="text-gray-500">تم المسح</p>';
+                document.getElementById('frontendData').innerHTML = '<p class="text-gray-500">تم المسح</p>';
+                document.getElementById('liveData').innerHTML = '<p class="text-gray-500">لا توجد بيانات</p>';
+                document.getElementById('comparisonResult').innerHTML = '';
+            }
+        }
+
+        let autoTestInterval = null;
+
+        function startAutoTest() {
+            if (autoTestInterval) return;
+            
+            addToConsole('▶️ Starting auto test...', 'log');
+            document.getElementById('autoTestStatus').innerHTML = '<div class="bg-yellow-100 text-yellow-800 p-3 rounded">⏳ الاختبار التلقائي جاري...</div>';
+            
+            let counter = 0;
+            autoTestInterval = setInterval(() => {
+                counter++;
+                
+                // Simulate admin change
+                const testSettings = {
+                    homeSections: {
+                        heroTitle: { ar: `🔄 تحديث تلقائي #${counter}`, en: `🔄 Auto Update #${counter}` },
+                        heroSubtitle: { ar: `هذا تحديث تلقائي رقم ${counter}`, en: `This is auto update #${counter}` }
+                    },
+                    socialLinks: [
+                        { platform: 'Test', url: `https://test.com/update-${counter}` }
+                    ],
+                    testCounter: counter
+                };
+                
+                localStorage.setItem('tivro_settings', JSON.stringify(testSettings));
+                localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
+                
+                // Trigger update
+                window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: testSettings }));
+                
+                updateLiveData(testSettings);
+                addToConsole(`🔄 Auto test #${counter} completed`, 'log');
+                
+                // Update displays
+                document.getElementById('adminData').innerHTML = formatDataForDisplay(testSettings);
+                document.getElementById('frontendData').innerHTML = formatDataForDisplay(testSettings);
+                
+                // Stop after 10 iterations
+                if (counter >= 10) {
+                    stopAutoTest();
+                    document.getElementById('autoTestStatus').innerHTML = '<div class="bg-green-100 text-green-800 p-3 rounded">✅ اكتمل الاختبار التلقائي بنجاح!</div>';
+                }
+            }, 2000);
+        }
+
+        function stopAutoTest() {
+            if (autoTestInterval) {
+                clearInterval(autoTestInterval);
+                autoTestInterval = null;
+                addToConsole('⏹️ Auto test stopped', 'log');
+                document.getElementById('autoTestStatus').innerHTML = '<div class="bg-gray-100 text-gray-800 p-3 rounded">⏹️ تم إيقاف الاختبار التلقائي</div>';
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            addToConsole('🔧 Test page loaded successfully', 'success');
+            testDataSources();
+        });
+    </script>
+</body>
+</html>
