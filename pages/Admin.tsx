@@ -6,7 +6,7 @@ import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, PackageRequest } from '../types';
 import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare, Layout as LayoutIcon, Eye, EyeOff, Star } from 'lucide-react';
-import SettingsNewPage from '../src/pages/Settings';
+import SettingsNewPage from './SettingsNew';
 import { SortableList } from '../components/SortableList';
 import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
 import ContactUsManager from '../components/ContactUsManager';
