@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { SiteSettings, LocalizedString } from '../types';
 
 // Mobile Storage Helper
 const mobileStorageHelper = {
@@ -51,23 +52,66 @@ const mobileStorageHelper = {
   }
 };
 
-interface SettingsData {
-  contact_email: string;
-  contact_phone: string;
-  social_links: any[];
-  address: any;
-  logo_url?: string;
-  icon_url?: string;
-  footer_logo_url?: string;
-  favicon_url?: string;
-  [key: string]: any;
-}
+// Default settings fallback
+const DEFAULT_SETTINGS: SiteSettings = {
+  siteName: { ar: '', en: '' },
+  contactEmail: '',
+  contactPhone: '',
+  address: { ar: '', en: '' },
+  socialLinks: [],
+  logoUrl: '',
+  footerLogoUrl: '',
+  faviconUrl: '',
+  iconUrl: '',
+  topBanner: { enabled: false, title: { ar: '', en: '' } },
+  bottomBanner: { enabled: false, title: { ar: '', en: '' } },
+  sectionTexts: {
+    workTitle: { ar: '', en: '' },
+    workSubtitle: { ar: '', en: '' },
+    privacyLink: { ar: '', en: '' },
+    termsLink: { ar: '', en: '' }
+  },
+  homeSections: {
+    heroBadge: { ar: '', en: '' },
+    heroTitle: { ar: '', en: '' },
+    heroSubtitle: { ar: '', en: '' },
+    servicesTitle: { ar: '', en: '' },
+    servicesSubtitle: { ar: '', en: '' },
+    teamTitle: { ar: '', en: '' },
+    teamSubtitle: { ar: '', en: '' },
+    packagesTitle: { ar: '', en: '' },
+    contactTitle: { ar: '', en: '' },
+    contactSubtitle: { ar: '', en: '' }
+  },
+  fontSizes: {
+    heroTitle: '',
+    heroSubtitle: '',
+    servicesTitle: '',
+    servicesSubtitle: '',
+    teamTitle: ''
+  },
+  contactUs: {
+    title: { ar: '', en: '' },
+    subtitle: { ar: '', en: '' },
+    email: '',
+    phone: '',
+    address: { ar: '', en: '' }
+  },
+  footerDescription: { ar: '', en: '' },
+  copyrightText: { ar: '', en: '' },
+  footerLinks: {
+    privacy: { ar: '', en: '' },
+    terms: { ar: '', en: '' }
+  },
+  privacyPolicy: { ar: '', en: '' },
+  termsOfService: { ar: '', en: '' }
+};
 
 // نسخة التطبيق الحالية للتعامل مع النسخ القديمة في الجوال
 const APP_VERSION = '1.0.0';
 
 export function useSettings() {
-  const [settings, setSettings] = useState<SettingsData | null>(null);
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,7 +149,7 @@ export function useSettings() {
     }
   }
 
-  async function saveSettings(payload: Partial<SettingsData>) {
+  async function saveSettings(payload: Partial<SiteSettings>) {
     setLoading(true);
     setError(null);
 
