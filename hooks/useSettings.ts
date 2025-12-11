@@ -93,9 +93,12 @@ const DEFAULT_SETTINGS: SiteSettings = {
   contactUs: {
     title: { ar: '', en: '' },
     subtitle: { ar: '', en: '' },
-    email: '',
-    phone: '',
-    address: { ar: '', en: '' }
+    cards: [],
+    socialLinks: [],
+    form: {
+      fields: [],
+      submitText: { ar: '', en: '' }
+    }
   },
   footerDescription: { ar: '', en: '' },
   copyrightText: { ar: '', en: '' },
