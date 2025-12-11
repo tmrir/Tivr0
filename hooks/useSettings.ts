@@ -73,8 +73,10 @@ export function useSettings() {
     setError(null);
 
     try {
-      // FIX: FORCE MOBILE NO-CACHE باستخدام cache: 'no-store'
-      const res = await fetch('/api/settings/get', {
+      // FORCE MOBILE NO-CACHE: timestamp + cache: 'no-store'
+      const url = `/api/settings/get?t=${Date.now()}`;
+
+      const res = await fetch(url, {
         cache: 'no-store',
       });
 
@@ -86,7 +88,7 @@ export function useSettings() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to fetch settings');
 
-      // FIX: Store fresh copy for mobile
+      // Store fresh copy for mobile
       mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
 
       setSettings(json.data);
@@ -95,7 +97,7 @@ export function useSettings() {
       console.error('❌ [Hook] Fetch Settings Error:', err);
       setError(err.message || 'Unknown error');
 
-      // FIX: fallback to last known storage on mobile
+      // Fallback to last known storage on mobile
       const cached = mobileStorageHelper.getItem('app_settings_cache');
       if (cached) {
         setSettings(JSON.parse(cached));
@@ -125,10 +127,14 @@ export function useSettings() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to save settings');
 
-      // FIX: update mobile copy
+      // update mobile copy
       mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
 
+      // تأكد من أن الحالة المحلية تحمل أحدث نسخة
       setSettings(json.data);
+
+      // إعادة الجلب من السيرفر لضمان تحديث كل شيء على الجوال والكمبيوتر
+      await fetchSettings();
 
     } catch (err: any) {
       console.error('❌ [Hook] Save Settings Error:', err);
@@ -152,10 +158,14 @@ export function useSettings() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to restore settings');
 
-      // FIX: update mobile cache
+      // update mobile cache
       mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
 
+      // تأكد من أن الحالة المحلية تحمل أحدث نسخة
       setSettings(json.data);
+
+      // إعادة الجلب من السيرفر لضمان تزامن كل الأجهزة
+      await fetchSettings();
 
     } catch (err: any) {
       console.error('❌ [Hook] Restore Settings Error:', err);
