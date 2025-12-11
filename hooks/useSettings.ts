@@ -73,16 +73,9 @@ export function useSettings() {
     setError(null);
 
     try {
-      // FIX: FORCE MOBILE NO-CACHE
-      const url = `/api/settings/get?t=${Date.now()}`;
-
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-          Pragma: 'no-cache',
-          Expires: '0'
-        }
+      // FIX: FORCE MOBILE NO-CACHE باستخدام cache: 'no-store'
+      const res = await fetch('/api/settings/get', {
+        cache: 'no-store',
       });
 
       const contentType = res.headers.get('content-type') || '';
