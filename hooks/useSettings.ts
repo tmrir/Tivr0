@@ -63,6 +63,9 @@ interface SettingsData {
   [key: string]: any;
 }
 
+// نسخة التطبيق الحالية للتعامل مع النسخ القديمة في الجوال
+const APP_VERSION = '1.0.0';
+
 export function useSettings() {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -73,12 +76,8 @@ export function useSettings() {
     setError(null);
 
     try {
-      // FORCE MOBILE NO-CACHE: timestamp + cache: 'no-store'
       const url = `/api/settings/get?t=${Date.now()}`;
-
-      const res = await fetch(url, {
-        cache: 'no-store',
-      });
+      const res = await fetch(url, { cache: 'no-store' });
 
       const contentType = res.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) {
@@ -88,16 +87,14 @@ export function useSettings() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to fetch settings');
 
-      // Store fresh copy for mobile
       mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
-
       setSettings(json.data);
 
     } catch (err: any) {
       console.error('❌ [Hook] Fetch Settings Error:', err);
       setError(err.message || 'Unknown error');
 
-      // Fallback to last known storage on mobile
+      // fallback to last known cache
       const cached = mobileStorageHelper.getItem('app_settings_cache');
       if (cached) {
         setSettings(JSON.parse(cached));
@@ -116,7 +113,8 @@ export function useSettings() {
       const res = await fetch('/api/settings/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        cache: 'no-store'
       });
 
       const contentType = res.headers.get('content-type') || '';
@@ -127,13 +125,10 @@ export function useSettings() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to save settings');
 
-      // update mobile copy
       mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
-
-      // تأكد من أن الحالة المحلية تحمل أحدث نسخة
       setSettings(json.data);
 
-      // إعادة الجلب من السيرفر لضمان تحديث كل شيء على الجوال والكمبيوتر
+      // إعادة الجلب من السيرفر لضمان التزامن الكامل
       await fetchSettings();
 
     } catch (err: any) {
@@ -149,7 +144,8 @@ export function useSettings() {
     setError(null);
 
     try {
-      const res = await fetch('/api/settings/restore', { method: 'POST' });
+      const res = await fetch('/api/settings/restore', { method: 'POST', cache: 'no-store' });
+
       const contentType = res.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) {
         throw new Error('Invalid response from server');
@@ -158,13 +154,10 @@ export function useSettings() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to restore settings');
 
-      // update mobile cache
       mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
-
-      // تأكد من أن الحالة المحلية تحمل أحدث نسخة
       setSettings(json.data);
 
-      // إعادة الجلب من السيرفر لضمان تزامن كل الأجهزة
+      // إعادة الجلب من السيرفر لضمان التزامن الكامل
       await fetchSettings();
 
     } catch (err: any) {
@@ -176,6 +169,13 @@ export function useSettings() {
   }
 
   useEffect(() => {
+    // Clear old cache if app version changed
+    const storedVersion = mobileStorageHelper.getItem('app_version');
+    if (storedVersion !== APP_VERSION) {
+      mobileStorageHelper.removeItem('app_settings_cache');
+      mobileStorageHelper.setItem('app_version', APP_VERSION);
+    }
+
     fetchSettings();
   }, []);
 
