@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSettings } from '../hooks/useSettings';
+import { useSettings } from '../../hooks/useSettings';
 import { useApp } from '../context/AppContext';
 import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, Globe, Phone, Share2, Image as ImageIcon, Database, FileText, LayoutTemplate, Flag } from 'lucide-react';
 import { SiteSettings, LocalizedString } from '../types';
