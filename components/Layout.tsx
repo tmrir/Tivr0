@@ -193,10 +193,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
         <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2">
             {settings?.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="h-10 object-contain" />
-            ) : (
-                <div className="w-10 h-10 bg-tivro-dark rounded-lg flex items-center justify-center text-white font-bold text-xl">T</div>
-            )}
+                <img src={settings.logoUrl} alt="Logo" className="h-10 object-contain" onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                }} />
+            ) : null}
+            <div className={`w-10 h-10 bg-tivro-dark rounded-lg flex items-center justify-center text-white font-bold text-xl ${settings?.logoUrl ? 'hidden' : ''}`}>T</div>
             <div className="flex flex-col items-start">
               <span className="text-2xl font-bold text-tivro-dark tracking-tight leading-tight">{settings?.siteName?.[lang] || 'Tivro'}</span>
               <span className="text-xs text-slate-500 font-medium leading-none">لخدمات الأعمال</span>
@@ -274,10 +277,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               <div className="col-span-1 md:col-span-2">
                 <div className="flex items-center gap-2 mb-6">
                   {settings?.footerLogoUrl ? (
-                      <img src={settings.footerLogoUrl} alt="Logo" className="h-12 object-contain" />
-                  ) : (
-                      <div className="w-8 h-8 bg-tivro-primary rounded flex items-center justify-center text-white font-bold">T</div>
-                  )}
+                      <img src={settings.footerLogoUrl} alt="Logo" className="h-12 object-contain" onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                      }} />
+                  ) : null}
+                  <div className={`w-8 h-8 bg-tivro-primary rounded flex items-center justify-center text-white font-bold ${settings?.footerLogoUrl ? 'hidden' : ''}`}>T</div>
                   <span className="text-2xl font-bold">{settings?.siteName?.[lang]}</span>
                 </div>
                 <p className="text-slate-400 max-w-md leading-relaxed mb-6">

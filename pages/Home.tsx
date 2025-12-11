@@ -94,10 +94,10 @@ export const Home = () => {
 
     const fetchSettings = async () => {
       try {
-        const response = await fetch(`/api/settings/get?ts=${Date.now()}`);
-        const result = await response.json();
-        if (result.ok && result.data) {
-          setSettings(result.data);
+        // Use db.settings.get() instead of direct API call to avoid 500 errors
+        const settingsData = await db.settings.get();
+        if (settingsData) {
+          setSettings(settingsData);
         }
       } catch (error) {
         console.error('Failed to fetch settings:', error);
