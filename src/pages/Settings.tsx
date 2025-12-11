@@ -24,7 +24,7 @@ const LocalizedInput = ({ label, value, onChange }: {label:string, value: Locali
     </div>
 );
 
-export const SettingsPage: React.FC = () => {
+const SettingsPage: React.FC = () => {
   const { t } = useApp();
   const { settings, loading, error, saveSettings, restoreSettings } = useSettings();
   const [activeTab, setActiveTab] = useState('general');
@@ -126,3 +126,5 @@ export const SettingsPage: React.FC = () => {
     </div>
   );
 };
+
+export default SettingsPage;
