@@ -5,7 +5,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, SiteSettings } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type } from 'lucide-react';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, Menu, X } from 'lucide-react';
 import { SettingsPage } from './Settings';
 import { SortableList } from '../components/SortableList'; // Import the new component
 
@@ -583,6 +583,7 @@ export const Admin = () => {
   const [refresh, setRefresh] = useState(0);
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -626,6 +627,46 @@ export const Admin = () => {
   return (
     <Layout hideFooter>
       <div className="flex h-[calc(100vh-80px)] bg-slate-50" dir={dir}>
+        {/* Mobile Menu Button */}
+        <div className="md:hidden fixed top-20 left-4 z-50">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="bg-white p-3 rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setMobileMenuOpen(false)}>
+            <div className="absolute top-0 left-0 w-64 h-full bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('admin.menu.main')}</h3>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 rounded-lg hover:bg-slate-100 transition"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                <nav className="space-y-1">
+                  <SidebarLink icon={<BarChart2 size={20}/>} label={t('admin.tab.dashboard')} active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} />
+                  <SidebarLink icon={<List size={20}/>} label={t('admin.tab.services')} active={activeTab === 'services'} onClick={() => { setActiveTab('services'); setMobileMenuOpen(false); }} />
+                  <SidebarLink icon={<UsersIcon size={20}/>} label={t('admin.tab.team')} active={activeTab === 'team'} onClick={() => { setActiveTab('team'); setMobileMenuOpen(false); }} />
+                  <SidebarLink icon={<PackageIcon size={20}/>} label={t('admin.tab.packages')} active={activeTab === 'packages'} onClick={() => { setActiveTab('packages'); setMobileMenuOpen(false); }} />
+                  <SidebarLink icon={<Briefcase size={20}/>} label={t('admin.tab.work')} active={activeTab === 'work'} onClick={() => { setActiveTab('work'); setMobileMenuOpen(false); }} />
+                  <SidebarLink icon={<FileText size={20}/>} label={t('admin.tab.blog')} active={activeTab === 'blog'} onClick={() => { setActiveTab('blog'); setMobileMenuOpen(false); }} />
+                  <SidebarLink icon={<MessageCircle size={20}/>} label={t('admin.tab.messages')} active={activeTab === 'messages'} onClick={() => { setActiveTab('messages'); setMobileMenuOpen(false); }} />
+                  <SidebarLink icon={<SettingsIcon size={20}/>} label={t('admin.tab.settings')} active={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }} />
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Sidebar */}
         <aside className="w-64 bg-white border-r border-slate-200 flex-shrink-0 hidden md:block overflow-y-auto">
           <div className="p-6">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{t('admin.menu.main')}</h3>
@@ -641,7 +682,8 @@ export const Admin = () => {
             </nav>
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto p-8">
+        
+        <main className="flex-1 overflow-y-auto p-8 pt-16 md:pt-8">
           {activeTab === 'dashboard' && <DashboardTab />}
           {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}
           {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p+1)} />}

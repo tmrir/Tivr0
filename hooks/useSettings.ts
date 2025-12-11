@@ -12,33 +12,31 @@ const mobileStorageHelper = {
       return false;
     }
   },
-  
+
   getItem: (key: string) => {
     try {
       if (mobileStorageHelper.isAvailable()) {
         return localStorage.getItem(key);
       }
-      // Fallback to sessionStorage
       return sessionStorage.getItem(key);
     } catch {
       return null;
     }
   },
-  
+
   setItem: (key: string, value: string) => {
     try {
       if (mobileStorageHelper.isAvailable()) {
         localStorage.setItem(key, value);
         return true;
       }
-      // Fallback to sessionStorage
       sessionStorage.setItem(key, value);
       return true;
     } catch {
       return false;
     }
   },
-  
+
   removeItem: (key: string) => {
     try {
       if (mobileStorageHelper.isAvailable()) {
@@ -73,18 +71,43 @@ export function useSettings() {
   async function fetchSettings() {
     setLoading(true);
     setError(null);
+
     try {
-      const res = await fetch('/api/settings/get');
+      // FIX: FORCE MOBILE NO-CACHE
+      const url = `/api/settings/get?t=${Date.now()}`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0'
+        }
+      });
+
       const contentType = res.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) {
         throw new Error('Invalid response from server');
       }
+
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to fetch settings');
+
+      // FIX: Store fresh copy for mobile
+      mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
+
       setSettings(json.data);
+
     } catch (err: any) {
       console.error('❌ [Hook] Fetch Settings Error:', err);
       setError(err.message || 'Unknown error');
+
+      // FIX: fallback to last known storage on mobile
+      const cached = mobileStorageHelper.getItem('app_settings_cache');
+      if (cached) {
+        setSettings(JSON.parse(cached));
+      }
+
     } finally {
       setLoading(false);
     }
@@ -93,19 +116,27 @@ export function useSettings() {
   async function saveSettings(payload: Partial<SettingsData>) {
     setLoading(true);
     setError(null);
+
     try {
       const res = await fetch('/api/settings/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
       const contentType = res.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) {
         throw new Error('Invalid response from server');
       }
+
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to save settings');
+
+      // FIX: update mobile copy
+      mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
+
       setSettings(json.data);
+
     } catch (err: any) {
       console.error('❌ [Hook] Save Settings Error:', err);
       setError(err.message || 'Unknown error');
@@ -117,15 +148,22 @@ export function useSettings() {
   async function restoreSettings() {
     setLoading(true);
     setError(null);
+
     try {
       const res = await fetch('/api/settings/restore', { method: 'POST' });
       const contentType = res.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) {
         throw new Error('Invalid response from server');
       }
+
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Failed to restore settings');
+
+      // FIX: update mobile cache
+      mobileStorageHelper.setItem('app_settings_cache', JSON.stringify(json.data));
+
       setSettings(json.data);
+
     } catch (err: any) {
       console.error('❌ [Hook] Restore Settings Error:', err);
       setError(err.message || 'Unknown error');

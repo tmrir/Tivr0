@@ -227,8 +227,40 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             )}
           </div>
 
-          <button className="md:hidden text-slate-700" onClick={() => setIsMenuOpen(!isMenuOpen)}>{isMenuOpen ? <X size={28} /> : <Menu size={28} />}</button>
+          <button className="md:hidden text-slate-700 p-2 z-50" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
+             {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
         </div>
+
+        {/* Mobile Menu Dropdown - FIXED POSITION */}
+        {isMenuOpen && (
+            <div className="md:hidden fixed inset-0 top-0 bg-white z-[70] h-screen overflow-y-auto pt-24 px-6 pb-6 animate-fade-in">
+                <div className="flex flex-col space-y-2">
+                    <NavLink href="#" label={t('nav.home')} />
+                    {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={navigationLabels.services || t('nav.services')} />}
+                    {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={navigationLabels.packages || (lang === 'ar' ? 'الباقات' : 'Packages')} />}
+                    {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={navigationLabels.work || t('nav.work')} />}
+                    {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={navigationLabels.team || t('nav.team')} />}
+                    {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={navigationLabels.blog || t('nav.blog')} />}
+                    
+                    <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
+                        <button onClick={() => { toggleLang(); setIsMenuOpen(false); }} className="flex items-center gap-2 text-slate-600 font-bold text-lg">
+                            <Globe size={20} /> <span>{lang === 'ar' ? 'English' : 'العربية'}</span>
+                        </button>
+                        
+                        {isAdmin ? (
+                             <a href="#admin" className="bg-slate-100 text-slate-800 text-center py-4 rounded-xl font-bold" onClick={() => setIsMenuOpen(false)}>
+                                 {t('admin.dashboard')}
+                             </a>
+                        ) : (
+                             <a href="#contact" className="bg-tivro-dark text-white text-center py-4 rounded-xl font-bold shadow-lg" onClick={() => setIsMenuOpen(false)}>
+                                 {t('nav.contact')}
+                             </a>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
       </header>
 
       {/* Main Content */}
