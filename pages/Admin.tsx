@@ -102,16 +102,18 @@ const SidebarLink = ({ icon, label, active, onClick, editable = false, onLabelCh
         </span>
       )}
       {editable && (
-        <button
+        <span
           onClick={handleVisibilityToggle}
           className={`p-1 rounded hover:bg-slate-200 transition ${visible ? 'text-slate-600' : 'text-slate-300'}`}
           title={visible ? 'إخفاء' : 'إظهار'}
+          role="button"
+          aria-label={visible ? 'إخفاء القسم' : 'إظهار القسم'}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
             <circle cx="12" cy="12" r="3"/>
           </svg>
-        </button>
+        </span>
       )}
     </button>
   );

@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { useSettings } from '../hooks/useSettings';
+import { useSettingsContext } from '../context/SettingsContext';
 import { useApp } from '../context/AppContext';
 import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, Globe, Phone, Share2, Image as ImageIcon, Database, FileText, LayoutTemplate } from 'lucide-react';
 import { SiteSettings, LocalizedString } from '../types';
@@ -9,12 +9,12 @@ const LocalizedArea = ({ label, value, onChange }: {label:string, value: Localiz
         <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-                <span className="text-xs text-slate-400 block mb-1">≡ƒç╕≡ƒçª ╪º┘ä╪╣╪▒╪¿┘è╪⌐</span>
-                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="rtl" placeholder="╪º┘ä┘å╪╡ ╪º┘ä┘à┘ü╪╡┘ä ╪¿╪º┘ä┘ä╪║╪⌐ ╪º┘ä╪╣╪▒╪¿┘è╪⌐" value={value?.ar || ''} onChange={e => onChange({...value, ar: e.target.value})} />
+                <span className="text-xs text-slate-400 block mb-1">النص بالعربية</span>
+                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="rtl" placeholder="اكتب النص العربي هنا" value={value?.ar || ''} onChange={e => onChange({...value, ar: e.target.value})} />
             </div>
             <div>
-                <span className="text-xs text-slate-400 block mb-1">≡ƒç║≡ƒç╕ English</span>
-                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="ltr" placeholder="Detailed English text" value={value?.en || ''} onChange={e => onChange({...value, en: e.target.value})} />
+                <span className="text-xs text-slate-400 block mb-1">النص بالإنجليزية</span>
+                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="ltr" placeholder="Write the English text here" value={value?.en || ''} onChange={e => onChange({...value, en: e.target.value})} />
             </div>
         </div>
     </div>
@@ -25,12 +25,12 @@ const LocalizedInput = ({ label, value, onChange }: {label:string, value: Locali
         <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-                <span className="text-xs text-slate-400 block mb-1">≡ƒç╕≡ƒçª ╪º┘ä╪╣╪▒╪¿┘è╪⌐</span>
-                <input className="w-full border p-2 rounded" placeholder="╪º┘ä┘å╪╡ ╪¿╪º┘ä┘ä╪║╪⌐ ╪º┘ä╪╣╪▒╪¿┘è╪⌐" dir="rtl" value={value?.ar || ''} onChange={e => onChange({...value, ar: e.target.value})} />
+                <span className="text-xs text-slate-400 block mb-1">النص بالعربية</span>
+                <input className="w-full border p-2 rounded" placeholder="اكتب النص العربي هنا" dir="rtl" value={value?.ar || ''} onChange={e => onChange({...value, ar: e.target.value})} />
             </div>
             <div>
-                <span className="text-xs text-slate-400 block mb-1">≡ƒç║≡ƒç╕ English</span>
-                <input className="w-full border p-2 rounded" placeholder="English text" dir="ltr" value={value?.en || ''} onChange={e => onChange({...value, en: e.target.value})} />
+                <span className="text-xs text-slate-400 block mb-1">النص بالإنجليزية</span>
+                <input className="w-full border p-2 rounded" placeholder="Write the English text here" dir="ltr" value={value?.en || ''} onChange={e => onChange({...value, en: e.target.value})} />
             </div>
         </div>
     </div>
@@ -38,26 +38,25 @@ const LocalizedInput = ({ label, value, onChange }: {label:string, value: Locali
 
 export const SettingsNewPage: React.FC = () => {
   const { t, lang } = useApp();
-  const { data: settings, isLoading: loading, mutate: saveSettings, reset: restoreSettings } = useSettings();
+  const { settings, loading, saving: savingFromContext, updateField, saveSettings } = useSettingsContext();
   const [activeTab, setActiveTab] = useState<'general' | 'logos' | 'home_content' | 'legal' | 'db'>('general');
   const [msg, setMsg] = useState<{type:'success'|'error', text:string} | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // ╪¬╪¡┘à┘è┘ä ╪º┘ä╪Ñ╪╣╪»╪º╪»╪º╪¬ ┘à╪▒╪⌐ ┘ê╪º╪¡╪»╪⌐ ┘ü┘é╪╖ ╪╣┘å╪» ╪¬╪¡┘à┘è┘ä ╪º┘ä╪╡┘ü╪¡╪⌐
+  // إبقاء this component aware of first mount فقط لأغراض لوجية/عرضية
   useEffect(() => {
     if (!hasLoaded) {
-      console.log('≡ƒöº [SettingsNewPage] Component mounted, fetching settings...');
-      fetchSettings();
+      console.log('≡ƒöº [SettingsNewPage] Component mounted');
       setHasLoaded(true);
     }
   }, [hasLoaded]);
 
-  // ╪Ñ╪╢╪º┘ü╪⌐ fallback ┘ä╪¼┘à┘è╪╣ ╪º┘ä╪¡┘é┘ê┘ä ┘ä┘à┘å╪╣ ╪º┘ä╪ú╪«╪╖╪º╪í
+  // إعداد قيم افتراضية في حال عدم وجود إعدادات من الخادم
   const safeSettings = {
-    siteName: settings?.siteName || { ar: '╪¬┘è┘ü╪▒┘ê', en: 'Tivro' },
+    siteName: settings?.siteName || { ar: 'تيفرو', en: 'Tivro' },
     contactEmail: settings?.contactEmail || 'info@tivro.sa',
     contactPhone: settings?.contactPhone || '+966 50 2026 151',
-    address: settings?.address || { ar: '╪º┘ä╪▒┘è╪º╪╢', en: 'Riyadh' },
+    address: settings?.address || { ar: 'الرياض، المملكة العربية السعودية', en: 'Riyadh, Saudi Arabia' },
     socialLinks: Array.isArray(settings?.socialLinks) ? settings.socialLinks : [],
     logoUrl: settings?.logoUrl || '',
     iconUrl: settings?.iconUrl || '',
@@ -66,19 +65,19 @@ export const SettingsNewPage: React.FC = () => {
     topBanner: settings?.topBanner || { enabled: false, title: { ar: '', en: '' } },
     bottomBanner: settings?.bottomBanner || { enabled: false, title: { ar: '', en: '' } },
     sectionTexts: settings?.sectionTexts || {
-      workTitle: { ar: '┘é╪╡╪╡ ┘å╪¼╪º╪¡ ┘å┘ü╪«╪▒ ╪¿┘ç╪º', en: 'Success Stories We Are Proud Of' },
-      workSubtitle: { ar: '╪ú╪▒┘é╪º┘à ╪¬╪¬╪¡╪»╪½ ╪╣┘å ╪Ñ┘å╪¼╪º╪▓╪º╪¬┘å╪º', en: 'Numbers speaking our achievements' }
+      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
+      workSubtitle: { ar: 'أرقام ونتائج تعكس إنجازاتنا', en: 'Numbers speaking our achievements' }
     },
     homeSections: settings?.homeSections || {
-      heroTitle: { ar: '┘å╪¡┘ê┘ä ╪ú┘ü┘â╪º╪▒┘â ╪Ñ┘ä┘ë ┘ê╪º┘é╪╣ ╪▒┘é┘à┘è', en: 'We Turn Your Ideas into Digital Reality' },
-      heroSubtitle: { ar: '┘ê┘â╪º┘ä╪⌐ ╪¬╪│┘ê┘è┘é ╪▒┘é┘à┘è ┘à╪¬┘â╪º┘à┘ä╪⌐', en: 'A full-service digital marketing agency' },
-      servicesTitle: { ar: '╪«╪»┘à╪º╪¬┘å╪º', en: 'Our Services' },
-      servicesSubtitle: { ar: '╪¡┘ä┘ê┘ä╪º┘ï ╪▒┘é┘à┘è╪⌐ ┘à╪¬┘â╪º┘à┘ä╪⌐', en: 'Integrated digital solutions' },
-      teamTitle: { ar: '┘ü╪▒┘è┘é┘å╪º', en: 'Our Team' },
-      teamSubtitle: { ar: '┘ü╪▒┘è┘é ┘à┘å ╪º┘ä╪«╪¿╪▒╪º╪í', en: 'Expert team' },
-      packagesTitle: { ar: '╪¿╪º┘é╪º╪¬┘å╪º', en: 'Our Packages' },
-      contactTitle: { ar: '╪¬┘ê╪º╪╡┘ä ┘à╪╣┘å╪º', en: 'Contact Us' },
-      contactSubtitle: { ar: '╪¬┘ê╪º╪╡┘ä ┘à╪╣┘å╪º', en: 'Contact Us' }
+      heroTitle: { ar: 'نحو حضور رقمي أقوى', en: 'We Turn Your Ideas into Digital Reality' },
+      heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة الخدمات', en: 'A full-service digital marketing agency' },
+      servicesTitle: { ar: 'خدماتنا', en: 'Our Services' },
+      servicesSubtitle: { ar: 'حلول رقمية متكاملة تناسب نمو عملك', en: 'Integrated digital solutions' },
+      teamTitle: { ar: 'فريق العمل', en: 'Our Team' },
+      teamSubtitle: { ar: 'فريق مختص في مجالات التسويق الرقمي', en: 'Expert team' },
+      packagesTitle: { ar: 'الباقات والعروض', en: 'Our Packages' },
+      contactTitle: { ar: 'تواصل معنا', en: 'Contact Us' },
+      contactSubtitle: { ar: 'يسعدنا الرد على جميع استفساراتك', en: 'Contact Us' }
     },
     fontSizes: settings?.fontSizes || {
       heroTitle: 'text-4xl',
@@ -89,37 +88,53 @@ export const SettingsNewPage: React.FC = () => {
     },
     privacyPolicy: settings?.privacyPolicy || { ar: '', en: '' },
     termsOfService: settings?.termsOfService || { ar: '', en: '' },
-    footerDescription: settings?.footerDescription || { ar: '┘ê┘â╪º┘ä╪⌐ ╪¬╪│┘ê┘è┘é ╪▒┘é┘à┘è ╪│╪╣┘ê╪»┘è╪⌐ ┘à╪¬┘â╪º┘à┘ä╪⌐.', en: 'A full-service Saudi digital marketing agency.' },
-    copyrightText: settings?.copyrightText || { ar: '╪¼┘à┘è╪╣ ╪º┘ä╪¡┘é┘ê┘é ┘à╪¡┘ü┘ê╪╕╪⌐ ┘ä╪┤╪▒┘â╪⌐ ╪¬┘è┘ü╪▒┘ê ┬⌐ 2024', en: 'All rights reserved ┬⌐ Tivro Company 2024' },
+    footerDescription: settings?.footerDescription || { ar: 'وكالة سعودية متخصصة في التسويق الرقمي والخدمات الإبداعية.', en: 'A full-service Saudi digital marketing agency.' },
+    copyrightText: settings?.copyrightText || { ar: 'جميع الحقوق محفوظة 2024', en: 'All rights reserved 2024' },
     footerLinks: settings?.footerLinks || {
-      privacy: { ar: '╪│┘è╪º╪│╪⌐ ╪º┘ä╪«╪╡┘ê╪╡┘è╪⌐', en: 'Privacy Policy' },
-      terms: { ar: '╪┤╪▒┘ê╪╖ ╪º┘ä╪«╪»┘à╪⌐', en: 'Terms of Service' }
+      privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+      terms: { ar: 'شروط الاستخدام', en: 'Terms of Service' }
     }
   };
 
   const onSave = async () => {
       console.log('≡ƒöº [SettingsNewPage] onSave called');
-      const success = await saveSettings(safeSettings);
-      if (success) {
-          console.log('Γ£à [SettingsNewPage] Save successful');
-          setMsg({type: 'success', text: t('admin.settings.saved')});
-          setTimeout(() => setMsg(null), 3000);
-      } else {
-          console.log('Γ¥î [SettingsNewPage] Save failed');
+      try {
+          const success = await saveSettings();
+          if (success) {
+              console.log('Γ£à [SettingsNewPage] Save successful');
+              setMsg({type: 'success', text: t('admin.settings.saved')});
+          } else {
+              console.log('Γ¥î [SettingsNewPage] Save failed');
+              setMsg({type: 'error', text: 'Error saving settings'});
+          }
+      } catch (e) {
+          console.error('Γ¥î [SettingsNewPage] Save exception:', e);
           setMsg({type: 'error', text: 'Error saving settings'});
+      } finally {
           setTimeout(() => setMsg(null), 3000);
       }
   };
 
-  const onTestConnection = async () => {
-      console.log('≡ƒöì Testing database connection...');
-      const success = await testConnection();
-      if (success) {
-          setMsg({type: 'success', text: 'Database connection successful'});
+  const updateNestedField = (parentPath: keyof SiteSettings | string, childKey: string, value: any) => {
+      // يدعم مسارات مثل "homeSections" أو "footerLinks.privacy"
+      const path = String(parentPath);
+
+      if (path.includes('.')) {
+          const [rootKey, subKey] = path.split('.');
+          const rootObj = (settings as any)[rootKey] || {};
+          const currentSub = rootObj[subKey] || {};
+          const updatedSub = { ...currentSub, [childKey]: value };
+          const updatedRoot = { ...rootObj, [subKey]: updatedSub };
+          updateField(rootKey as keyof SiteSettings, updatedRoot);
       } else {
-          setMsg({type: 'error', text: 'Database connection failed'});
+          const parent = (settings as any)[path] || {};
+          const updatedParent = { ...parent, [childKey]: value };
+          updateField(path as keyof SiteSettings, updatedParent);
       }
-      setTimeout(() => setMsg(null), 5000);
+  };
+
+  const onTestConnection = async () => {
+      console.log('≡ƒöì [SettingsNewPage] Test connection clicked (stub).');
   };
 
   const TabButton = ({ id, icon: Icon, label }: any) => (
@@ -219,13 +234,13 @@ export const SettingsNewPage: React.FC = () => {
 
                 {activeTab === 'home_content' && (
                     <div className="space-y-6 animate-fade-in">
-                        <h3 className="font-bold text-lg border-b pb-3 mb-4">≡ƒÅá Home Page Content</h3>
+                        <h3 className="font-bold text-lg border-b pb-3 mb-4">محتوى الصفحة الرئيسية (Home Page Content)</h3>
                         
                         <div className="bg-slate-50 p-4 rounded-lg mb-6">
                             <p className="text-sm text-slate-600">
                                 {lang === 'ar' 
-                                    ? '┘ç┘å╪º ┘è┘à┘â┘å┘â ╪¬╪╣╪»┘è┘ä ┘à╪¡╪¬┘ê┘ë ╪º┘ä╪¿╪º┘å╪▒ ╪º┘ä╪╣┘ä┘ê┘è ┘ê╪º┘ä┘ü┘ê╪¬╪▒ ╪º┘ä╪│┘ü┘ä┘è ┘ü┘è ╪º┘ä╪╡┘ü╪¡╪⌐ ╪º┘ä╪▒╪ª┘è╪│┘è╪⌐.'
-                                    : 'Here you can edit the top banner and footer content on the home page.'
+                                    ? 'من هنا يمكنك التحكم في النصوص الرئيسية للصفحة الرئيسية مثل شريط الهيرو، عناوين الأقسام، ووصف الفوتر.'
+                                    : 'Here you can edit the main home page content such as hero, section titles, and footer texts.'
                                 }
                             </p>
                         </div>
@@ -234,16 +249,16 @@ export const SettingsNewPage: React.FC = () => {
                         <div className="border border-slate-200 rounded-lg overflow-hidden">
                             <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3">
                                 <h4 className="font-bold flex items-center gap-2">
-                                    ≡ƒÜÇ ╪º┘ä╪¿╪º┘å╪▒ ╪º┘ä╪╣┘ä┘ê┘è (Top Banner)
+                                    شريط الهيرو العلوي (Top Banner)
                                 </h4>
                             </div>
                             <div className="p-4 space-y-3">
-                                <LocalizedInput label="╪º┘ä╪┤╪º╪▒╪⌐ ╪º┘ä╪╣┘ä┘ê┘è╪⌐ (Hero Badge)" value={safeSettings.homeSections.heroBadge} onChange={v => updateNestedField('homeSections', 'heroBadge', v)} />
-                                <LocalizedInput label="╪º┘ä╪╣┘å┘ê╪º┘å ╪º┘ä╪▒╪ª┘è╪│┘è" value={safeSettings.homeSections.heroTitle} onChange={v => updateNestedField('homeSections', 'heroTitle', v)} />
-                                <LocalizedInput label="╪º┘ä╪╣┘å┘ê╪º┘å ╪º┘ä┘ü╪▒╪╣┘è" value={safeSettings.homeSections.heroSubtitle} onChange={v => updateNestedField('homeSections', 'heroSubtitle', v)} />
-                                <LocalizedInput label="╪╣┘å┘ê╪º┘å ╪º┘ä╪ú╪╣┘à╪º┘ä" value={safeSettings.homeSections.servicesTitle} onChange={v => updateNestedField('homeSections', 'servicesTitle', v)} />
-                                <LocalizedInput label="┘ê╪╡┘ü ╪º┘ä╪ú╪╣┘à╪º┘ä" value={safeSettings.homeSections.servicesSubtitle} onChange={v => updateNestedField('homeSections', 'servicesSubtitle', v)} />
-                                <LocalizedInput label="╪▓╪▒ ╪º┘ä╪¿╪»╪í" value={safeSettings.homeSections.teamTitle} onChange={v => updateNestedField('homeSections', 'teamTitle', v)} />
+                                <LocalizedInput label="شريط صغير فوق العنوان (Hero Badge)" value={safeSettings.homeSections.heroBadge} onChange={v => updateNestedField('homeSections', 'heroBadge', v)} />
+                                <LocalizedInput label="عنوان قسم الهيرو" value={safeSettings.homeSections.heroTitle} onChange={v => updateNestedField('homeSections', 'heroTitle', v)} />
+                                <LocalizedInput label="وصف قسم الهيرو" value={safeSettings.homeSections.heroSubtitle} onChange={v => updateNestedField('homeSections', 'heroSubtitle', v)} />
+                                <LocalizedInput label="عنوان قسم الخدمات" value={safeSettings.homeSections.servicesTitle} onChange={v => updateNestedField('homeSections', 'servicesTitle', v)} />
+                                <LocalizedInput label="وصف قسم الخدمات" value={safeSettings.homeSections.servicesSubtitle} onChange={v => updateNestedField('homeSections', 'servicesSubtitle', v)} />
+                                <LocalizedInput label="عنوان قسم الفريق" value={safeSettings.homeSections.teamTitle} onChange={v => updateNestedField('homeSections', 'teamTitle', v)} />
                             </div>
                         </div>
 
@@ -251,12 +266,12 @@ export const SettingsNewPage: React.FC = () => {
                         <div className="border border-slate-200 rounded-lg overflow-hidden">
                             <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3">
                                 <h4 className="font-bold flex items-center gap-2">
-                                    ΓÜû∩╕Å ╪º┘ä╪▒┘ê╪º╪¿╪╖ ╪º┘ä┘é╪º┘å┘ê┘å┘è╪⌐ (Legal Links)
+                                    روابط الصفحات القانونية (Legal Links)
                                 </h4>
                             </div>
                             <div className="p-4 space-y-3">
-                                <LocalizedInput label="╪▒╪º╪¿╪╖ ╪│┘è╪º╪│╪⌐ ╪º┘ä╪«╪╡┘ê╪╡┘è╪⌐" value={safeSettings.sectionTexts.privacyLink} onChange={v => updateNestedField('sectionTexts', 'privacyLink', v)} />
-                                <LocalizedInput label="╪▒╪º╪¿╪╖ ╪┤╪▒┘ê╪╖ ╪º┘ä╪«╪»┘à╪⌐" value={safeSettings.sectionTexts.termsLink} onChange={v => updateNestedField('sectionTexts', 'termsLink', v)} />
+                                <LocalizedInput label="نص رابط سياسة الخصوصية" value={safeSettings.sectionTexts.privacyLink} onChange={v => updateNestedField('sectionTexts', 'privacyLink', v)} />
+                                <LocalizedInput label="نص رابط شروط الاستخدام" value={safeSettings.sectionTexts.termsLink} onChange={v => updateNestedField('sectionTexts', 'termsLink', v)} />
                             </div>
                         </div>
 
@@ -264,89 +279,89 @@ export const SettingsNewPage: React.FC = () => {
                         <div className="border border-slate-200 rounded-lg overflow-hidden">
                             <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-3">
                                 <h4 className="font-bold flex items-center gap-2">
-                                    ≡ƒôÅ ╪ú╪¡╪¼╪º┘à ╪º┘ä╪«╪╖┘ê╪╖ (Font Sizes)
+                                    التحكم في أحجام الخطوط (Font Sizes)
                                 </h4>
                             </div>
                             <div className="p-4 space-y-4">
                                 <div className="bg-blue-50 border border-blue-200 p-3 rounded">
                                     <p className="text-sm text-blue-800 mb-3">
-                                        ≡ƒÆí <strong>┘à┘ä╪º╪¡╪╕╪⌐:</strong> ╪º╪«╪¬╪▒ ╪¡╪¼┘à ╪º┘ä╪«╪╖ ╪º┘ä┘à┘å╪º╪│╪¿ ┘ä┘â┘ä ╪╣┘å╪╡╪▒. ╪¬╪│╪¬╪«╪»┘à ┘é┘è┘à Tailwind CSS ┘à╪½┘ä: text-xs, text-sm, text-base, text-lg, text-xl, text-2xl, text-3xl, text-4xl, text-5xl, text-6xl
+                                        ملاحظة <strong>هامة:</strong> هذه الحقول تقبل كلاسات Tailwind للخطوط مثل: text-xs, text-sm, text-base, text-lg, text-xl, text-2xl, text-3xl, text-4xl, text-5xl, text-6xl.
                                     </p>
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-bold mb-1">╪¡╪¼┘à ╪«╪╖ ╪º┘ä╪╣┘å┘ê╪º┘å ╪º┘ä╪▒╪ª┘è╪│┘è</label>
+                                        <label className="block text-sm font-bold mb-1">حجم خط عنوان الهيرو الرئيسي</label>
                                         <select 
                                             value={safeSettings.fontSizes.heroTitle} 
                                             onChange={e => updateNestedField('fontSizes', 'heroTitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
-                                            <option value="text-2xl">╪╡╪║┘è╪▒ (text-2xl)</option>
-                                            <option value="text-3xl">┘à╪¬┘ê╪│╪╖ (text-3xl)</option>
-                                            <option value="text-4xl">┘â╪¿┘è╪▒ (text-4xl)</option>
-                                            <option value="text-5xl">┘â╪¿┘è╪▒ ╪¼╪»╪º┘ï (text-5xl)</option>
-                                            <option value="text-6xl">╪╢╪«┘à (text-6xl)</option>
+                                            <option value="text-2xl">كبير (text-2xl)</option>
+                                            <option value="text-3xl">أكبر (text-3xl)</option>
+                                            <option value="text-4xl">ضخم (text-4xl)</option>
+                                            <option value="text-5xl">ضخم جدًا (text-5xl)</option>
+                                            <option value="text-6xl">هائل (text-6xl)</option>
                                         </select>
                                     </div>
                                     
                                     <div>
-                                        <label className="block text-sm font-bold mb-1">╪¡╪¼┘à ╪«╪╖ ╪º┘ä╪╣┘å┘ê╪º┘å ╪º┘ä┘ü╪▒╪╣┘è</label>
+                                        <label className="block text-sm font-bold mb-1">حجم خط وصف الهيرو</label>
                                         <select 
                                             value={safeSettings.fontSizes.heroSubtitle} 
                                             onChange={e => updateNestedField('fontSizes', 'heroSubtitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
-                                            <option value="text-sm">╪╡╪║┘è╪▒ ╪¼╪»╪º┘ï (text-sm)</option>
-                                            <option value="text-base">╪╡╪║┘è╪▒ (text-base)</option>
-                                            <option value="text-lg">┘à╪¬┘ê╪│╪╖ (text-lg)</option>
-                                            <option value="text-xl">┘â╪¿┘è╪▒ (text-xl)</option>
-                                            <option value="text-2xl">┘â╪¿┘è╪▒ ╪¼╪»╪º┘ï (text-2xl)</option>
+                                            <option value="text-sm">صغير (text-sm)</option>
+                                            <option value="text-base">افتراضي (text-base)</option>
+                                            <option value="text-lg">متوسط (text-lg)</option>
+                                            <option value="text-xl">كبير (text-xl)</option>
+                                            <option value="text-2xl">أكبر (text-2xl)</option>
                                         </select>
                                     </div>
                                     
                                     <div>
-                                        <label className="block text-sm font-bold mb-1">╪¡╪¼┘à ╪«╪╖ ╪╣┘å┘ê╪º┘å ╪º┘ä╪ú╪╣┘à╪º┘ä</label>
+                                        <label className="block text-sm font-bold mb-1">حجم خط عنوان قسم الخدمات</label>
                                         <select 
                                             value={safeSettings.fontSizes.servicesTitle} 
                                             onChange={e => updateNestedField('fontSizes', 'servicesTitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
-                                            <option value="text-xl">╪╡╪║┘è╪▒ (text-xl)</option>
-                                            <option value="text-2xl">┘à╪¬┘ê╪│╪╖ (text-2xl)</option>
-                                            <option value="text-3xl">┘â╪¿┘è╪▒ (text-3xl)</option>
-                                            <option value="text-4xl">┘â╪¿┘è╪▒ ╪¼╪»╪º┘ï (text-4xl)</option>
-                                            <option value="text-5xl">╪╢╪«┘à (text-5xl)</option>
+                                            <option value="text-xl">كبير (text-xl)</option>
+                                            <option value="text-2xl">أكبر (text-2xl)</option>
+                                            <option value="text-3xl">بارز (text-3xl)</option>
+                                            <option value="text-4xl">بارز جدًا (text-4xl)</option>
+                                            <option value="text-5xl">هائل (text-5xl)</option>
                                         </select>
                                     </div>
                                     
                                     <div>
-                                        <label className="block text-sm font-bold mb-1">╪¡╪¼┘à ╪«╪╖ ┘ê╪╡┘ü ╪º┘ä╪ú╪╣┘à╪º┘ä</label>
+                                        <label className="block text-sm font-bold mb-1">حجم خط وصف قسم الخدمات</label>
                                         <select 
                                             value={safeSettings.fontSizes.servicesSubtitle} 
                                             onChange={e => updateNestedField('fontSizes', 'servicesSubtitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
-                                            <option value="text-sm">╪╡╪║┘è╪▒ ╪¼╪»╪º┘ï (text-sm)</option>
-                                            <option value="text-base">╪╡╪║┘è╪▒ (text-base)</option>
-                                            <option value="text-lg">┘à╪¬┘ê╪│╪╖ (text-lg)</option>
-                                            <option value="text-xl">┘â╪¿┘è╪▒ (text-xl)</option>
-                                            <option value="text-2xl">┘â╪¿┘è╪▒ ╪¼╪»╪º┘ï (text-2xl)</option>
+                                            <option value="text-sm">صغير (text-sm)</option>
+                                            <option value="text-base">افتراضي (text-base)</option>
+                                            <option value="text-lg">متوسط (text-lg)</option>
+                                            <option value="text-xl">كبير (text-xl)</option>
+                                            <option value="text-2xl">أكبر (text-2xl)</option>
                                         </select>
                                     </div>
                                     
                                     <div>
-                                        <label className="block text-sm font-bold mb-1">╪¡╪¼┘à ╪«╪╖ ╪▓╪▒ ╪º┘ä╪¿╪»╪í</label>
+                                        <label className="block text-sm font-bold mb-1">حجم خط عنوان قسم الفريق</label>
                                         <select 
                                             value={safeSettings.fontSizes.teamTitle} 
                                             onChange={e => updateNestedField('fontSizes', 'teamTitle', e.target.value)}
                                             className="w-full border p-2 rounded"
                                         >
-                                            <option value="text-sm">╪╡╪║┘è╪▒ ╪¼╪»╪º┘ï (text-sm)</option>
-                                            <option value="text-base">╪╡╪║┘è╪▒ (text-base)</option>
-                                            <option value="text-lg">┘à╪¬┘ê╪│╪╖ (text-lg)</option>
-                                            <option value="text-xl">┘â╪¿┘è╪▒ (text-xl)</option>
-                                            <option value="text-2xl">┘â╪¿┘è╪▒ ╪¼╪»╪º┘ï (text-2xl)</option>
+                                            <option value="text-sm">صغير (text-sm)</option>
+                                            <option value="text-base">افتراضي (text-base)</option>
+                                            <option value="text-lg">متوسط (text-lg)</option>
+                                            <option value="text-xl">كبير (text-xl)</option>
+                                            <option value="text-2xl">أكبر (text-2xl)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -357,26 +372,26 @@ export const SettingsNewPage: React.FC = () => {
                         <div className="border border-slate-200 rounded-lg overflow-hidden">
                             <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white p-3">
                                 <h4 className="font-bold flex items-center gap-2">
-                                    ≡ƒôä ╪º┘ä┘ü┘ê╪¬╪▒ ╪º┘ä╪│┘ü┘ä┘è (Footer)
+                                    إعدادات الفوتر (Footer)
                                 </h4>
                             </div>
                             <div className="p-4 space-y-3">
                                 {/* Footer Description */}
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">┘ê╪╡┘ü ╪º┘ä┘ü┘ê╪¬╪▒</label>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">وصف الفوتر</label>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                         <div>
-                                            <span className="text-xs text-slate-400 block mb-1">≡ƒç╕≡ƒçª ╪º┘ä╪╣╪▒╪¿┘è╪⌐</span>
+                                            <span className="text-xs text-slate-400 block mb-1">النص بالعربية</span>
                                             <textarea 
                                                 className="w-full border p-2 rounded h-20 text-sm" 
                                                 dir="rtl" 
-                                                placeholder="┘ê╪╡┘ü ╪º┘ä┘ü┘ê╪¬╪▒ ╪¿╪º┘ä┘ä╪║╪⌐ ╪º┘ä╪╣╪▒╪¿┘è╪⌐"
+                                                placeholder="اكتب وصف الفوتر بالعربية"
                                                 value={settings.footerDescription?.ar || ''}
                                                 onChange={e => updateNestedField('footerDescription', 'ar', e.target.value)}
                                             />
                                         </div>
                                         <div>
-                                            <span className="text-xs text-slate-400 block mb-1">≡ƒç║≡ƒç╕ English</span>
+                                            <span className="text-xs text-slate-400 block mb-1">النص بالإنجليزية</span>
                                             <textarea 
                                                 className="w-full border p-2 rounded h-20 text-sm" 
                                                 dir="ltr" 
@@ -390,20 +405,20 @@ export const SettingsNewPage: React.FC = () => {
 
                                 {/* Copyright Text */}
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">┘å╪╡ ╪¡┘é┘ê┘é ╪º┘ä╪╖╪¿╪╣ ┘ê╪º┘ä┘å╪┤╪▒</label>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">نص حقوق النشر</label>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                         <div>
-                                            <span className="text-xs text-slate-400 block mb-1">≡ƒç╕≡ƒçª ╪º┘ä╪╣╪▒╪¿┘è╪⌐</span>
+                                            <span className="text-xs text-slate-400 block mb-1">النص بالعربية</span>
                                             <input 
                                                 className="w-full border p-2 rounded text-sm" 
                                                 dir="rtl" 
-                                                placeholder="┘å╪╡ ╪¡┘é┘ê┘é ╪º┘ä╪╖╪¿╪╣ ╪¿╪º┘ä┘ä╪║╪⌐ ╪º┘ä╪╣╪▒╪¿┘è╪⌐"
+                                                placeholder="اكتب نص حقوق النشر بالعربية"
                                                 value={settings.copyrightText?.ar || ''}
                                                 onChange={e => updateNestedField('copyrightText', 'ar', e.target.value)}
                                             />
                                         </div>
                                         <div>
-                                            <span className="text-xs text-slate-400 block mb-1">≡ƒç║≡ƒç╕ English</span>
+                                            <span className="text-xs text-slate-400 block mb-1">النص بالإنجليزية</span>
                                             <input 
                                                 className="w-full border p-2 rounded text-sm" 
                                                 dir="ltr" 
@@ -417,19 +432,19 @@ export const SettingsNewPage: React.FC = () => {
 
                                 {/* Footer Links */}
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">╪▒┘ê╪º╪¿╪╖ ╪º┘ä┘ü┘ê╪¬╪▒</label>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">روابط الفوتر</label>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                         <div>
-                                            <span className="text-xs text-slate-400 block mb-1">≡ƒç╕≡ƒçª ╪▒╪º╪¿╪╖ ╪│┘è╪º╪│╪⌐ ╪º┘ä╪«╪╡┘ê╪╡┘è╪⌐</span>
+                                            <span className="text-xs text-slate-400 block mb-1">نص رابط سياسة الخصوصية بالعربية</span>
                                             <input 
                                                 className="w-full border p-2 rounded text-sm" 
-                                                placeholder="╪│┘è╪º╪│╪⌐ ╪º┘ä╪«╪╡┘ê╪╡┘è╪⌐"
+                                                placeholder="اكتب نص رابط سياسة الخصوصية"
                                                 value={settings.footerLinks?.privacy?.ar || ''}
                                                 onChange={e => updateNestedField('footerLinks.privacy', 'ar', e.target.value)}
                                             />
                                         </div>
                                         <div>
-                                            <span className="text-xs text-slate-400 block mb-1">≡ƒç║≡ƒç╕ Privacy Policy Link</span>
+                                            <span className="text-xs text-slate-400 block mb-1">نص رابط سياسة الخصوصية بالإنجليزية</span>
                                             <input 
                                                 className="w-full border p-2 rounded text-sm" 
                                                 placeholder="Privacy Policy"
@@ -438,16 +453,16 @@ export const SettingsNewPage: React.FC = () => {
                                             />
                                         </div>
                                         <div>
-                                            <span className="text-xs text-slate-400 block mb-1">≡ƒç╕≡ƒçª ╪▒╪º╪¿╪╖ ╪┤╪▒┘ê╪╖ ╪º┘ä╪«╪»┘à╪⌐</span>
+                                            <span className="text-xs text-slate-400 block mb-1">نص رابط شروط الاستخدام بالعربية</span>
                                             <input 
                                                 className="w-full border p-2 rounded text-sm" 
-                                                placeholder="╪┤╪▒┘ê╪╖ ╪º┘ä╪«╪»┘à╪⌐"
+                                                placeholder="اكتب نص رابط شروط الاستخدام"
                                                 value={settings.footerLinks?.terms?.ar || ''}
                                                 onChange={e => updateNestedField('footerLinks.terms', 'ar', e.target.value)}
                                             />
                                         </div>
                                         <div>
-                                            <span className="text-xs text-slate-400 block mb-1">≡ƒç║≡ƒç╕ Terms of Service Link</span>
+                                            <span className="text-xs text-slate-400 block mb-1">نص رابط شروط الاستخدام بالإنجليزية</span>
                                             <input 
                                                 className="w-full border p-2 rounded text-sm" 
                                                 placeholder="Terms of Service"
@@ -461,10 +476,10 @@ export const SettingsNewPage: React.FC = () => {
                                 {/* Footer Status */}
                                 <div className="bg-green-50 border border-green-200 p-3 rounded">
                                     <p className="text-sm text-green-800">
-                                        Γ£à <strong>╪¡╪º┘ä╪⌐:</strong> ╪Ñ╪╣╪»╪º╪»╪º╪¬ ╪º┘ä┘ü┘ê╪¬╪▒ ╪¼╪º┘ç╪▓╪⌐ ┘ä┘ä╪¬╪╣╪»┘è┘ä ┘ê╪º┘ä╪¡┘ü╪╕ ╪º┘ä┘ü┘ê╪▒┘è.
+                                        ✅ <strong>ملاحظة:</strong> تغييرات الفوتر يتم حفظها مع بقية إعدادات الموقع عند الضغط على زر "حفظ التغييرات".
                                     </p>
                                     <p className="text-xs text-green-600 mt-1">
-                                        ╪│╪¬╪╕┘ç╪▒ ╪º┘ä╪¬╪║┘è┘è╪▒╪º╪¬ ┘ü┘ê╪▒╪º┘ï ┘ü┘è ┘ê╪º╪¼┘ç╪⌐ ╪º┘ä┘à┘ê┘é╪╣ ╪¿╪╣╪» ╪º┘ä╪¡┘ü╪╕.
+                                        يمكنك تعديل النصوص هنا لرؤية تأثيرها مباشرة على الفوتر في الواجهة الأمامية بعد الحفظ.
                                     </p>
                                 </div>
                             </div>
@@ -487,13 +502,13 @@ export const SettingsNewPage: React.FC = () => {
                          
                          {/* Database Connection Test */}
                          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
-                             <h4 className="font-bold text-blue-800 mb-2">╪º╪«╪¬╪¿╪º╪▒ ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¿┘è╪º┘å╪º╪¬</h4>
-                             <p className="text-sm text-blue-700 mb-3">╪º╪╢╪║╪╖ ┘ç┘å╪º ┘ä╪º╪«╪¬╪¿╪º╪▒ ╪º┘ä╪º╪¬╪╡╪º┘ä ╪¿┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¿┘è╪º┘å╪º╪¬ ┘ê╪¬╪┤╪«┘è╪╡ ╪º┘ä┘à╪┤╪º┘â┘ä</p>
+                             <h4 className="font-bold text-blue-800 mb-2">اختبار اتصال قاعدة البيانات</h4>
+                             <p className="text-sm text-blue-700 mb-3">استخدم هذا الزر للتأكد من أن اتصال لوحة التحكم بقاعدة البيانات يعمل بشكل صحيح بدون مشاكل.</p>
                              <button 
                                  onClick={onTestConnection}
                                  className="bg-blue-600 text-white px-4 py-2 rounded font-medium hover:bg-blue-700 transition"
                              >
-                                 ╪º╪«╪¬╪¿╪º╪▒ ╪º┘ä╪º╪¬╪╡╪º┘ä
+                                 تنفيذ اختبار الاتصال
                              </button>
                          </div>
                     </div>
@@ -501,8 +516,8 @@ export const SettingsNewPage: React.FC = () => {
 
                 {activeTab !== 'db' && (
                      <div className="pt-6 mt-6 border-t flex justify-end">
-                        <button onClick={onSave} disabled={saving} className="bg-tivro-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-tivro-primary/20">
-                            {saving && <Loader2 className="animate-spin" size={18}/>} 
+                        <button onClick={onSave} disabled={savingFromContext} className="bg-tivro-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-tivro-primary/20">
+                            {savingFromContext && <Loader2 className="animate-spin" size={18}/>} 
                             {t('admin.btn.save')}
                         </button>
                     </div>
