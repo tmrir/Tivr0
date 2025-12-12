@@ -6,7 +6,21 @@
     <title>Tivro | تيفرو للتسويق الرقمي</title>
     <meta name="description" content="وكالة تيفرو للتسويق الإلكتروني - شريكك للنمو الرقمي في السعودية" />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/src/index.css">
+    <style>
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+      body {
+        font-family: 'Cairo', sans-serif;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased">
     <div id="root"></div>
