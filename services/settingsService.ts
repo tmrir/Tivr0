@@ -19,22 +19,7 @@ export class SettingsService {
     try {
       console.log('🔧 [SettingsService] Fetching settings with unified structure...');
       
-      // أولاً، تحقق من localStorage
-      const localSettings = localStorage.getItem('tivro_settings');
-      const localTimestamp = localStorage.getItem('tivro_settings_timestamp');
-      
-      if (localSettings && localTimestamp) {
-        try {
-          const parsed = JSON.parse(localSettings);
-          const validated = validateSettings(parsed);
-          console.log('✅ [SettingsService] Loaded and validated from localStorage');
-          return validated;
-        } catch (parseError) {
-          console.error('❌ [SettingsService] LocalStorage parse error:', parseError);
-        }
-      }
-      
-      // ثانياً، جلب من Supabase مع دمج مع الإعدادات الافتراضية
+      // أولاً، جلب من Supabase مع دمج مع الإعدادات الافتراضية
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
@@ -43,20 +28,32 @@ export class SettingsService {
 
       if (error) {
         console.error('❌ [SettingsService] Supabase fetch error:', error);
-        console.log('🔄 [SettingsService] Using default settings as fallback');
-        
-        // حفظ الإعدادات الافتراضية في localStorage
+        console.log('🔄 [SettingsService] Falling back to localStorage/default settings');
+
+        // محاولة التحميل من localStorage كخيار احتياطي
+        const localSettings = localStorage.getItem('tivro_settings');
+        if (localSettings) {
+          try {
+            const parsed = JSON.parse(localSettings);
+            const validated = validateSettings(parsed);
+            console.log('✅ [SettingsService] Loaded and validated from localStorage (fallback)');
+            return validated;
+          } catch (parseError) {
+            console.error('❌ [SettingsService] LocalStorage parse error in fallback:', parseError);
+          }
+        }
+
+        // في حال فشل Supabase و localStorage، نعود للافتراضي
         localStorage.setItem('tivro_settings', JSON.stringify(defaultSettings));
         localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
-        
         return defaultSettings;
       }
 
       console.log('✅ [SettingsService] Settings fetched from Supabase');
       
-      // دمج بيانات Supabase مع الإعدادات الافتراضية
-      const mergedSettings = mergeWithDefaults(data);
-      const validated = validateSettings(mergedSettings);
+      // تحويل بيانات Supabase (snake_case) إلى SiteSettings (camelCase) ثم دمجها مع الافتراضيات والتحقق منها
+      const mappedFromDB = this.mapFromDB(data);
+      const validated = validateSettings(mappedFromDB);
       
       // حفظ البيانات المدمجة في localStorage
       localStorage.setItem('tivro_settings', JSON.stringify(validated));
@@ -103,8 +100,9 @@ export class SettingsService {
 
       if (error) {
         console.error('❌ [SettingsService] Supabase save error:', error);
-        console.log('✅ [SettingsService] Data saved to localStorage only (Supabase failed)');
-        return true; // نجاح لأن localStorage تم حفظه
+        console.log('⚠️ [SettingsService] Data saved to localStorage only (Supabase failed)');
+        // نرجع "false" حتى تعرف الواجهة أن الحفظ لم يصل لقاعدة البيانات
+        return false;
       }
 
       console.log('✅ [SettingsService] Settings saved to Supabase successfully:', data);
@@ -184,7 +182,6 @@ export class SettingsService {
       bottom_banner: settings.bottomBanner,
       section_texts: settings.sectionTexts,
       home_sections: settings.homeSections,
-      font_sizes: settings.fontSizes,
       privacy_policy: settings.privacyPolicy,
       terms_of_service: settings.termsOfService,
       updated_at: new Date().toISOString()
