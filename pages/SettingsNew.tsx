@@ -140,8 +140,7 @@ export const SettingsNewPage: React.FC = () => {
         <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('admin.tab.settings')} (New Version)</h2>
         
         {msg && <div className={`p-4 rounded mb-6 flex items-center gap-2 ${msg.type==='success'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`}>{msg.type==='success'?<CheckCircle size={18}/>:<AlertCircle size={18}/>}{msg.text}</div>}
-        {error && <div className="p-4 rounded mb-6 bg-red-100 text-red-800 flex items-center gap-2"><AlertCircle size={18}/> {error}</div>}
-
+        
         <div className="flex flex-col md:flex-row gap-8">
             <div className="w-full md:w-64 flex-shrink-0 space-y-2">
                 <TabButton id="general" icon={Globe} label={t('admin.settings.general')} />
