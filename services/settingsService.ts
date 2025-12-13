@@ -160,6 +160,7 @@ export class SettingsService {
         servicesSubtitle: 'text-lg',
         teamTitle: 'text-2xl'
       },
+      contactUs: row.contact_us || defaultSettings.contactUs,
       // استرجاع إعدادات الفوتر المخزنة داخل section_texts في قاعدة البيانات
       footerDescription: (row.section_texts && row.section_texts.footerDescription) || defaultSettings.footerDescription,
       copyrightText: (row.section_texts && row.section_texts.copyrightText) || defaultSettings.copyrightText,
@@ -192,6 +193,7 @@ export class SettingsService {
         footerLinks: settings.footerLinks,
       },
       home_sections: settings.homeSections,
+      contact_us: settings.contactUs,
       privacy_policy: settings.privacyPolicy,
       terms_of_service: settings.termsOfService,
       updated_at: new Date().toISOString()

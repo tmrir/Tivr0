@@ -187,6 +187,7 @@ const mapSettingsToDB = (item: SiteSettings) => ({
   bottom_banner: item.bottomBanner,
   section_texts: item.sectionTexts,
   home_sections: item.homeSections,
+  contact_us: item.contactUs,
   privacy_policy: item.privacyPolicy,
   terms_of_service: item.termsOfService
 });
