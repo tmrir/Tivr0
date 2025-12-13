@@ -576,7 +576,6 @@ export const Home = () => {
       )}
 
       {/* Custom Pages - After Packages */}
-      {renderPagesAtLocation('after-packages')}
 
       {/* Custom Pages - Before Work */}
       {renderPagesAtLocation('before-work')}
@@ -598,7 +597,7 @@ export const Home = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {cases.map(c => (
-              <div key={c.id} className="group relative rounded-2xl overflow-hidden shadow-lg cursor-pointer">
+              <div key={c.id} className="group relative rounded-2xl overflow-hidden shadow-lg">
                 <div className="aspect-video overflow-hidden bg-slate-200">
                    <img src={c.image} alt={c.title[lang]} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                 </div>
@@ -607,12 +606,26 @@ export const Home = () => {
                   <h3 className="text-white text-2xl font-bold mb-2">{c.title[lang]}</h3>
                   <p className="text-slate-200 text-sm mb-4">{c.result[lang]}</p>
                   <div className="flex gap-4 flex-wrap">
-                    {(c.stats || []).map((stat, idx) => (
-                      <div key={idx} className="bg-white/10 backdrop-blur rounded px-3 py-1 border border-white/10">
-                        <span className="block text-white font-bold">{stat.value}</span>
-                        <span className="text-xs text-slate-300">{stat.label[lang]}</span>
-                      </div>
-                    ))}
+                    {(c.stats || []).map((stat, idx) => {
+                      const link = stat.label?.en && stat.label.en.trim().startsWith('http')
+                        ? stat.label.en.trim()
+                        : undefined;
+                      const isClickable = !!link;
+                      return (
+                        <div
+                          key={idx}
+                          className={`bg-white/10 backdrop-blur rounded px-3 py-1 border border-white/10 ${isClickable ? 'cursor-pointer' : ''}`}
+                          onClick={() => {
+                            if (link) {
+                              window.open(link, '_blank');
+                            }
+                          }}
+                        >
+                          <span className="block text-white font-bold">{stat.value}</span>
+                          <span className="text-xs text-slate-300">{stat.label[lang]}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -655,7 +668,6 @@ export const Home = () => {
       {renderPagesAtLocation('after-work')}
 
       {/* Custom Pages - Before Footer */}
-      {renderPagesAtLocation('before-footer')}
 
       {/* CTA / Contact */}
       {navigationState.find(item => item.key === 'contact')?.visible && (

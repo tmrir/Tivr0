@@ -569,7 +569,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.work')}</h2>
-                <button onClick={() => setEditing({id:'new', title:{ar:'',en:''}, client:'', category:{ar:'',en:''}, result:{ar:'',en:''}, image:'', stats:[]})} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 shadow-sm hover:bg-emerald-700 transition"><Plus size={18}/>{t('admin.btn.add')}</button>
+                <button onClick={() => setEditing({id:'new', title:{ar:'',en:''}, client:'', category:{ar:'',en:''}, result:{ar:'',en:''}, image:'', url: '', stats:[]})} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 shadow-sm hover:bg-emerald-700 transition"><Plus size={18}/>{t('admin.btn.add')}</button>
             </div>
             
             {editing ? (
@@ -580,6 +580,10 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.client')}</label><input className="w-full border p-2 rounded" value={editing.client} onChange={e=>setEditing({...editing, client:e.target.value})} /></div>
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label><input className="w-full border p-2 rounded" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} /></div>
+                     </div>
+                     <div className="mb-6">
+                        <label className="block text-xs font-bold text-slate-500 mb-1">رابط المشروع (URL)</label>
+                        <input className="w-full border p-2 rounded" placeholder="https://example.com" value={editing.url || ''} onChange={e=>setEditing({...editing, url:e.target.value})} />
                      </div>
 
                      <LocalizedInput label={t('admin.form.title_ar')} value={editing.title} onChange={v => setEditing({...editing, title: v})} />

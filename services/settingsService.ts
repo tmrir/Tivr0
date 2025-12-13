@@ -160,6 +160,10 @@ export class SettingsService {
         servicesSubtitle: 'text-lg',
         teamTitle: 'text-2xl'
       },
+      // استرجاع إعدادات الفوتر المخزنة داخل section_texts في قاعدة البيانات
+      footerDescription: (row.section_texts && row.section_texts.footerDescription) || defaultSettings.footerDescription,
+      copyrightText: (row.section_texts && row.section_texts.copyrightText) || defaultSettings.copyrightText,
+      footerLinks: (row.section_texts && row.section_texts.footerLinks) || defaultSettings.footerLinks,
       privacyPolicy: row.privacy_policy || { ar: '', en: '' },
       termsOfService: row.terms_of_service || { ar: '', en: '' }
     };
@@ -180,7 +184,13 @@ export class SettingsService {
       favicon_url: settings.faviconUrl || '', // تأمين القيمة
       top_banner: settings.topBanner,
       bottom_banner: settings.bottomBanner,
-      section_texts: settings.sectionTexts,
+      // نخزن إعدادات الفوتر داخل حقل section_texts كـ JSON إضافي
+      section_texts: {
+        ...settings.sectionTexts,
+        footerDescription: settings.footerDescription,
+        copyrightText: settings.copyrightText,
+        footerLinks: settings.footerLinks,
+      },
       home_sections: settings.homeSections,
       privacy_policy: settings.privacyPolicy,
       terms_of_service: settings.termsOfService,

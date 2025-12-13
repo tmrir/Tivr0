@@ -21,6 +21,7 @@ export interface CaseStudy {
   category: LocalizedString;
   result: LocalizedString;
   image: string;
+  url?: string;
   stats: { label: LocalizedString; value: string }[];
   orderIndex?: number;
 }

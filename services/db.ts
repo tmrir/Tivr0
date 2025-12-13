@@ -33,17 +33,35 @@ const mapTeamFromDB = (row: any): TeamMember => ({
 });
 const mapTeamToDB = (item: TeamMember) => ({ name: item.name, role: item.role, image: item.image, linkedin: item.linkedin });
 
-const mapCaseFromDB = (row: any): CaseStudy => ({
-  id: row.id,
-  client: row.client || '',
-  title: row.title || { ar: '', en: '' },
-  category: row.category || { ar: '', en: '' },
-  result: row.result || { ar: '', en: '' },
-  image: row.image || '',
-  stats: Array.isArray(row.stats) ? row.stats : [],
-  orderIndex: row.order_index
-});
-const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, stats: item.stats });
+const mapCaseFromDB = (row: any): CaseStudy => {
+  let stats: any[] = [];
+
+  if (Array.isArray(row.stats)) {
+    stats = row.stats;
+  } else if (typeof row.stats === 'string') {
+    try {
+      const parsed = JSON.parse(row.stats);
+      if (Array.isArray(parsed)) {
+        stats = parsed;
+      }
+    } catch {
+      stats = [];
+    }
+  }
+
+  return {
+    id: row.id,
+    client: row.client || '',
+    title: row.title || { ar: '', en: '' },
+    category: row.category || { ar: '', en: '' },
+    result: row.result || { ar: '', en: '' },
+    image: row.image || '',
+    url: row.url || '',
+    stats,
+    orderIndex: row.order_index,
+  };
+};
+const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, url: item.url || '', stats: item.stats });
 
 const mapBlogFromDB = (row: any): BlogPost => ({
   id: row.id,
@@ -112,7 +130,9 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
 
     sectionTexts: row.section_texts || { 
       workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
-      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' } 
+      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' },
+      privacyLink: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+      termsLink: { ar: 'شروط الاستخدام', en: 'Terms of Service' }
     },
     homeSections: row.home_sections || {
         heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
@@ -120,6 +140,32 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
         teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
         packagesTitle: { ar: '', en: '' },
         contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
+    },
+
+    fontSizes: row.font_sizes || {
+      heroTitle: 'text-5xl md:text-7xl',
+      heroSubtitle: 'text-xl',
+      servicesTitle: 'text-3xl md:text-4xl',
+      servicesSubtitle: 'text-slate-500',
+      teamTitle: 'text-3xl md:text-4xl'
+    },
+
+    contactUs: row.contact_us || {
+      title: { ar: 'تواصل معنا', en: 'Contact Us' },
+      subtitle: { ar: 'نحن هنا لمساعدتك', en: 'We are here to help you' },
+      cards: [],
+      socialLinks: [],
+      form: {
+        fields: [],
+        submitText: { ar: 'إرسال', en: 'Send' }
+      }
+    },
+
+    footerDescription: (row.section_texts && row.section_texts.footerDescription) || { ar: 'وكالة تسويق رقمي سعودية متكاملة.', en: 'A full-service Saudi digital marketing agency.' },
+    copyrightText: (row.section_texts && row.section_texts.copyrightText) || { ar: 'جميع الحقوق محفوظة', en: 'All rights reserved' },
+    footerLinks: (row.section_texts && row.section_texts.footerLinks) || { 
+      privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+      terms: { ar: 'شروط الاستخدام', en: 'Terms of Service' }
     },
 
     privacyPolicy: row.privacy_policy || { ar: '', en: '' },
