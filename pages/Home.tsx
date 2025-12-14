@@ -611,6 +611,10 @@ export const Home = () => {
                         ? stat.label.en.trim()
                         : undefined;
                       const isClickable = !!link;
+                      // Truncate long URLs for display
+                      const displayLabel = stat.label[lang].length > 30 
+                        ? stat.label[lang].substring(0, 30) + '...'
+                        : stat.label[lang];
                       return (
                         <div
                           key={idx}
@@ -620,9 +624,10 @@ export const Home = () => {
                               window.open(link, '_blank');
                             }
                           }}
+                          title={isClickable ? link : stat.label[lang]} // Show full URL on hover
                         >
                           <span className="block text-white font-bold">{stat.value}</span>
-                          <span className="text-xs text-slate-300">{stat.label[lang]}</span>
+                          <span className="text-xs text-slate-300">{displayLabel}</span>
                         </div>
                       );
                     })}
