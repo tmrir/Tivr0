@@ -973,42 +973,48 @@ const DashboardOverview: React.FC<{ setActiveTab: (tab: string) => void }> = ({ 
             icon: <List size={24} />, 
             color: 'bg-blue-500', 
             label: t('admin.tab.services'),
-            count: stats.services
+            count: stats.services,
+            onClick: () => setActiveTab('services')
         },
         { 
             key: 'team', 
             icon: <UsersIcon size={24} />, 
             color: 'bg-green-500', 
             label: t('admin.tab.team'),
-            count: stats.team
+            count: stats.team,
+            onClick: () => setActiveTab('team')
         },
         { 
             key: 'packages', 
             icon: <PackageIcon size={24} />, 
             color: 'bg-purple-500', 
             label: t('admin.tab.packages'),
-            count: stats.packages
+            count: stats.packages,
+            onClick: () => setActiveTab('packages')
         },
         { 
             key: 'caseStudies', 
             icon: <Briefcase size={24} />, 
             color: 'bg-orange-500', 
             label: t('admin.tab.work'),
-            count: stats.caseStudies
+            count: stats.caseStudies,
+            onClick: () => setActiveTab('work')
         },
         { 
             key: 'blog', 
             icon: <FileText size={24} />, 
             color: 'bg-pink-500', 
             label: t('admin.tab.blog'),
-            count: stats.blog
+            count: stats.blog,
+            onClick: () => setActiveTab('blog')
         },
         { 
             key: 'messages', 
             icon: <MessageCircle size={24} />, 
             color: 'bg-red-500', 
             label: t('admin.tab.messages'),
-            count: stats.messages
+            count: stats.messages,
+            onClick: () => setActiveTab('messages')
         },
         { 
             key: 'packageRequests', 
