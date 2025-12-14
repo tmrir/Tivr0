@@ -688,7 +688,6 @@ export const Home = () => {
           </div>
         </div>
       </section>
-      )}
 
       {/* Custom Pages - After Work */}
       {renderPagesAtLocation('after-work')}
