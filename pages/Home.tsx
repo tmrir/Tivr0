@@ -632,7 +632,7 @@ export const Home = () => {
                           stat.label.en.includes('dawamakkah')
                             ? 'Donate Now'
                             : 'Learn More';
-                      } else if (stat.label[lang].length > 30) {
+                      } else if (stat.label[lang] && stat.label[lang].length > 30) {
                         // Truncate long text for other cases
                         displayLabel =
                           stat.label[lang].substring(0, 30) + '...';
