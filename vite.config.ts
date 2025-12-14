@@ -7,12 +7,12 @@ export default defineConfig(({ mode }) => {
     return {
       server: {
         port: 3000,
-        host: 'localhost', hmr: { port: 3001 },
+        host: 'localhost',
         open: true
       },
       plugins: [react()],
       css: {
-        postcss: './postcss.config.js'
+        postcss: './postcss.config.cjs'
       },
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),

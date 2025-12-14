@@ -35,6 +35,8 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
+  const hasArabicChars = (value: string) => /[\u0600-\u06FF]/.test(value);
+
   // Use provided settings or fallback
   const contactSettings = settings || fallbackSettings;
 
@@ -123,7 +125,13 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
               
               <div 
                 className="mb-6 text-slate-300"
-                dangerouslySetInnerHTML={{ __html: sanitizeHTML(card.contentHTML) }}
+                dangerouslySetInnerHTML={{ 
+                  __html: sanitizeHTML(
+                    lang === 'en' && hasArabicChars(card.contentHTML || '')
+                      ? "<p>Let's discuss your goals and craft a strategy tailored to your success.</p>"
+                      : (card.contentHTML || '')
+                  )
+                }}
               />
               
               <form onSubmit={handleSubmit} className="space-y-4 w-full md:w-80">

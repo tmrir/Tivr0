@@ -20,6 +20,8 @@ const TRANSLATIONS: Translations = {
   'nav.team': { ar: 'الفريق', en: 'Team' },
   'nav.blog': { ar: 'المدونة', en: 'Blog' },
   'nav.contact': { ar: 'تواصل معنا', en: 'Contact' },
+  'brand.tagline': { ar: 'لخدمات الأعمال', en: 'For Business Services' },
+  'common.open_link': { ar: 'فتح الرابط', en: 'Open link' },
   'hero.title': { ar: 'شريكك الاستراتيجي للنمو الرقمي', en: 'Your Strategic Partner for Digital Growth' },
   'hero.subtitle': { ar: 'نحول الأفكار إلى أرقام، ونقود علامتك التجارية نحو الصدارة في السوق السعودي.', en: 'We turn ideas into numbers, leading your brand to the forefront of the Saudi market.' },
   'cta.start': { ar: 'ابدأ رحلة النمو', en: 'Start Growth Journey' },

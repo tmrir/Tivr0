@@ -620,7 +620,7 @@ export const Home = () => {
                       const labelAr = stat.label?.ar || '';
                       const isEnUrl = labelEn.trim().startsWith('http');
                       const displayLabel = lang === 'en'
-                        ? ((labelEn && !isEnUrl) ? labelEn : labelAr)
+                        ? ((labelEn && !isEnUrl) ? labelEn : t('common.open_link'))
                         : (stat.label?.[lang] || labelAr || labelEn);
 
                       return (

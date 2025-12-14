@@ -24,6 +24,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [settings, setSettings] = useState<SiteSettings | any>(DEFAULT_SETTINGS);
   const [footerServices, setFooterServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
+
+  const hasArabicChars = (value: string) => /[\u0600-\u06FF]/.test(value);
+  const resolveNavLabel = (label: any, fallback: string) => {
+    if (!label) return fallback;
+    if (typeof label === 'object' && (label.ar || label.en)) {
+      return (label?.[lang] || label.ar || label.en || fallback) as string;
+    }
+    if (typeof label === 'string') {
+      if (lang === 'en' && hasArabicChars(label)) return fallback;
+      return label;
+    }
+    return fallback;
+  };
   
   // State for navigation visibility and labels from admin panel
   const [navigationState, setNavigationState] = useState<any[]>([
@@ -37,7 +50,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [navigationLabels, setNavigationLabels] = useState<any>({
     services: t('nav.services'),
     team: t('nav.team'),
-    packages: lang === 'ar' ? 'الباقات' : 'Packages',
+    packages: t('admin.tab.packages'),
     work: t('nav.work'),
     blog: t('nav.blog')
   });
@@ -202,17 +215,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <div className={`w-10 h-10 bg-tivro-dark rounded-lg flex items-center justify-center text-white font-bold text-xl ${settings?.logoUrl ? 'hidden' : ''}`}>T</div>
             <div className="flex flex-col items-start">
               <span className="text-2xl font-bold text-tivro-dark tracking-tight leading-tight">{settings?.siteName?.[lang] || 'Tivro'}</span>
-              <span className="text-xs text-slate-500 font-medium leading-none">لخدمات الأعمال</span>
+              <span className="text-xs text-slate-500 font-medium leading-none">{t('brand.tagline')}</span>
             </div>
           </a>
 
           <nav className="hidden md:flex items-center gap-8">
             <NavLink href="#" label={t('nav.home')} />
-            {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={navigationLabels.services || t('nav.services')} />}
-            {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={navigationLabels.packages || (lang === 'ar' ? 'الباقات' : 'Packages')} />}
-            {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={navigationLabels.work || t('nav.work')} />}
-            {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={navigationLabels.team || t('nav.team')} />}
-            {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={navigationLabels.blog || t('nav.blog')} />}
+            {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={resolveNavLabel(navigationLabels.services, t('nav.services'))} />}
+            {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={resolveNavLabel(navigationLabels.packages, t('admin.tab.packages'))} />}
+            {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={resolveNavLabel(navigationLabels.work, t('nav.work'))} />}
+            {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={resolveNavLabel(navigationLabels.team, t('nav.team'))} />}
+            {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={resolveNavLabel(navigationLabels.blog, t('nav.blog'))} />}
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
@@ -240,11 +253,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <div className="md:hidden fixed inset-0 top-0 bg-white z-[70] h-screen overflow-y-auto pt-24 px-6 pb-6 animate-fade-in">
                 <div className="flex flex-col space-y-2">
                     <NavLink href="#" label={t('nav.home')} />
-                    {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={navigationLabels.services || t('nav.services')} />}
-                    {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={navigationLabels.packages || (lang === 'ar' ? 'الباقات' : 'Packages')} />}
-                    {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={navigationLabels.work || t('nav.work')} />}
-                    {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={navigationLabels.team || t('nav.team')} />}
-                    {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={navigationLabels.blog || t('nav.blog')} />}
+                    {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={resolveNavLabel(navigationLabels.services, t('nav.services'))} />}
+                    {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={resolveNavLabel(navigationLabels.packages, t('admin.tab.packages'))} />}
+                    {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={resolveNavLabel(navigationLabels.work, t('nav.work'))} />}
+                    {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={resolveNavLabel(navigationLabels.team, t('nav.team'))} />}
+                    {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={resolveNavLabel(navigationLabels.blog, t('nav.blog'))} />}
                     
                     <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
                         <button onClick={() => { toggleLang(); setIsMenuOpen(false); }} className="flex items-center gap-2 text-slate-600 font-bold text-lg">

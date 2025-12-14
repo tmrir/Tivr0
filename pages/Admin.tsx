@@ -41,6 +41,7 @@ const StatCard = ({ title, value }: any) => (
 );
 
 const SidebarLink = ({ icon, label, active, onClick, editable = false, onLabelChange, visible = true, onVisibilityToggle }: any) => {
+  const { t, lang } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(label);
 
@@ -105,9 +106,9 @@ const SidebarLink = ({ icon, label, active, onClick, editable = false, onLabelCh
         <span
           onClick={handleVisibilityToggle}
           className={`p-1 rounded hover:bg-slate-200 transition ${visible ? 'text-slate-600' : 'text-slate-300'}`}
-          title={visible ? 'إخفاء' : 'إظهار'}
+          title={visible ? (lang === 'ar' ? 'إخفاء' : 'Hide') : (lang === 'ar' ? 'إظهار' : 'Show')}
           role="button"
-          aria-label={visible ? 'إخفاء القسم' : 'إظهار القسم'}
+          aria-label={visible ? (lang === 'ar' ? 'إخفاء القسم' : 'Hide section') : (lang === 'ar' ? 'إظهار القسم' : 'Show section')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -144,7 +145,7 @@ const DashboardTab = () => {
         <StatCard title={t('admin.dash.packages')} value={stats.packages.toString()} />
       </div>
       <div className="bg-green-50 border border-green-100 p-4 rounded-lg text-green-800">
-          <strong>System Status:</strong> Connected to Supabase. Drag & Drop Enabled.
+          <strong>System Status:</strong> {t('admin.dash.connected')}
       </div>
     </div>
   );
@@ -337,8 +338,8 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                             <h3 className="font-bold text-lg text-slate-900">{m.name[lang]}</h3>
                             <p className="text-tivro-primary text-sm font-medium">{m.role[lang]}</p>
                             <div className="absolute top-3 right-3 hidden group-hover:flex bg-white/90 backdrop-blur shadow-sm rounded-lg border border-slate-100 p-1 z-10 gap-1">
-                                <button onClick={()=>setEditing(m)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition"><Edit2 size={16}/></button>
-                                <button onClick={()=>handleDelete(m.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-md transition"><Trash2 size={16}/></button>
+                                <button onClick={()=>setEditing(m)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16}/></button>
+                                <button onClick={()=>handleDelete(m.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
                             </div>
                         </div>
                     )}
@@ -436,7 +437,7 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                                             ? 'bg-tivro-primary text-white' 
                                             : 'bg-slate-100 text-slate-600'
                                     }`}>
-                                        {p.id === 'new' ? 'باقة جديدة' : 'باقة مميزة'}
+                                        {p.id === 'new' ? (lang === 'ar' ? 'باقة جديدة' : 'New Package') : (lang === 'ar' ? 'باقة مميزة' : 'Featured Package')}
                                     </div>
                                     <h3 className={`text-2xl font-bold mb-3 ${
                                         p.isPopular ? 'text-tivro-primary' : 'text-slate-800'
@@ -445,7 +446,7 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                                     </h3>
                                     <div className="flex items-center justify-center gap-2 mb-4">
                                         <span className="text-4xl font-bold text-slate-900">{p.price}</span>
-                                        <span className="text-slate-500 font-medium">/شهرياً</span>
+                                        <span className="text-slate-500 font-medium">{lang === 'ar' ? '/شهرياً' : '/month'}</span>
                                     </div>
                                 </div>
                                 
@@ -461,7 +462,7 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                                     ))}
                                     {p.features.length > 3 && (
                                         <div className="text-center text-sm text-slate-500 font-medium">
-                                            +{p.features.length - 3} ميزات أخرى
+                                            +{p.features.length - 3} {lang === 'ar' ? 'ميزات أخرى' : 'more features'}
                                         </div>
                                     )}
                                 </div>
@@ -477,14 +478,14 @@ const PackagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                                         }`}
                                     >
                                         <Edit2 size={16} />
-                                        تعديل
+                                        {t('admin.btn.edit')}
                                     </button>
                                     <button 
                                         onClick={() => handleDelete(p.id)}
                                         className="px-4 py-2 rounded-lg font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-all duration-200 flex items-center gap-2 relative z-20"
                                     >
                                         <Trash2 size={16} />
-                                        حذف
+                                        {t('admin.btn.delete')}
                                     </button>
                                 </div>
                                 
@@ -615,19 +616,19 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label><input className="w-full border p-2 rounded" value={editing.image} onChange={e=>setEditing({...editing, image:e.target.value})} /></div>
                      </div>
                      <div className="mb-6">
-                        <label className="block text-xs font-bold text-slate-500 mb-1">رابط المشروع (URL)</label>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">{lang === 'ar' ? 'رابط المشروع (URL)' : 'Project URL'}</label>
                         <input className="w-full border p-2 rounded" placeholder="https://example.com" value={editing.url || ''} onChange={e=>setEditing({...editing, url:e.target.value})} />
                      </div>
 
                      <LocalizedInput label={t('admin.form.title_ar')} value={editing.title} onChange={v => setEditing({...editing, title: v})} />
                      <LocalizedInput label={t('admin.form.category_ar')} value={editing.category} onChange={v => setEditing({...editing, category: v})} />
-                     <LocalizedInput label="النتيجة / Result (e.g. زيادة المبيعات 200%)" value={editing.result} onChange={v => setEditing({...editing, result: v})} />
+                     <LocalizedInput label={lang === 'ar' ? 'النتيجة / Result (e.g. زيادة المبيعات 200%)' : 'Result (e.g. +200% sales)'} value={editing.result} onChange={v => setEditing({...editing, result: v})} />
 
                      {/* Stats Management */}
                      <div className="mt-6 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <div className="flex justify-between items-center mb-3">
-                            <label className="font-bold text-slate-700">الإحصائيات (Stats)</label>
-                            <button type="button" onClick={addStat} className="text-xs bg-white border px-3 py-1 rounded-full flex items-center gap-1 hover:bg-slate-100"><Plus size={12}/> إضافة رقم</button>
+                            <label className="font-bold text-slate-700">{lang === 'ar' ? 'الإحصائيات (Stats)' : 'Stats'}</label>
+                            <button type="button" onClick={addStat} className="text-xs bg-white border px-3 py-1 rounded-full flex items-center gap-1 hover:bg-slate-100"><Plus size={12}/> {lang === 'ar' ? 'إضافة رقم' : 'Add stat'}</button>
                         </div>
                         {(editing.stats || []).map((stat, i) => (
                             <div key={i} className="flex gap-2 items-center mb-2">
@@ -637,7 +638,7 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
                                 <button type="button" onClick={()=>removeStat(i)} className="text-red-500 p-2 bg-white rounded border hover:bg-red-50"><Trash2 size={16}/></button>
                             </div>
                         ))}
-                        {(!editing.stats || editing.stats.length === 0) && <p className="text-xs text-slate-400 italic">لا توجد إحصائيات مضافة لهذا العمل.</p>}
+                        {(!editing.stats || editing.stats.length === 0) && <p className="text-xs text-slate-400 italic">{lang === 'ar' ? 'لا توجد إحصائيات مضافة لهذا العمل.' : 'No stats added for this item.'}</p>}
                      </div>
 
                      <div className="flex gap-3 justify-end pt-4 border-t">
@@ -1046,49 +1047,49 @@ const DashboardOverview: React.FC<{ setActiveTab: (tab: string) => void }> = ({ 
 
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h2 className="text-xl font-bold text-slate-800 mb-4">إجراءات سريعة</h2>
+                <h2 className="text-xl font-bold text-slate-800 mb-4">{lang === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <button 
                         onClick={() => setActiveTab('services')}
                         className="flex items-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
                     >
                         <List size={20} />
-                        <span className="font-medium">إضافة خدمة جديدة</span>
+                        <span className="font-medium">{lang === 'ar' ? 'إضافة خدمة جديدة' : 'Add New Service'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('team')}
                         className="flex items-center gap-3 p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
                     >
                         <UsersIcon size={20} />
-                        <span className="font-medium">إضافة عضو فريق</span>
+                        <span className="font-medium">{lang === 'ar' ? 'إضافة عضو فريق' : 'Add Team Member'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('packages')}
                         className="flex items-center gap-3 p-4 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
                     >
                         <PackageIcon size={20} />
-                        <span className="font-medium">إضافة باقة جديدة</span>
+                        <span className="font-medium">{lang === 'ar' ? 'إضافة باقة جديدة' : 'Add New Package'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('work')}
                         className="flex items-center gap-3 p-4 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
                     >
                         <Briefcase size={20} />
-                        <span className="font-medium">إضافة عمل جديد</span>
+                        <span className="font-medium">{lang === 'ar' ? 'إضافة عمل جديد' : 'Add New Case Study'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('blog')}
                         className="flex items-center gap-3 p-4 bg-pink-50 text-pink-700 rounded-lg hover:bg-pink-100 transition-colors"
                     >
                         <FileText size={20} />
-                        <span className="font-medium">إضافة مقال جديد</span>
+                        <span className="font-medium">{lang === 'ar' ? 'إضافة مقال جديد' : 'Add New Post'}</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('settings')}
                         className="flex items-center gap-3 p-4 bg-slate-50 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
                     >
                         <SettingsIcon size={20} />
-                        <span className="font-medium">إعدادات الموقع</span>
+                        <span className="font-medium">{lang === 'ar' ? 'إعدادات الموقع' : 'Site Settings'}</span>
                     </button>
                 </div>
             </div>
@@ -1153,6 +1154,43 @@ export const Admin = () => {
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  const hasArabicChars = (value: string) => /[\u0600-\u06FF]/.test(value);
+
+  const getDefaultNavLabel = (key: string) => {
+    switch (key) {
+      case 'dashboard': return t('admin.tab.dashboard');
+      case 'services': return t('admin.tab.services');
+      case 'team': return t('admin.tab.team');
+      case 'packages': return t('admin.tab.packages');
+      case 'work': return t('admin.tab.work');
+      case 'blog': return t('admin.tab.blog');
+      case 'contact': return lang === 'ar' ? 'تواصل معنا' : 'Contact Us';
+      case 'messages': return t('admin.tab.messages');
+      case 'packageRequests': return lang === 'ar' ? 'طلبات الباقات' : 'Package Requests';
+      case 'pages': return lang === 'ar' ? 'مدير الصفحات' : 'Page Manager';
+      case 'settings': return t('admin.tab.settings');
+      default: return key;
+    }
+  };
+
+  const resolveNavLabel = (key: string, label: any) => {
+    const fallback = getDefaultNavLabel(key);
+    if (!label) return fallback;
+    if (typeof label === 'object' && (label.ar || label.en)) {
+      const candidate = (label?.[lang] || '') as string;
+      if (candidate && (lang !== 'en' || !hasArabicChars(candidate))) {
+        return candidate;
+      }
+      if (lang === 'en') return fallback;
+      return (label.ar || label.en || fallback) as string;
+    }
+    if (typeof label === 'string') {
+      if (lang === 'en' && hasArabicChars(label)) return fallback;
+      return label;
+    }
+    return fallback;
+  };
+
   // Navigation state for editable sidebar
   const [navigationItems, setNavigationItems] = useState([
     { key: 'dashboard', label: t('admin.tab.dashboard'), visible: true },
@@ -1173,7 +1211,30 @@ export const Admin = () => {
     const savedNavigation = localStorage.getItem('adminNavigation');
     if (savedNavigation) {
       try {
-        setNavigationItems(JSON.parse(savedNavigation));
+        const rawItems = JSON.parse(savedNavigation);
+        const normalized = Array.isArray(rawItems)
+          ? rawItems.map((item: any) => {
+              const key = item?.key;
+              const visible = typeof item?.visible === 'boolean' ? item.visible : true;
+              const label = item?.label;
+
+              if (typeof label === 'string') {
+                // Migrate old single-language strings to {ar,en}
+                if (hasArabicChars(label)) {
+                  return { key, visible, label: { ar: label, en: '' } };
+                }
+                return { key, visible, label: { ar: '', en: label } };
+              }
+
+              if (label && typeof label === 'object') {
+                return { key, visible, label };
+              }
+
+              return { key, visible, label: { ar: '', en: '' } };
+            })
+          : navigationItems;
+
+        setNavigationItems(normalized);
       } catch (error) {
         console.error('Failed to load navigation state:', error);
       }
@@ -1188,7 +1249,15 @@ export const Admin = () => {
 
   const updateNavigationLabel = (key: string, newLabel: string) => {
     const newItems = navigationItems.map(item => 
-      item.key === key ? { ...item, label: newLabel } : item
+      item.key === key
+        ? {
+            ...item,
+            label:
+              item.label && typeof item.label === 'object'
+                ? { ...item.label, [lang]: newLabel }
+                : (lang === 'ar' ? { ar: newLabel, en: '' } : { ar: '', en: newLabel })
+          }
+        : item
     );
     saveNavigationState(newItems);
     
@@ -1287,7 +1356,7 @@ export const Admin = () => {
                 <SidebarLink 
                   key={item.key}
                   icon={getIconForItem(item.key)} 
-                  label={item.label} 
+                  label={resolveNavLabel(item.key, item.label)} 
                   active={activeTab === item.key} 
                   onClick={() => setActiveTab(item.key as any)}
                   editable={true}
