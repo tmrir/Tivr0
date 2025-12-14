@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Layout } from '../components/Layout';
 import { db } from '../services/db';
@@ -47,6 +47,10 @@ export const Home = () => {
   // State for package request modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+
+  // Debouncing and caching state
+  const [lastSettingsUpdate, setLastSettingsUpdate] = useState(0);
+  const settingsCacheTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const openPackageModal = (pkg: Package) => {
     setSelectedPackage(pkg);
@@ -215,8 +219,8 @@ export const Home = () => {
       }
     };
 
-    window.addEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
-    window.addEventListener('storage', handleSettingsUpdate as EventListener);
+    // window.addEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
+    // window.addEventListener('storage', handleSettingsUpdate as EventListener);
     window.addEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
     window.addEventListener('storage', handleStorageNavigationUpdate);
 
@@ -253,16 +257,16 @@ export const Home = () => {
       fetchSettings();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
+    // document.addEventListener('visibilitychange', handleVisibilityChange);
+    // window.addEventListener('focus', handleFocus);
 
     return () => {
-        window.removeEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
+        // window.removeEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
         window.removeEventListener('hashchange', handleHashScroll);
         window.removeEventListener('storage', handleCustomPagesUpdate);
         window.removeEventListener('customPagesUpdated', handleCustomPagesUpdate);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('focus', handleFocus);
+        // document.removeEventListener('visibilitychange', handleVisibilityChange);
+        // window.removeEventListener('focus', handleFocus);
         window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
         window.removeEventListener('storage', handleStorageNavigationUpdate);
     };
@@ -599,44 +603,26 @@ export const Home = () => {
             {cases.map(c => (
               <div key={c.id} className="group relative rounded-2xl overflow-hidden shadow-lg">
                 <div className="aspect-video overflow-hidden bg-slate-200">
-                  <img
-                    src={c.image}
-                    alt={c.title[lang]}
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700"
-                  />
+                   <img src={c.image} alt={c.title[lang]} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent flex flex-col justify-end p-8">
-                  <span
-                    className="text-tivro-primary font-bold text-sm mb-2 bg-black/20 backdrop-blur-sm px-2 py-1 rounded w-fit"
-                  >
-                    {c.category[lang]}
-                  </span>
+                  <span className="text-tivro-primary font-bold text-sm mb-2 bg-black/20 backdrop-blur-sm px-2 py-1 rounded w-fit">{c.category[lang]}</span>
                   <h3 className="text-white text-2xl font-bold mb-2">{c.title[lang]}</h3>
                   <p className="text-slate-200 text-sm mb-4">{c.result[lang]}</p>
                   <div className="flex gap-4 flex-wrap">
                     {(c.stats || []).map((stat, idx) => {
-                      const link =
-                        stat.label?.en && stat.label.en.trim().startsWith('http')
-                          ? stat.label.en.trim()
-                          : undefined;
+                      const link = stat.label?.en && stat.label.en.trim().startsWith('http')
+                        ? stat.label.en.trim()
+                        : undefined;
                       const isClickable = !!link;
-                      // For English interface, if label.en is a URL, use a shorter display text
-                      let displayLabel = stat.label[lang];
-                      if (
-                        lang === 'en' &&
-                        stat.label.en &&
-                        stat.label.en.trim().startsWith('http')
-                      ) {
-                        // For English interface with URLs, create a better display label
-                        displayLabel =
-                          stat.label.en.includes('dawamakkah')
-                            ? 'Donate Now'
-                            : 'Learn More';
-                      } else if (stat.label[lang] && stat.label[lang].length > 30) {
-                        // Truncate long text for other cases
-                        displayLabel =
-                          stat.label[lang].substring(0, 30) + '...';
-                      }
+
+                      const labelEn = stat.label?.en || '';
+                      const labelAr = stat.label?.ar || '';
+                      const isEnUrl = labelEn.trim().startsWith('http');
+                      const displayLabel = lang === 'en'
+                        ? ((labelEn && !isEnUrl) ? labelEn : labelAr)
+                        : (stat.label?.[lang] || labelAr || labelEn);
+
                       return (
                         <div
                           key={idx}
@@ -646,7 +632,6 @@ export const Home = () => {
                               window.open(link, '_blank');
                             }
                           }}
-                          title={isClickable ? link : stat.label[lang]} // Show full URL on hover
                         >
                           <span className="block text-white font-bold">{stat.value}</span>
                           <span className="text-xs text-slate-300">{displayLabel}</span>
@@ -660,9 +645,10 @@ export const Home = () => {
           </div>
         </div>
       </section>
-    )}
+      )}
 
-    {/* Team Section */}
+      {/* Team Section */}
+      {navigationState.find(item => item.key === 'team')?.visible && (
       <section id="team" className="py-24 bg-white border-t border-slate-100">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
@@ -688,6 +674,7 @@ export const Home = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Custom Pages - After Work */}
       {renderPagesAtLocation('after-work')}

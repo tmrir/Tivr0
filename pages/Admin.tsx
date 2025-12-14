@@ -514,8 +514,37 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
         });
     }, []);
 
-    const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.caseStudies.save(editing); setSaving(false); setEditing(null); onUpdate(); setItems(await db.caseStudies.getAll()); };
-    const handleDelete = async (id: string) => { if(confirm(t('admin.confirm'))) { await db.caseStudies.delete(id); onUpdate(); setItems(items.filter(x=>x.id!==id)); }};
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editing) return;
+        setSaving(true);
+        try {
+            const { error } = await db.caseStudies.save(editing);
+            if (error) {
+                console.error('❌ [CaseStudiesManager] Save error:', error);
+                alert(error.message || 'Error saving item');
+                return;
+            }
+            setEditing(null);
+            onUpdate();
+            setItems(await db.caseStudies.getAll());
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (confirm(t('admin.confirm'))) {
+            const { error } = await db.caseStudies.delete(id);
+            if (error) {
+                console.error('❌ [CaseStudiesManager] Delete error:', error);
+                alert(error.message || 'Error deleting item');
+                return;
+            }
+            onUpdate();
+            setItems(items.filter(x => x.id !== id));
+        }
+    };
     
     const handleReorder = (newItems: CaseStudy[]) => {
         setItems(newItems);
@@ -526,8 +555,12 @@ const CaseStudiesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
         setSettingsSaving(true);
         const currentSettings = await db.settings.get();
         if(currentSettings) {
-            await db.settings.save({...currentSettings, sectionTexts: sectionSettings});
-            alert(t('admin.settings.saved'));
+            const success = await db.settings.save({ ...currentSettings, sectionTexts: sectionSettings });
+            if (success) {
+                alert(t('admin.settings.saved'));
+            } else {
+                alert('Error saving settings');
+            }
         }
         setSettingsSaving(false);
     };

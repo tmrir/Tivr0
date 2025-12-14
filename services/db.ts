@@ -56,12 +56,21 @@ const mapCaseFromDB = (row: any): CaseStudy => {
     category: row.category || { ar: '', en: '' },
     result: row.result || { ar: '', en: '' },
     image: row.image || '',
-    url: row.url || '',
+    url: row.url || row.project_url || row.link || '',
     stats,
     orderIndex: row.order_index,
   };
 };
-const mapCaseToDB = (item: CaseStudy) => ({ client: item.client, title: item.title, category: item.category, result: item.result, image: item.image, url: item.url || '', stats: item.stats });
+const mapCaseToDB = (item: CaseStudy) => ({ 
+  client: item.client, 
+  title: item.title, 
+  category: item.category, 
+  result: item.result, 
+  image: item.image, 
+  url: item.url || '', 
+  stats: item.stats || [],
+  order_index: item.orderIndex || 0 
+});
 
 const mapBlogFromDB = (row: any): BlogPost => ({
   id: row.id,
@@ -273,7 +282,15 @@ export const db = {
     save: async (item: CaseStudy) => {
       const payload = mapCaseToDB(item);
       if (item.id && item.id !== 'new') (payload as any).id = item.id;
-      return await supabase.from('case_studies').upsert([payload]);
+
+      const res = await supabase.from('case_studies').upsert([payload]);
+      if (res.error && (res.error as any).code === 'PGRST204' && /\burl\b/i.test(res.error.message || '')) {
+        const retryPayload = { ...(payload as any) };
+        delete retryPayload.url;
+        return await supabase.from('case_studies').upsert([retryPayload]);
+      }
+
+      return res;
     },
     delete: async (id: string) => await supabase.from('case_studies').delete().eq('id', id)
   },
