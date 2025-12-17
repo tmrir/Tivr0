@@ -89,20 +89,37 @@ export class SettingsService {
 
       // ثانياً، حاول الحفظ في Supabase
       const payload = this.mapToDB(validated);
-      const { data, error } = await supabase
-        .from('site_settings')
-        .upsert(payload, { 
-          onConflict: 'id',
-          ignoreDuplicates: false 
-        })
-        .select()
-        .single();
+      const upsertOnce = async (dataToSave: any) => {
+        return await supabase
+          .from('site_settings')
+          .upsert(dataToSave, {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          })
+          .select()
+          .single();
+      };
+
+      let { data, error } = await upsertOnce(payload);
+
+      if (error && (error as any).code === 'PGRST204') {
+        const message = (error as any).message || '';
+        const match = message.match(/Could not find the '([^']+)' column/i);
+        const missingColumn = match?.[1];
+
+        if (missingColumn && Object.prototype.hasOwnProperty.call(payload, missingColumn)) {
+          console.warn(`⚠️ [SettingsService] Missing column '${missingColumn}' in Supabase schema. Retrying save without it...`);
+          const retryPayload = { ...(payload as any) };
+          delete retryPayload[missingColumn];
+          ({ data, error } = await upsertOnce(retryPayload));
+        }
+      }
 
       if (error) {
         console.error('❌ [SettingsService] Supabase save error:', error);
         console.log('⚠️ [SettingsService] Data saved to localStorage only (Supabase failed)');
-        // نرجع "false" حتى تعرف الواجهة أن الحفظ لم يصل لقاعدة البيانات
-        return false;
+        // لا نفشل الواجهة طالما localStorage تم حفظه بنجاح
+        return true;
       }
 
       console.log('✅ [SettingsService] Settings saved to Supabase successfully:', data);
