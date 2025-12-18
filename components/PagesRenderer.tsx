@@ -62,6 +62,14 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       });
   }, [pages, placement]);
 
+  const sanitizeHtml = (input: string) => {
+    return input
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+      .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+      .replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
+  };
+
   if (filtered.length === 0) return null;
 
   const renderComponent = (component: PageComponent) => {
@@ -69,11 +77,22 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
 
     switch (component.type) {
       case 'text':
-        return (
-          <div className="max-w-4xl mx-auto">
-            <p className="text-lg text-slate-700 leading-relaxed">{(component as any).content?.text?.[lang]}</p>
-          </div>
-        );
+        {
+          const value = ((component as any).content?.text?.[lang] || '') as string;
+          const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(value);
+          return (
+            <div className="max-w-4xl mx-auto">
+              {looksLikeHtml ? (
+                <div
+                  className="text-lg text-slate-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
+                />
+              ) : (
+                <p className="text-lg text-slate-700 leading-relaxed">{value}</p>
+              )}
+            </div>
+          );
+        }
 
       case 'image': {
         const src = (component as any).content?.src;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CustomPage, PageComponent, SectionTemplate, NavigationItem } from '../types';
 import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer } from 'lucide-react';
+import { RichTextEditor } from './RichTextEditor';
 
 interface PageManagerProps {
   onUpdate?: () => void;
@@ -507,48 +508,48 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                       <label className="block text-sm font-medium text-slate-700 mb-1">
                         {lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}
                       </label>
-                      <textarea
+                      <RichTextEditor
+                        dir="rtl"
                         value={selectedComponent.content.text?.ar || ''}
-                        onChange={(e) => {
+                        placeholder={lang === 'ar' ? 'اكتب النص هنا...' : 'Write here...'}
+                        onChange={(html) => {
                           const updatedComponent = {
                             ...selectedComponent,
                             content: {
                               ...selectedComponent.content,
                               text: {
                                 ...selectedComponent.content.text,
-                                ar: e.target.value
+                                ar: html
                               }
                             }
                           };
                           setSelectedComponent(updatedComponent);
                           updateComponentInPage(updatedComponent);
                         }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                        rows={3}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
                         {lang === 'ar' ? 'النص (إنجليزي)' : 'Text (English)'}
                       </label>
-                      <textarea
+                      <RichTextEditor
+                        dir="ltr"
                         value={selectedComponent.content.text?.en || ''}
-                        onChange={(e) => {
+                        placeholder={lang === 'ar' ? 'اكتب النص هنا...' : 'Write here...'}
+                        onChange={(html) => {
                           const updatedComponent = {
                             ...selectedComponent,
                             content: {
                               ...selectedComponent.content,
                               text: {
                                 ...selectedComponent.content.text,
-                                en: e.target.value
+                                en: html
                               }
                             }
                           };
                           setSelectedComponent(updatedComponent);
                           updateComponentInPage(updatedComponent);
                         }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                        rows={3}
                       />
                     </div>
                   </div>
