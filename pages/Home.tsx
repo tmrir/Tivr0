@@ -8,6 +8,7 @@ import { Service, CaseStudy, TeamMember, Package, SiteSettings } from '../types'
 import { ContactUsSection } from '../components/ContactUsSection';
 import { PackageRequestModal } from '../components/PackageRequestModal';
 import { defaultSettings } from '../defaultSettings';
+import { PagesRenderer } from '../components/PagesRenderer';
 
 export const Home = () => {
   const { t, lang, dir } = useApp();
@@ -500,7 +501,7 @@ export const Home = () => {
       </section>
 
       {/* Custom Pages - After Header */}
-      {renderPagesAtLocation('after-header')}
+      <PagesRenderer placement="after_header" />
 
       {/* Services Section */}
       {navigationState.find(item => item.key === 'services')?.visible && (
@@ -535,6 +536,8 @@ export const Home = () => {
         </div>
       </section>
       )}
+
+      <PagesRenderer placement="after_services" />
 
       {/* Custom Pages - Before Packages */}
       {renderPagesAtLocation('before-packages')}
@@ -676,10 +679,13 @@ export const Home = () => {
       </section>
       )}
 
+      <PagesRenderer placement="after_team" />
+
       {/* Custom Pages - After Work */}
-      {renderPagesAtLocation('after-work')}
+      <PagesRenderer placement="after_work" />
 
       {/* Custom Pages - Before Footer */}
+      <PagesRenderer placement="before_footer" />
 
       {/* CTA / Contact */}
       {navigationState.find(item => item.key === 'contact')?.visible && (

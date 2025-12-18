@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 export type Language = 'ar' | 'en';
 
 export interface LocalizedString {
@@ -246,6 +248,25 @@ export interface ComponentLayout {
   spacing?: string;
 }
 
+export interface DesignElement {
+    id: string;
+    type: 'text' | 'image' | 'icon' | 'shape';
+    x: number;
+    y: number;
+    content: string; // Text content or Image URL or Icon Name
+    style: CSSProperties;
+    label?: string; // For UI identification
+}
+
+export interface BrandAsset {
+    id: string;
+    name: LocalizedString;
+    type: 'logo' | 'favicon' | 'app_icon' | 'poster' | 'social_ad' | 'profile_pic' | 'stationery';
+    width: number;
+    height: number;
+    elements: DesignElement[];
+}
+
 export interface CustomPage {
   id: string;
   name: string;
@@ -254,6 +275,9 @@ export interface CustomPage {
   description?: LocalizedString;
   components: PageComponent[];
   isVisible: boolean;
+  placement?: 'after_header' | 'after_services' | 'after_team' | 'after_work' | 'before_footer';
+  order?: number;
+  visible?: boolean;
   showInNavigation: boolean;
   navigationOrder: number;
   createdAt: string;
@@ -290,24 +314,4 @@ export interface PackageRequest {
   createdAt: string;
   status: 'pending' | 'contacted' | 'completed' | 'cancelled';
   notes?: string;
-}
-
-// --- BRAND IDENTITY TYPES ---
-export interface DesignElement {
-    id: string;
-    type: 'text' | 'image' | 'icon' | 'shape';
-    x: number;
-    y: number;
-    content: string; // Text content or Image URL or Icon Name
-    style: React.CSSProperties;
-    label?: string; // For UI identification
-}
-
-export interface BrandAsset {
-    id: string;
-    name: LocalizedString;
-    type: 'logo' | 'favicon' | 'app_icon' | 'poster' | 'social_ad' | 'profile_pic' | 'stationery';
-    width: number;
-    height: number;
-    elements: DesignElement[];
 }

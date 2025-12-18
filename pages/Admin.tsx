@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { SettingsProvider } from '../context/SettingsContext';
 import { db } from '../services/db';

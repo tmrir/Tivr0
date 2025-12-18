@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CustomPage, PageComponent, SectionTemplate, NavigationItem, ExtendedSiteSettings } from '../types';
+import { CustomPage, PageComponent, SectionTemplate, NavigationItem } from '../types';
 import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer } from 'lucide-react';
 
 interface PageManagerProps {
@@ -137,6 +137,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       description: { ar: '', en: '' },
       components: [],
       isVisible: true,
+      placement: undefined,
+      order: undefined,
       showInNavigation: true,
       navigationOrder: pages.length,
       createdAt: new Date().toISOString(),
@@ -418,6 +420,24 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                 />
                 {lang === 'ar' ? 'إظهار في القائمة' : 'Show in Navigation'}
               </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                {lang === 'ar' ? 'مكان الظهور' : 'Placement'}
+              </label>
+              <select
+                value={editingPage.placement || ''}
+                onChange={(e) => setEditingPage({ ...editingPage, placement: (e.target.value || undefined) as any })}
+                className="w-full border border-slate-200 rounded-lg p-2"
+              >
+                <option value="">{lang === 'ar' ? 'افتراضي (بدون تحديد)' : 'Default (not set)'}</option>
+                <option value="after_header">{lang === 'ar' ? 'بعد الهيدر' : 'After Header'}</option>
+                <option value="after_services">{lang === 'ar' ? 'بعد الخدمات' : 'After Services'}</option>
+                <option value="after_team">{lang === 'ar' ? 'بعد الفريق' : 'After Team'}</option>
+                <option value="after_work">{lang === 'ar' ? 'بعد الأعمال' : 'After Work'}</option>
+                <option value="before_footer">{lang === 'ar' ? 'قبل الفوتر' : 'Before Footer'}</option>
+              </select>
             </div>
           </div>
 
