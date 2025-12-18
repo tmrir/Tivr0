@@ -24,6 +24,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [settings, setSettings] = useState<SiteSettings | any>(DEFAULT_SETTINGS);
   const [footerServices, setFooterServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
+  const [navigationPages, setNavigationPages] = useState<any[]>([]);
 
   const hasArabicChars = (value: string) => /[\u0600-\u06FF]/.test(value);
   const resolveNavLabel = (label: any, fallback: string) => {
@@ -146,12 +147,42 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
     window.addEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
     window.addEventListener('storage', handleStorageNavigationUpdate);
+
+    const loadNavigationPages = () => {
+      const raw = localStorage.getItem('navigationPages');
+      if (!raw) {
+        setNavigationPages([]);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        setNavigationPages(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setNavigationPages([]);
+      }
+    };
+
+    const handleStorageNavigationPagesUpdate = (event: StorageEvent) => {
+      if (!event.key || event.key === 'navigationPages') {
+        loadNavigationPages();
+      }
+    };
+
+    const handleCustomPagesUpdated = () => {
+      loadNavigationPages();
+    };
+
+    loadNavigationPages();
+    window.addEventListener('storage', handleStorageNavigationPagesUpdate);
+    window.addEventListener('customPagesUpdated', handleCustomPagesUpdated as EventListener);
     
     fetchData();
     
     return () => {
       window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
       window.removeEventListener('storage', handleStorageNavigationUpdate);
+      window.removeEventListener('storage', handleStorageNavigationPagesUpdate);
+      window.removeEventListener('customPagesUpdated', handleCustomPagesUpdated as EventListener);
     };
   }, [lang]);
 
@@ -180,6 +211,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       }
     }}>{label}</a>
   );
+
+  const customNavItems = (navigationPages || [])
+    .filter((p: any) => {
+      const visible = typeof p.visible === 'boolean' ? p.visible : !!p.isVisible;
+      const show = typeof p.showInNavigation === 'boolean' ? p.showInNavigation : false;
+      return visible && show && !!p.slug;
+    })
+    .slice()
+    .sort((a: any, b: any) => {
+      const ao = typeof a.navigationOrder === 'number' ? a.navigationOrder : 0;
+      const bo = typeof b.navigationOrder === 'number' ? b.navigationOrder : 0;
+      return ao - bo;
+    })
+    .map((p: any) => ({
+      href: `#page-${p.slug}`,
+      label: resolveNavLabel(p.title, p.name || p.slug)
+    }));
 
   const IconComponent = ({ name }: { name: string }) => {
     const Icon = (Icons as any)[name] || Icons.Link;
@@ -226,6 +274,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={resolveNavLabel(navigationLabels.work, t('nav.work'))} />}
             {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={resolveNavLabel(navigationLabels.team, t('nav.team'))} />}
             {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={resolveNavLabel(navigationLabels.blog, t('nav.blog'))} />}
+            {customNavItems.map((item) => (
+              <NavLink key={item.href} href={item.href} label={item.label} />
+            ))}
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
@@ -258,6 +309,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                     {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={resolveNavLabel(navigationLabels.work, t('nav.work'))} />}
                     {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={resolveNavLabel(navigationLabels.team, t('nav.team'))} />}
                     {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={resolveNavLabel(navigationLabels.blog, t('nav.blog'))} />}
+                    {customNavItems.map((item) => (
+                      <NavLink key={item.href} href={item.href} label={item.label} />
+                    ))}
                     
                     <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
                         <button onClick={() => { toggleLang(); setIsMenuOpen(false); }} className="flex items-center gap-2 text-slate-600 font-bold text-lg">

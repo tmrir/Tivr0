@@ -70,10 +70,18 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       .replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
   };
 
+  const scrollToHash = (hash: string) => {
+    const targetId = hash.replace(/^#/, '');
+    if (!targetId) return;
+    const target = document.getElementById(targetId);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   if (filtered.length === 0) return null;
 
-  const renderComponent = (component: PageComponent) => {
+  const renderComponent = (component: PageComponent, ctx?: { isHero?: boolean }) => {
     if ((component as any).isVisible === false) return null;
+    const isHero = !!ctx?.isHero;
 
     switch (component.type) {
       case 'text':
@@ -84,18 +92,18 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
             <div className="max-w-4xl mx-auto">
               {looksLikeHtml ? (
                 <div
-                  className="text-lg text-slate-700 leading-relaxed"
+                  className={isHero ? 'text-lg leading-relaxed' : 'text-lg text-slate-700 leading-relaxed'}
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
                 />
               ) : (
-                <p className="text-lg text-slate-700 leading-relaxed">{value}</p>
+                <p className={isHero ? 'text-lg leading-relaxed' : 'text-lg text-slate-700 leading-relaxed'}>{value}</p>
               )}
             </div>
           );
         }
 
       case 'image': {
-        const src = (component as any).content?.src;
+        const src = (component as any).content?.src || (component as any).content?.url;
         const alt = (component as any).content?.alt?.[lang] || '';
         if (!src) return null;
         return (
@@ -120,14 +128,36 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       case 'button': {
         const text = (component as any).content?.text?.[lang];
         const href = (component as any).content?.href;
+        const style = (component as any).content?.style || 'primary';
+        const bgColor = (component as any).content?.bgColor as string | undefined;
+        const textColor = (component as any).content?.textColor as string | undefined;
+        const borderColor = (component as any).content?.borderColor as string | undefined;
         if (!text) return null;
+
+        const className =
+          style === 'secondary'
+            ? 'bg-white/10 hover:bg-white/20 backdrop-blur text-white'
+            : style === 'outline'
+              ? 'bg-transparent border border-slate-300 text-slate-700 hover:bg-slate-50'
+              : 'bg-tivro-primary text-white hover:bg-emerald-500';
+
         return (
           <div className="text-center">
             <button
               onClick={() => {
-                if (href) window.open(href, '_blank');
+                if (!href) return;
+                if (href.startsWith('#')) {
+                  scrollToHash(href);
+                  return;
+                }
+                window.open(href, '_blank');
               }}
-              className="px-8 py-4 rounded-lg font-medium text-lg transition bg-tivro-primary text-white hover:bg-emerald-500"
+              style={{
+                backgroundColor: bgColor,
+                color: textColor,
+                borderColor: borderColor
+              }}
+              className={`px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg flex items-center justify-center gap-2 ${className} ${borderColor ? 'border' : ''}`}
             >
               {text}
             </button>
@@ -168,25 +198,147 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
   return (
     <>
       {filtered.map((page) => (
-        <section key={page.id} className="py-16 bg-white">
-          <div className="container mx-auto px-4 md:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">{(page as any).title?.[lang] || page.name}</h2>
-              {(page as any).description?.[lang] && (
-                <p className="text-slate-500 max-w-2xl mx-auto">{(page as any).description?.[lang]}</p>
-              )}
-            </div>
+        <section
+          key={page.id}
+          id={(page as any).slug ? `page-${(page as any).slug}` : undefined}
+          className={((page as any).sectionVariant || 'default') === 'hero' ? 'relative overflow-hidden pt-20 pb-24' : 'py-16 bg-white'}
+          style={((page as any).sectionVariant || 'default') === 'hero' ? {
+            backgroundColor: (page as any).heroSettings?.backgroundColor || '#0f172a',
+            color: (page as any).heroSettings?.textColor || '#ffffff',
+            backgroundImage: ((page as any).heroSettings?.imagePosition === 'background' && (page.components || []).find((c: any) => c.type === 'image' && c.isVisible !== false)?.content?.src)
+              ? `url(${(page.components || []).find((c: any) => c.type === 'image' && c.isVisible !== false)?.content?.src})`
+              : undefined,
+            backgroundSize: ((page as any).heroSettings?.imagePosition === 'background') ? 'cover' : undefined,
+            backgroundPosition: ((page as any).heroSettings?.imagePosition === 'background') ? 'center' : undefined
+          } : undefined}
+        >
+          {((page as any).sectionVariant || 'default') === 'hero' && (
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-tivro-primary/20 to-transparent pointer-events-none" />
+          )}
 
-            <div className="space-y-8">
-              {(page.components || [])
-                .slice()
-                .sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-                .map((component) => (
-                  <div key={component.id} className="text-center">
-                    {renderComponent(component)}
+          <div className={`container mx-auto px-4 md:px-8 ${((page as any).sectionVariant || 'default') === 'hero' ? 'relative z-10' : ''}`}>
+            {((page as any).sectionVariant || 'default') === 'hero' ? (() => {
+              const heroSettings = (page as any).heroSettings || {};
+              const imagePosition = heroSettings.imagePosition || 'right';
+              const all = (page.components || []).slice().sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+              const images = all.filter((c: any) => c.type === 'image' && c.isVisible !== false);
+              const heroImage = images[0] as any;
+              const nonImage = all.filter((c: any) => c.type !== 'image');
+              const buttons = nonImage.filter((c: any) => c.type === 'button');
+              const contentComponents = nonImage.filter((c: any) => c.type !== 'button');
+
+              const textBoxStyle: React.CSSProperties = {
+                backgroundColor: heroSettings.textBoxBackgroundColor || 'rgba(15, 23, 42, 0.4)'
+              };
+
+              const ImageBlock = () => {
+                if (!heroImage) return null;
+                const src = heroImage.content?.src || heroImage.content?.url;
+                const alt = heroImage.content?.alt?.[lang] || '';
+                if (!src) return null;
+                return (
+                  <div className="w-full">
+                    <img src={src} alt={alt} className="w-full h-auto rounded-2xl shadow-2xl" />
                   </div>
-                ))}
-            </div>
+                );
+              };
+
+              const TextBox = () => (
+                <div className="w-full rounded-2xl border border-white/10 p-6 md:p-10 backdrop-blur" style={textBoxStyle}>
+                  <div className="mb-6">
+                    <h2 className="text-4xl md:text-6xl font-bold leading-tight">
+                      {(page as any).title?.[lang] || page.name}
+                    </h2>
+                    {(page as any).description?.[lang] && (
+                      <p className="mt-6 text-lg md:text-xl opacity-90 leading-relaxed max-w-2xl">
+                        {(page as any).description?.[lang]}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-6">
+                    {contentComponents.map((component: any) => (
+                      <div key={component.id} className="text-start">
+                        {renderComponent(component, { isHero: true })}
+                      </div>
+                    ))}
+                  </div>
+
+                  {buttons.length > 0 && (
+                    <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                      {buttons.map((component: any) => (
+                        <div key={component.id} className="text-start">
+                          {renderComponent(component, { isHero: true })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+
+              if (imagePosition === 'top') {
+                return (
+                  <div className="space-y-8">
+                    <ImageBlock />
+                    <TextBox />
+                  </div>
+                );
+              }
+
+              if (imagePosition === 'bottom') {
+                return (
+                  <div className="space-y-8">
+                    <TextBox />
+                    <ImageBlock />
+                  </div>
+                );
+              }
+
+              if (imagePosition === 'left') {
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                    <ImageBlock />
+                    <TextBox />
+                  </div>
+                );
+              }
+
+              if (imagePosition === 'right') {
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                    <TextBox />
+                    <ImageBlock />
+                  </div>
+                );
+              }
+
+              // background
+              return (
+                <div className="max-w-5xl">
+                  <TextBox />
+                </div>
+              );
+            })() : (
+              <>
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">{(page as any).title?.[lang] || page.name}</h2>
+                  {(page as any).description?.[lang] && (
+                    <p className="text-slate-500 max-w-2xl mx-auto">{(page as any).description?.[lang]}</p>
+                  )}
+                </div>
+
+                <div className="space-y-8">
+                  {(page.components || [])
+                    .slice()
+                    .sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+                    .map((component) => (
+                      <div key={component.id} className="text-center">
+                        {renderComponent(component, { isHero: false })}
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
           </div>
         </section>
       ))}

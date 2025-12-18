@@ -139,6 +139,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       components: [],
       isVisible: true,
       placement: undefined,
+      sectionVariant: undefined,
       order: undefined,
       showInNavigation: true,
       navigationOrder: pages.length,
@@ -174,6 +175,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       localStorage.setItem('customPages', JSON.stringify(updatedPages));
       // Also save to navigation state
       localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
+
+      window.dispatchEvent(new CustomEvent('customPagesUpdated'));
       
       setEditingPage(null);
       onUpdate?.();
@@ -190,6 +193,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       setPages(updatedPages);
       localStorage.setItem('customPages', JSON.stringify(updatedPages));
       localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
+
+      window.dispatchEvent(new CustomEvent('customPagesUpdated'));
       onUpdate?.();
     }
   };
@@ -201,6 +206,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
     setPages(updatedPages);
     localStorage.setItem('customPages', JSON.stringify(updatedPages));
     localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
+
+    window.dispatchEvent(new CustomEvent('customPagesUpdated'));
     onUpdate?.();
   };
 
@@ -440,6 +447,98 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                 <option value="before_footer">{lang === 'ar' ? 'قبل الفوتر' : 'Before Footer'}</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                {lang === 'ar' ? 'شكل القسم' : 'Section Style'}
+              </label>
+              <select
+                value={editingPage.sectionVariant || ''}
+                onChange={(e) => setEditingPage({ ...editingPage, sectionVariant: (e.target.value || undefined) as any })}
+                className="w-full border border-slate-200 rounded-lg p-2"
+              >
+                <option value="">{lang === 'ar' ? 'افتراضي' : 'Default'}</option>
+                <option value="hero">{lang === 'ar' ? 'مثل الهيدر (Hero)' : 'Hero-like'}</option>
+              </select>
+            </div>
+
+            {editingPage.sectionVariant === 'hero' && (
+              <div className="space-y-3 p-3 border border-slate-200 rounded-lg bg-slate-50">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {lang === 'ar' ? 'لون خلفية القسم' : 'Section Background Color'}
+                  </label>
+                  <input
+                    type="color"
+                    value={editingPage.heroSettings?.backgroundColor || '#0f172a'}
+                    onChange={(e) =>
+                      setEditingPage({
+                        ...editingPage,
+                        heroSettings: { ...editingPage.heroSettings, backgroundColor: e.target.value }
+                      })
+                    }
+                    className="w-full h-10 border border-slate-200 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {lang === 'ar' ? 'لون الخط' : 'Text Color'}
+                  </label>
+                  <input
+                    type="color"
+                    value={editingPage.heroSettings?.textColor || '#ffffff'}
+                    onChange={(e) =>
+                      setEditingPage({
+                        ...editingPage,
+                        heroSettings: { ...editingPage.heroSettings, textColor: e.target.value }
+                      })
+                    }
+                    className="w-full h-10 border border-slate-200 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {lang === 'ar' ? 'لون خلفية صندوق النص' : 'Text Box Background'}
+                  </label>
+                  <input
+                    type="color"
+                    value={editingPage.heroSettings?.textBoxBackgroundColor || '#0b1220'}
+                    onChange={(e) =>
+                      setEditingPage({
+                        ...editingPage,
+                        heroSettings: { ...editingPage.heroSettings, textBoxBackgroundColor: e.target.value }
+                      })
+                    }
+                    className="w-full h-10 border border-slate-200 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {lang === 'ar' ? 'مكان الصورة' : 'Image Position'}
+                  </label>
+                  <select
+                    value={editingPage.heroSettings?.imagePosition || 'right'}
+                    onChange={(e) =>
+                      setEditingPage({
+                        ...editingPage,
+                        heroSettings: { ...editingPage.heroSettings, imagePosition: e.target.value as any }
+                      })
+                    }
+                    className="w-full border border-slate-200 rounded-lg p-2"
+                  >
+                    <option value="right">{lang === 'ar' ? 'يمين' : 'Right'}</option>
+                    <option value="left">{lang === 'ar' ? 'يسار' : 'Left'}</option>
+                    <option value="top">{lang === 'ar' ? 'أعلى' : 'Top'}</option>
+                    <option value="bottom">{lang === 'ar' ? 'أسفل' : 'Bottom'}</option>
+                    <option value="background">{lang === 'ar' ? 'خلف النص (خلفية)' : 'Background'}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Component Editor */}
@@ -651,6 +750,72 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                         <option value="secondary">{lang === 'ar' ? 'ثانوي' : 'Secondary'}</option>
                         <option value="outline">{lang === 'ar' ? 'إطار' : 'Outline'}</option>
                       </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          {lang === 'ar' ? 'لون خلفية الزر' : 'Button Background'}
+                        </label>
+                        <input
+                          type="color"
+                          value={selectedComponent.content.bgColor || '#10b981'}
+                          onChange={(e) => {
+                            const updatedComponent = {
+                              ...selectedComponent,
+                              content: {
+                                ...selectedComponent.content,
+                                bgColor: e.target.value
+                              }
+                            };
+                            setSelectedComponent(updatedComponent);
+                            updateComponentInPage(updatedComponent);
+                          }}
+                          className="w-full h-10 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          {lang === 'ar' ? 'لون نص الزر' : 'Button Text Color'}
+                        </label>
+                        <input
+                          type="color"
+                          value={selectedComponent.content.textColor || '#ffffff'}
+                          onChange={(e) => {
+                            const updatedComponent = {
+                              ...selectedComponent,
+                              content: {
+                                ...selectedComponent.content,
+                                textColor: e.target.value
+                              }
+                            };
+                            setSelectedComponent(updatedComponent);
+                            updateComponentInPage(updatedComponent);
+                          }}
+                          className="w-full h-10 border border-slate-200 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          {lang === 'ar' ? 'لون إطار الزر' : 'Button Border Color'}
+                        </label>
+                        <input
+                          type="color"
+                          value={selectedComponent.content.borderColor || '#10b981'}
+                          onChange={(e) => {
+                            const updatedComponent = {
+                              ...selectedComponent,
+                              content: {
+                                ...selectedComponent.content,
+                                borderColor: e.target.value
+                              }
+                            };
+                            setSelectedComponent(updatedComponent);
+                            updateComponentInPage(updatedComponent);
+                          }}
+                          className="w-full h-10 border border-slate-200 rounded-lg"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

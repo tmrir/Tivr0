@@ -276,6 +276,13 @@ export interface CustomPage {
   components: PageComponent[];
   isVisible: boolean;
   placement?: 'after_header' | 'after_services' | 'after_team' | 'after_work' | 'before_footer';
+  sectionVariant?: 'default' | 'hero';
+  heroSettings?: {
+    backgroundColor?: string;
+    textColor?: string;
+    textBoxBackgroundColor?: string;
+    imagePosition?: 'left' | 'right' | 'top' | 'bottom' | 'background';
+  };
   order?: number;
   visible?: boolean;
   showInNavigation: boolean;
