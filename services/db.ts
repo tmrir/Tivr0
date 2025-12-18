@@ -202,11 +202,19 @@ const mapSettingsToDB = (item: SiteSettings) => ({
 });
 
 /* --- SERVER SEED TRIGGER --- */
+let seedUnavailable = false;
 const triggerServerSeed = async () => {
+  if (seedUnavailable) return false;
   try {
     const res = await fetch('/api/seed', { method: 'POST' });
-    return res.ok;
+    if (!res.ok) {
+      // If endpoint is missing/disabled in this environment, stop retrying.
+      if (res.status === 404) seedUnavailable = true;
+      return false;
+    }
+    return true;
   } catch (e) {
+    seedUnavailable = true;
     return false;
   }
 };

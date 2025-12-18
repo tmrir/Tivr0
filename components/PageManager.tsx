@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CustomPage, PageComponent, SectionTemplate, NavigationItem } from '../types';
+import { db } from '../services/db';
 import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer } from 'lucide-react';
 import { RichTextEditor } from './RichTextEditor';
 
@@ -17,20 +18,41 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'pages' | 'templates' | 'navigation'>('pages');
 
-  // Load pages from localStorage on mount
+  // Load pages from global settings (Supabase)
   useEffect(() => {
-    const savedPages = localStorage.getItem('customPages');
-    if (savedPages) {
+    const load = async () => {
       try {
-        const parsedPages = JSON.parse(savedPages);
-        setPages(parsedPages);
-        // Also save to global state for navigation
-        localStorage.setItem('navigationPages', JSON.stringify(parsedPages.filter(p => p.showInNavigation)));
+        const settings = await db.settings.get();
+        const fromSettings = (settings as any)?.customPages;
+        if (Array.isArray(fromSettings)) {
+          setPages(fromSettings as CustomPage[]);
+          localStorage.setItem('customPages', JSON.stringify(fromSettings));
+          localStorage.setItem('navigationPages', JSON.stringify((fromSettings as CustomPage[]).filter(p => p.showInNavigation)));
+          return;
+        }
       } catch (error) {
-        console.error('Error loading pages:', error);
+        console.error('Error loading pages from settings:', error);
       }
-    }
+
+      // No localStorage fallback as a source of truth (prevents cross-device divergence)
+      setPages([]);
+    };
+    load();
   }, []);
+
+  const persistPages = async (updatedPages: CustomPage[]) => {
+    // Always keep a local copy for fast render / offline.
+    localStorage.setItem('customPages', JSON.stringify(updatedPages));
+    localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
+
+    try {
+      const settings = await db.settings.get();
+      const merged = { ...(settings as any), customPages: updatedPages };
+      await db.settings.save(merged as any);
+    } catch (error) {
+      console.error('Error saving pages to settings:', error);
+    }
+  };
 
   // Default templates
   useEffect(() => {
@@ -140,6 +162,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       isVisible: true,
       placement: undefined,
       sectionVariant: undefined,
+      underConstruction: false,
+      underConstructionButton: { label: { ar: '', en: '' }, href: '' },
       order: undefined,
       showInNavigation: true,
       navigationOrder: pages.length,
@@ -170,11 +194,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       }
       
       setPages(updatedPages);
-      
-      // Save to localStorage for persistence
-      localStorage.setItem('customPages', JSON.stringify(updatedPages));
-      // Also save to navigation state
-      localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
+
+      await persistPages(updatedPages);
 
       window.dispatchEvent(new CustomEvent('customPagesUpdated'));
       
@@ -191,8 +212,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
     if (confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذه الصفحة؟' : 'Are you sure you want to delete this page?')) {
       const updatedPages = pages.filter(p => p.id !== pageId);
       setPages(updatedPages);
-      localStorage.setItem('customPages', JSON.stringify(updatedPages));
-      localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
+      persistPages(updatedPages);
 
       window.dispatchEvent(new CustomEvent('customPagesUpdated'));
       onUpdate?.();
@@ -204,8 +224,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       p.id === pageId ? { ...p, isVisible: !p.isVisible } : p
     );
     setPages(updatedPages);
-    localStorage.setItem('customPages', JSON.stringify(updatedPages));
-    localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
+    persistPages(updatedPages);
 
     window.dispatchEvent(new CustomEvent('customPagesUpdated'));
     onUpdate?.();
@@ -428,6 +447,20 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                 />
                 {lang === 'ar' ? 'إظهار في القائمة' : 'Show in Navigation'}
               </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={!!editingPage.underConstruction}
+                  onChange={(e) =>
+                    setEditingPage({
+                      ...editingPage,
+                      underConstruction: e.target.checked
+                    })
+                  }
+                  className="rounded"
+                />
+                {lang === 'ar' ? 'تحت الإنشاء' : 'Under Construction'}
+              </label>
             </div>
 
             <div>
@@ -442,11 +475,82 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                 <option value="">{lang === 'ar' ? 'افتراضي (بدون تحديد)' : 'Default (not set)'}</option>
                 <option value="after_header">{lang === 'ar' ? 'بعد الهيدر' : 'After Header'}</option>
                 <option value="after_services">{lang === 'ar' ? 'بعد الخدمات' : 'After Services'}</option>
+                <option value="before_packages">{lang === 'ar' ? 'قبل الباقات' : 'Before Packages'}</option>
                 <option value="after_team">{lang === 'ar' ? 'بعد الفريق' : 'After Team'}</option>
+                <option value="before_work">{lang === 'ar' ? 'قبل الأعمال' : 'Before Work'}</option>
                 <option value="after_work">{lang === 'ar' ? 'بعد الأعمال' : 'After Work'}</option>
                 <option value="before_footer">{lang === 'ar' ? 'قبل الفوتر' : 'Before Footer'}</option>
               </select>
             </div>
+
+            {editingPage.underConstruction && (
+              <div className="space-y-2 p-3 border border-slate-200 rounded-lg bg-slate-50">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {lang === 'ar' ? 'نص الزر (عربي)' : 'Button Label (Arabic)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPage.underConstructionButton?.label?.ar || ''}
+                    onChange={(e) =>
+                      setEditingPage({
+                        ...editingPage,
+                        underConstructionButton: {
+                          ...editingPage.underConstructionButton,
+                          label: {
+                            ...(editingPage.underConstructionButton?.label || { ar: '', en: '' }),
+                            ar: e.target.value
+                          }
+                        }
+                      })
+                    }
+                    className="w-full border border-slate-200 rounded-lg p-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {lang === 'ar' ? 'نص الزر (إنجليزي)' : 'Button Label (English)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPage.underConstructionButton?.label?.en || ''}
+                    onChange={(e) =>
+                      setEditingPage({
+                        ...editingPage,
+                        underConstructionButton: {
+                          ...editingPage.underConstructionButton,
+                          label: {
+                            ...(editingPage.underConstructionButton?.label || { ar: '', en: '' }),
+                            en: e.target.value
+                          }
+                        }
+                      })
+                    }
+                    className="w-full border border-slate-200 rounded-lg p-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {lang === 'ar' ? 'رابط الزر' : 'Button Link'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPage.underConstructionButton?.href || ''}
+                    onChange={(e) =>
+                      setEditingPage({
+                        ...editingPage,
+                        underConstructionButton: {
+                          ...editingPage.underConstructionButton,
+                          href: e.target.value
+                        }
+                      })
+                    }
+                    className="w-full border border-slate-200 rounded-lg p-2"
+                    placeholder="#contact"
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">

@@ -21,7 +21,8 @@ const DEFAULT_SETTINGS: Partial<SiteSettings> = {
 export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) => {
   const { t, lang, setLang, isAdmin } = useApp();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [settings, setSettings] = useState<SiteSettings | any>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [settingsReady, setSettingsReady] = useState(false);
   const [footerServices, setFooterServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [navigationPages, setNavigationPages] = useState<any[]>([]);
@@ -59,46 +60,43 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   useEffect(() => {
     const fetchData = async () => {
         try {
-            const s = await db.settings.get();
-            if (s) {
-                setSettings(s);
-                if (s.faviconUrl) {
-                    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement || document.createElement('link');
-                    link.type = 'image/x-icon';
-                    link.rel = 'shortcut icon';
-                    link.href = s.faviconUrl;
-                    document.getElementsByTagName('head')[0].appendChild(link);
-                }
-            }
             const services = await db.services.getAll();
             setFooterServices(services.slice(0, 4));
             const packagesData = await db.packages.getAll();
             setPackages(packagesData);
         } catch(e) { console.error(e); }
     };
-    
-    // Load navigation state from admin panel
-    const savedNavigation = localStorage.getItem('adminNavigation');
-    if (savedNavigation) {
+
+    const applyAdminNavigation = (items: any[]) => {
+      const visibilityState = items.map((item: any) => ({
+        key: item.key,
+        visible: item.visible
+      }));
+      setNavigationState(visibilityState);
+
+      const labelsState: any = {};
+      items.forEach((item: any) => {
+        labelsState[item.key] = item.label;
+      });
+      setNavigationLabels(labelsState);
+    };
+
+    const loadAdminNavigation = async () => {
       try {
-        const navigationItems = JSON.parse(savedNavigation);
-        // Update visibility state
-        const visibilityState = navigationItems.map((item: any) => ({
-          key: item.key,
-          visible: item.visible
-        }));
-        setNavigationState(visibilityState);
-        
-        // Update labels state
-        const labelsState: any = {};
-        navigationItems.forEach((item: any) => {
-          labelsState[item.key] = item.label;
-        });
-        setNavigationLabels(labelsState);
-      } catch (error) {
-        console.error('Failed to load navigation state:', error);
+        const settings = await db.settings.get();
+        const fromDb = (settings as any)?.adminNavigation;
+        if (Array.isArray(fromDb) && fromDb.length > 0) {
+          applyAdminNavigation(fromDb);
+          try {
+            localStorage.setItem('adminNavigation', JSON.stringify(fromDb));
+          } catch {
+            // ignore cache errors
+          }
+        }
+      } catch {
+        // ignore and fallback
       }
-    }
+    };
     
     // Listen for admin navigation updates
     const handleAdminNavigationUpdate = (event: any) => {
@@ -125,55 +123,66 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       if (event.key === 'adminNavigation' && event.newValue) {
         try {
           const navigationItems = JSON.parse(event.newValue);
-          
-          // Update visibility state
-          const visibilityState = navigationItems.map((item: any) => ({
-            key: item.key,
-            visible: item.visible
-          }));
-          setNavigationState(visibilityState);
-          
-          // Update labels state
-          const labelsState: any = {};
-          navigationItems.forEach((item: any) => {
-            labelsState[item.key] = item.label;
-          });
-          setNavigationLabels(labelsState);
+          if (Array.isArray(navigationItems)) {
+            applyAdminNavigation(navigationItems);
+          }
         } catch (error) {
           console.error('Failed to parse navigation update:', error);
         }
       }
     };
 
-    window.addEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
-    window.addEventListener('storage', handleStorageNavigationUpdate);
-
-    const loadNavigationPages = () => {
-      const raw = localStorage.getItem('navigationPages');
-      if (!raw) {
-        setNavigationPages([]);
-        return;
-      }
+    const loadSettingsAndNav = async () => {
       try {
-        const parsed = JSON.parse(raw);
-        setNavigationPages(Array.isArray(parsed) ? parsed : []);
+        const s = await db.settings.get();
+        if (s) {
+          setSettings(s);
+          if (s.faviconUrl) {
+            const link = (document.querySelector("link[rel~='icon']") as HTMLLinkElement) || document.createElement('link');
+            link.type = 'image/x-icon';
+            link.rel = 'shortcut icon';
+            link.href = s.faviconUrl;
+            document.getElementsByTagName('head')[0].appendChild(link);
+          }
+
+          const fromDb = (s as any)?.adminNavigation;
+          if (Array.isArray(fromDb) && fromDb.length > 0) {
+            applyAdminNavigation(fromDb);
+            try {
+              localStorage.setItem('adminNavigation', JSON.stringify(fromDb));
+            } catch {
+              // ignore cache errors
+            }
+          }
+
+          const pages = (s as any)?.customPages;
+          if (Array.isArray(pages)) {
+            const navPages = (pages as any[]).filter((p: any) => !!p && p.showInNavigation);
+            setNavigationPages(navPages);
+            try {
+              localStorage.setItem('navigationPages', JSON.stringify(navPages));
+            } catch {
+              // ignore cache failures
+            }
+          } else {
+            setNavigationPages([]);
+          }
+        }
       } catch {
         setNavigationPages([]);
-      }
-    };
-
-    const handleStorageNavigationPagesUpdate = (event: StorageEvent) => {
-      if (!event.key || event.key === 'navigationPages') {
-        loadNavigationPages();
+      } finally {
+        setSettingsReady(true);
       }
     };
 
     const handleCustomPagesUpdated = () => {
-      loadNavigationPages();
+      loadSettingsAndNav();
     };
 
-    loadNavigationPages();
-    window.addEventListener('storage', handleStorageNavigationPagesUpdate);
+    window.addEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
+    window.addEventListener('storage', handleStorageNavigationUpdate);
+
+    loadSettingsAndNav();
     window.addEventListener('customPagesUpdated', handleCustomPagesUpdated as EventListener);
     
     fetchData();
@@ -181,7 +190,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     return () => {
       window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
       window.removeEventListener('storage', handleStorageNavigationUpdate);
-      window.removeEventListener('storage', handleStorageNavigationPagesUpdate);
       window.removeEventListener('customPagesUpdated', handleCustomPagesUpdated as EventListener);
     };
   }, [lang]);
@@ -212,7 +220,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     }}>{label}</a>
   );
 
-  const customNavItems = (navigationPages || [])
+  const customNavItems = (settingsReady ? (navigationPages || []) : [])
     .filter((p: any) => {
       const visible = typeof p.visible === 'boolean' ? p.visible : !!p.isVisible;
       const show = typeof p.showInNavigation === 'boolean' ? p.showInNavigation : false;
@@ -253,16 +261,24 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
         <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2">
-            {settings?.logoUrl ? (
+            {settingsReady && settings?.logoUrl ? (
                 <img src={settings.logoUrl} alt="Logo" className="h-10 object-contain" onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
                     target.nextElementSibling?.classList.remove('hidden');
                 }} />
             ) : null}
-            <div className={`w-10 h-10 bg-tivro-dark rounded-lg flex items-center justify-center text-white font-bold text-xl ${settings?.logoUrl ? 'hidden' : ''}`}>T</div>
+            {!settingsReady ? (
+              <div className="w-10 h-10 rounded-lg bg-slate-200 animate-pulse" />
+            ) : (
+              <div className={`w-10 h-10 bg-tivro-dark rounded-lg flex items-center justify-center text-white font-bold text-xl ${settings?.logoUrl ? 'hidden' : ''}`}>T</div>
+            )}
             <div className="flex flex-col items-start">
-              <span className="text-2xl font-bold text-tivro-dark tracking-tight leading-tight">{settings?.siteName?.[lang] || 'Tivro'}</span>
+              {!settingsReady ? (
+                <span className="h-6 w-24 rounded bg-slate-200 animate-pulse" />
+              ) : (
+                <span className="text-2xl font-bold text-tivro-dark tracking-tight leading-tight">{settings?.siteName?.[lang] || DEFAULT_SETTINGS.siteName?.[lang] || 'Tivro'}</span>
+              )}
               <span className="text-xs text-slate-500 font-medium leading-none">{t('brand.tagline')}</span>
             </div>
           </a>
@@ -343,15 +359,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
               <div className="col-span-1 md:col-span-2">
                 <div className="flex items-center gap-2 mb-6">
-                  {settings?.footerLogoUrl ? (
+                  {settingsReady && settings?.footerLogoUrl ? (
                       <img src={settings.footerLogoUrl} alt="Logo" className="h-12 object-contain" onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
                           target.nextElementSibling?.classList.remove('hidden');
                       }} />
                   ) : null}
-                  <div className={`w-8 h-8 bg-tivro-primary rounded flex items-center justify-center text-white font-bold ${settings?.footerLogoUrl ? 'hidden' : ''}`}>T</div>
-                  <span className="text-2xl font-bold">{settings?.siteName?.[lang]}</span>
+                  {!settingsReady ? (
+                    <div className="w-8 h-8 rounded bg-slate-200 animate-pulse" />
+                  ) : (
+                    <div className={`w-8 h-8 bg-tivro-primary rounded flex items-center justify-center text-white font-bold ${settings?.footerLogoUrl ? 'hidden' : ''}`}>T</div>
+                  )}
+                  {!settingsReady ? (
+                    <span className="h-6 w-28 rounded bg-slate-200 animate-pulse" />
+                  ) : (
+                    <span className="text-2xl font-bold">{settings?.siteName?.[lang] || DEFAULT_SETTINGS.siteName?.[lang] || 'Tivro'}</span>
+                  )}
                 </div>
                 <p className="text-slate-400 max-w-md leading-relaxed mb-6">
                   {settings?.footerDescription?.[lang] || (lang === 'ar' ? 'وكالة تسويق رقمي سعودية متكاملة.' : 'A full-service Saudi digital marketing agency.')}

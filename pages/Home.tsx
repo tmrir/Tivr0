@@ -18,7 +18,6 @@ export const Home = () => {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
-  const [customPages, setCustomPages] = useState<any[]>([]);
   
   // State for navigation visibility and labels
   const [navigationState, setNavigationState] = useState<any[]>([
@@ -64,49 +63,18 @@ export const Home = () => {
   };
 
   useEffect(() => {
-    // Load custom pages from localStorage
-    const savedPages = localStorage.getItem('customPages');
-    if (savedPages) {
-      try {
-        setCustomPages(JSON.parse(savedPages));
-      } catch (error) {
-        console.error('Failed to load custom pages:', error);
-      }
-    }
+    const applyAdminNavigation = (items: any[]) => {
+      const visibilityState = items.map((item: any) => ({
+        key: item.key,
+        visible: item.visible
+      }));
+      setNavigationState(visibilityState);
 
-    // Load navigation state from admin panel
-    const savedNavigation = localStorage.getItem('adminNavigation');
-    if (savedNavigation) {
-      try {
-        const navigationItems = JSON.parse(savedNavigation);
-        // Update visibility state
-        const visibilityState = navigationItems.map((item: any) => ({
-          key: item.key,
-          visible: item.visible
-        }));
-        setNavigationState(visibilityState);
-        
-        // Update labels state
-        const labelsState: any = {};
-        navigationItems.forEach((item: any) => {
-          labelsState[item.key] = item.label;
-        });
-        setNavigationLabels(labelsState);
-      } catch (error) {
-        console.error('Failed to load navigation state:', error);
-      }
-    }
-
-    const fetchSettings = async () => {
-      try {
-        // Use db.settings.get() instead of direct API call to avoid 500 errors
-        const settingsData = await db.settings.get();
-        if (settingsData) {
-          setSettings(settingsData);
-        }
-      } catch (error) {
-        console.error('Failed to fetch settings:', error);
-      }
+      const labelsState: any = {};
+      items.forEach((item: any) => {
+        labelsState[item.key] = item.label;
+      });
+      setNavigationLabels(labelsState);
     };
 
     const loadData = async () => {
@@ -143,6 +111,16 @@ export const Home = () => {
             
             setPackages(p);
             setSettings(set);
+
+            const fromDbNav = (set as any)?.adminNavigation;
+            if (Array.isArray(fromDbNav) && fromDbNav.length > 0) {
+              applyAdminNavigation(fromDbNav);
+              try {
+                localStorage.setItem('adminNavigation', JSON.stringify(fromDbNav));
+              } catch {
+                // ignore cache errors
+              }
+            }
             console.log('✅ [Home] Data loaded successfully:', { settings: set });
         } catch (e) {
             console.error("Home Data Load Error", e);
@@ -150,85 +128,8 @@ export const Home = () => {
             setLoading(false);
         }
     };
-
-    // Listen for custom pages updates
-    const handleCustomPagesUpdate = () => {
-      const savedPages = localStorage.getItem('customPages');
-      if (savedPages) {
-        try {
-          setCustomPages(JSON.parse(savedPages));
-        } catch (error) {
-          console.error('Failed to load custom pages:', error);
-        }
-      }
-    };
-
-    // Listen for storage events
-    window.addEventListener('storage', handleCustomPagesUpdate);
-
-    // Also listen for custom events
-    window.addEventListener('customPagesUpdated', handleCustomPagesUpdate);
-
-    // Listen for settings changes
-    const handleSettingsUpdate = () => {
-        console.log('🔄 [Home] Settings update detected, reloading...');
-        loadData();
-    };
-
-    // Listen for admin navigation updates
-    const handleAdminNavigationUpdate = (event: any) => {
-      console.log('🔄 [Home] Admin navigation update detected:', event.detail);
-      const { navigationItems } = event.detail;
-      
-      // Update visibility state
-      const visibilityState = navigationItems.map((item: any) => ({
-        key: item.key,
-        visible: item.visible
-      }));
-      setNavigationState(visibilityState);
-      
-      // Update labels state
-      const labelsState: any = {};
-      navigationItems.forEach((item: any) => {
-        labelsState[item.key] = item.label;
-      });
-      setNavigationLabels(labelsState);
-    };
-
-    // Listen for storage changes in navigation
-    const handleStorageNavigationUpdate = (event: StorageEvent) => {
-      if (event.key === 'adminNavigation' && event.newValue) {
-        try {
-          const navigationItems = JSON.parse(event.newValue);
-          
-          // Update visibility state
-          const visibilityState = navigationItems.map((item: any) => ({
-            key: item.key,
-            visible: item.visible
-          }));
-          setNavigationState(visibilityState);
-          
-          // Update labels state
-          const labelsState: any = {};
-          navigationItems.forEach((item: any) => {
-            labelsState[item.key] = item.label;
-          });
-          setNavigationLabels(labelsState);
-        } catch (error) {
-          console.error('Failed to parse navigation update:', error);
-        }
-      }
-    };
-
-    // window.addEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
-    // window.addEventListener('storage', handleSettingsUpdate as EventListener);
-    window.addEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
-    window.addEventListener('storage', handleStorageNavigationUpdate);
-
-    // تحميل البيانات عند تحميل المكون
     loadData();
 
-    // دعم التمرير التلقائي عند تحميل الهاش
     const handleHashScroll = () => {
         const hash = window.location.hash.substring(1);
         if (hash) {
@@ -248,28 +149,8 @@ export const Home = () => {
     // الاستماع لتغييرات الهاش
     window.addEventListener('hashchange', handleHashScroll);
 
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchSettings();
-      }
-    };
-
-    const handleFocus = () => {
-      fetchSettings();
-    };
-
-    // document.addEventListener('visibilitychange', handleVisibilityChange);
-    // window.addEventListener('focus', handleFocus);
-
     return () => {
-        // window.removeEventListener('settingsUpdated', handleSettingsUpdate as EventListener);
         window.removeEventListener('hashchange', handleHashScroll);
-        window.removeEventListener('storage', handleCustomPagesUpdate);
-        window.removeEventListener('customPagesUpdated', handleCustomPagesUpdate);
-        // document.removeEventListener('visibilitychange', handleVisibilityChange);
-        // window.removeEventListener('focus', handleFocus);
-        window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
-        window.removeEventListener('storage', handleStorageNavigationUpdate);
     };
   }, []);
 
@@ -290,162 +171,6 @@ export const Home = () => {
       } finally {
           setContactSending(false);
       }
-  };
-
-  // Custom Pages Renderer
-  const renderCustomPage = (page: any) => {
-    if (!page.isVisible || !page.components || page.components.length === 0) return null;
-
-    if (page.displayType === 'cards') {
-      return (
-        <section key={page.id} className="py-16 bg-slate-50">
-          <div className="container mx-auto px-4 md:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">
-                {page.title?.[lang] || page.name}
-              </h2>
-              <p className="text-slate-500 max-w-2xl mx-auto">
-                {page.description?.[lang]}
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {page.components.map((component: any) => (
-                <div key={component.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                  {component.type === 'text' && (
-                    <div className="text-slate-800">
-                      {component.content.text?.[lang]}
-                    </div>
-                  )}
-                  {component.type === 'image' && (
-                    <div className="text-center">
-                      {component.content.src ? (
-                        <img 
-                          src={component.content.src} 
-                          alt={component.content.alt?.[lang]} 
-                          className="w-full h-48 object-cover rounded-lg mb-4" 
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-slate-200 rounded-lg flex items-center justify-center text-slate-400 mb-4">
-                          {component.content.alt?.[lang] || 'Image'}
-                        </div>
-                      )}
-                      {component.content.alt?.[lang] && (
-                        <p className="text-sm text-slate-600">{component.content.alt[lang]}</p>
-                      )}
-                    </div>
-                  )}
-                  {component.type === 'button' && (
-                    <div className="text-center">
-                      <button 
-                        onClick={() => window.open(component.content.href, '_blank')}
-                        className={`px-6 py-3 rounded-lg font-medium transition ${
-                          component.content.style === 'primary' ? 'bg-tivro-primary text-white hover:bg-emerald-500' :
-                          component.content.style === 'secondary' ? 'bg-slate-600 text-white hover:bg-slate-700' :
-                          'border border-slate-300 text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        {component.content.text?.[lang]}
-                      </button>
-                    </div>
-                  )}
-                  {component.type === 'link' && (
-                    <div className="text-center">
-                      <a 
-                        href={component.content.href}
-                        target={component.content.target}
-                        className={`inline-block px-6 py-3 rounded-lg font-medium transition ${
-                          component.content.style === 'primary' ? 'bg-tivro-primary text-white hover:bg-emerald-500' :
-                          component.content.style === 'secondary' ? 'bg-slate-600 text-white hover:bg-slate-700' :
-                          'border border-slate-300 text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        {component.content.text?.[lang]}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      );
-    }
-
-    // Section display type
-    return (
-      <section key={page.id} className="py-16 bg-white">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">
-              {page.title?.[lang] || page.name}
-            </h2>
-            <p className="text-slate-500 max-w-2xl mx-auto">
-              {page.description?.[lang]}
-            </p>
-          </div>
-          <div className="space-y-8">
-            {page.components.map((component: any) => (
-              <div key={component.id} className="text-center">
-                {component.type === 'text' && (
-                  <div className="max-w-4xl mx-auto">
-                    <p className="text-lg text-slate-700 leading-relaxed">
-                      {component.content.text?.[lang]}
-                    </p>
-                  </div>
-                )}
-                {component.type === 'image' && (
-                  <div className="max-w-4xl mx-auto">
-                    {component.content.src ? (
-                      <img 
-                        src={component.content.src} 
-                        alt={component.content.alt?.[lang]} 
-                        className="w-full h-96 object-cover rounded-xl" 
-                      />
-                    ) : (
-                      <div className="w-full h-96 bg-slate-200 rounded-xl flex items-center justify-center text-slate-400">
-                        {component.content.alt?.[lang] || 'Image'}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {component.type === 'button' && (
-                  <button 
-                    onClick={() => window.open(component.content.href, '_blank')}
-                    className={`px-8 py-4 rounded-lg font-medium text-lg transition ${
-                      component.content.style === 'primary' ? 'bg-tivro-primary text-white hover:bg-emerald-500' :
-                      component.content.style === 'secondary' ? 'bg-slate-600 text-white hover:bg-slate-700' :
-                      'border border-slate-300 text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    {component.content.text?.[lang]}
-                  </button>
-                )}
-                {component.type === 'link' && (
-                  <a 
-                    href={component.content.href}
-                    target={component.content.target}
-                    className={`inline-block px-8 py-4 rounded-lg font-medium text-lg transition ${
-                      component.content.style === 'primary' ? 'bg-tivro-primary text-white hover:bg-emerald-500' :
-                      component.content.style === 'secondary' ? 'bg-slate-600 text-white hover:bg-slate-700' :
-                      'border border-slate-300 text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    {component.content.text?.[lang]}
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  };
-
-  // Helper function to render pages at specific locations
-  const renderPagesAtLocation = (location: string) => {
-    return customPages
-      .filter(page => page.displayLocation === location && page.isVisible)
-      .map(page => renderCustomPage(page));
   };
 
   const IconComponent = ({ name, className }: { name: string, className?: string }) => {
@@ -540,7 +265,7 @@ export const Home = () => {
       <PagesRenderer placement="after_services" />
 
       {/* Custom Pages - Before Packages */}
-      {renderPagesAtLocation('before-packages')}
+      <PagesRenderer placement="before_packages" />
 
       {/* Packages */}
       {navigationState.find(item => item.key === 'packages')?.visible && (
@@ -585,7 +310,7 @@ export const Home = () => {
       {/* Custom Pages - After Packages */}
 
       {/* Custom Pages - Before Work */}
-      {renderPagesAtLocation('before-work')}
+      <PagesRenderer placement="before_work" />
 
       {/* Case Studies - EXACT DESIGN MATCH */}
       {navigationState.find(item => item.key === 'work')?.visible && (

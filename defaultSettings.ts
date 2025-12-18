@@ -156,7 +156,10 @@ export const defaultSettings: SiteSettings = {
   footerLinks: {
     privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
     terms: { ar: 'شروط الخدمة', en: 'Terms of Service' }
-  }
+  },
+
+  customPages: [],
+  adminNavigation: []
 };
 
 // دالة لدمج الإعدادات مع الإعدادات الافتراضية
@@ -193,6 +196,8 @@ export function validateSettings(settings: any): SiteSettings {
   
   // التأكد من أن جميع Arrays موجودة
   validated.socialLinks = Array.isArray(validated.socialLinks) ? validated.socialLinks : [];
+  (validated as any).customPages = Array.isArray((validated as any).customPages) ? (validated as any).customPages : [];
+  (validated as any).adminNavigation = Array.isArray((validated as any).adminNavigation) ? (validated as any).adminNavigation : [];
   
   return validated;
 }

@@ -1212,48 +1212,97 @@ export const Admin = () => {
     { key: 'settings', label: t('admin.tab.settings'), visible: true }
   ]);
 
-  // Load navigation state from localStorage
+  const normalizeNavigationItems = (rawItems: any) => {
+    const base = Array.isArray(rawItems) ? rawItems : navigationItems;
+    return Array.isArray(base)
+      ? base
+          .map((item: any) => {
+            const key = item?.key;
+            const visible = typeof item?.visible === 'boolean' ? item.visible : true;
+            const label = item?.label;
+
+            if (typeof label === 'string') {
+              // Migrate old single-language strings to {ar,en}
+              if (hasArabicChars(label)) {
+                return { key, visible, label: { ar: label, en: '' } };
+              }
+              return { key, visible, label: { ar: '', en: label } };
+            }
+
+            if (label && typeof label === 'object') {
+              return { key, visible, label };
+            }
+
+            return { key, visible, label: { ar: '', en: '' } };
+          })
+          .filter((x: any) => !!x && typeof x.key === 'string')
+      : navigationItems;
+  };
+
+  const persistNavigationState = async (newItems: typeof navigationItems) => {
+    setNavigationItems(newItems);
+    try {
+      localStorage.setItem('adminNavigation', JSON.stringify(newItems));
+    } catch {
+      // ignore cache errors
+    }
+
+    try {
+      const settings = await db.settings.get();
+      const merged = { ...(settings as any), adminNavigation: newItems };
+      await db.settings.save(merged as any);
+    } catch (e) {
+      console.error('Failed to save admin navigation to settings:', e);
+    }
+  };
+
+  // Load navigation state from DB first (fallback to localStorage)
   useEffect(() => {
-    const savedNavigation = localStorage.getItem('adminNavigation');
-    if (savedNavigation) {
+    const load = async () => {
+      try {
+        const settings = await db.settings.get();
+        const fromDb = (settings as any)?.adminNavigation;
+        if (Array.isArray(fromDb) && fromDb.length > 0) {
+          const normalized = normalizeNavigationItems(fromDb);
+          setNavigationItems(normalized);
+          try {
+            localStorage.setItem('adminNavigation', JSON.stringify(normalized));
+          } catch {
+            // ignore cache errors
+          }
+          return;
+        }
+      } catch {
+        // ignore and fallback
+      }
+
+      const savedNavigation = localStorage.getItem('adminNavigation');
+      if (!savedNavigation) return;
       try {
         const rawItems = JSON.parse(savedNavigation);
-        const normalized = Array.isArray(rawItems)
-          ? rawItems.map((item: any) => {
-              const key = item?.key;
-              const visible = typeof item?.visible === 'boolean' ? item.visible : true;
-              const label = item?.label;
-
-              if (typeof label === 'string') {
-                // Migrate old single-language strings to {ar,en}
-                if (hasArabicChars(label)) {
-                  return { key, visible, label: { ar: label, en: '' } };
-                }
-                return { key, visible, label: { ar: '', en: label } };
-              }
-
-              if (label && typeof label === 'object') {
-                return { key, visible, label };
-              }
-
-              return { key, visible, label: { ar: '', en: '' } };
-            })
-          : navigationItems;
-
+        const normalized = normalizeNavigationItems(rawItems);
         setNavigationItems(normalized);
+
+        // migrate to DB (one-time) if DB does not have it yet
+        try {
+          const settings = await db.settings.get();
+          const current = (settings as any)?.adminNavigation;
+          if (!Array.isArray(current) || current.length === 0) {
+            const merged = { ...(settings as any), adminNavigation: normalized };
+            await db.settings.save(merged as any);
+          }
+        } catch {
+          // ignore migration failures
+        }
       } catch (error) {
         console.error('Failed to load navigation state:', error);
       }
-    }
+    };
+
+    load();
   }, []);
 
-  // Save navigation state to localStorage
-  const saveNavigationState = (newItems: typeof navigationItems) => {
-    setNavigationItems(newItems);
-    localStorage.setItem('adminNavigation', JSON.stringify(newItems));
-  };
-
-  const updateNavigationLabel = (key: string, newLabel: string) => {
+  const updateNavigationLabel = async (key: string, newLabel: string) => {
     const newItems = navigationItems.map(item => 
       item.key === key
         ? {
@@ -1265,7 +1314,7 @@ export const Admin = () => {
           }
         : item
     );
-    saveNavigationState(newItems);
+    await persistNavigationState(newItems);
     
     // Trigger immediate update in Home page
     window.dispatchEvent(new CustomEvent('adminNavigationUpdated', { detail: { navigationItems: newItems } }));
@@ -1278,11 +1327,11 @@ export const Admin = () => {
     }));
   };
 
-  const toggleNavigationVisibility = (key: string) => {
+  const toggleNavigationVisibility = async (key: string) => {
     const newItems = navigationItems.map(item => 
       item.key === key ? { ...item, visible: !item.visible } : item
     );
-    saveNavigationState(newItems);
+    await persistNavigationState(newItems);
     
     // Trigger immediate update in Home page
     window.dispatchEvent(new CustomEvent('adminNavigationUpdated', { detail: { navigationItems: newItems } }));

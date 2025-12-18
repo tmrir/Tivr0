@@ -99,6 +99,12 @@ export interface HomeSectionsSettings {
     contactSubtitle: LocalizedString;
 }
 
+export interface AdminNavigationItem {
+  key: string;
+  label: LocalizedString | string;
+  visible: boolean;
+}
+
 export interface SiteSettings {
   siteName: LocalizedString;
   contactEmail: string;
@@ -144,6 +150,9 @@ export interface SiteSettings {
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
   privacyPolicy: LocalizedString; 
   termsOfService: LocalizedString; 
+
+  customPages?: CustomPage[];
+  adminNavigation?: AdminNavigationItem[];
 }
 
 // New Page Interface
@@ -275,13 +284,18 @@ export interface CustomPage {
   description?: LocalizedString;
   components: PageComponent[];
   isVisible: boolean;
-  placement?: 'after_header' | 'after_services' | 'after_team' | 'after_work' | 'before_footer';
+  placement?: 'after_header' | 'after_services' | 'before_packages' | 'after_team' | 'before_work' | 'after_work' | 'before_footer';
   sectionVariant?: 'default' | 'hero';
   heroSettings?: {
     backgroundColor?: string;
     textColor?: string;
     textBoxBackgroundColor?: string;
     imagePosition?: 'left' | 'right' | 'top' | 'bottom' | 'background';
+  };
+  underConstruction?: boolean;
+  underConstructionButton?: {
+    label?: LocalizedString;
+    href?: string;
   };
   order?: number;
   visible?: boolean;

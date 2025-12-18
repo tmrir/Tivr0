@@ -3,6 +3,7 @@ import { useSettingsContext } from '../context/SettingsContext';
 import { useApp } from '../context/AppContext';
 import { Loader2, Save, RotateCcw, AlertCircle, CheckCircle, Globe, Phone, Share2, Image as ImageIcon, Database, FileText, LayoutTemplate } from 'lucide-react';
 import { SiteSettings, LocalizedString } from '../types';
+import { settingsService } from '../services/settingsService';
 
 const LocalizedArea = ({ label, value, onChange }: {label:string, value: LocalizedString, onChange: (v: LocalizedString)=>void}) => (
     <div className="mb-4">
@@ -42,6 +43,7 @@ export const SettingsNewPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'general' | 'logos' | 'home_content' | 'legal' | 'db'>('general');
   const [msg, setMsg] = useState<{type:'success'|'error', text:string} | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [testingDb, setTestingDb] = useState(false);
 
   // إبقاء this component aware of first mount فقط لأغراض لوجية/عرضية
   useEffect(() => {
@@ -134,7 +136,20 @@ export const SettingsNewPage: React.FC = () => {
   };
 
   const onTestConnection = async () => {
-      console.log('≡ƒöì [SettingsNewPage] Test connection clicked (stub).');
+      setTestingDb(true);
+      try {
+          const ok = await settingsService.testConnection();
+          if (ok) {
+              setMsg({ type: 'success', text: lang === 'ar' ? 'تم الاتصال بقاعدة البيانات بنجاح.' : 'Database connection successful.' });
+          } else {
+              setMsg({ type: 'error', text: lang === 'ar' ? 'فشل اختبار الاتصال بقاعدة البيانات.' : 'Database connection test failed.' });
+          }
+      } catch (e) {
+          setMsg({ type: 'error', text: lang === 'ar' ? 'حدث خطأ أثناء اختبار الاتصال.' : 'Error while testing connection.' });
+      } finally {
+          setTestingDb(false);
+          setTimeout(() => setMsg(null), 3000);
+      }
   };
 
   const TabButton = ({ id, icon: Icon, label }: any) => (

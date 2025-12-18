@@ -7,6 +7,49 @@ import { defaultSettings, mergeWithDefaults, validateSettings } from '../default
 export class SettingsService {
   private static instance: SettingsService;
 
+  private inFlightGet: Promise<SiteSettings> | null = null;
+
+  private static readonly SETTINGS_CACHE_KEY = 'tivro_settings';
+  private static readonly SETTINGS_CACHE_TS_KEY = 'tivro_settings_timestamp';
+  private static readonly SETTINGS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+  private static readonly EXTENSION_KEYS = {
+    adminNavigation: '__tivro_admin_navigation',
+    customPages: '__tivro_custom_pages',
+    contactUs: '__tivro_contact_us'
+  } as const;
+
+  private coerceJsonObject(value: any): Record<string, any> {
+    if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, any>;
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, any>;
+      } catch {
+        // ignore
+      }
+    }
+    return {};
+  }
+
+  private stableStringify(value: any): string {
+    const seen = new WeakSet();
+    const normalize = (v: any): any => {
+      if (v === null || v === undefined) return v;
+      if (typeof v !== 'object') return v;
+      if (seen.has(v)) return undefined;
+      seen.add(v);
+
+      if (Array.isArray(v)) return v.map(normalize);
+      const keys = Object.keys(v).sort();
+      const out: any = {};
+      for (const k of keys) out[k] = normalize(v[k]);
+      return out;
+    };
+
+    return JSON.stringify(normalize(value));
+  }
+
   static getInstance(): SettingsService {
     if (!SettingsService.instance) {
       SettingsService.instance = new SettingsService();
@@ -16,61 +59,80 @@ export class SettingsService {
 
   // جلب الإعدادات مع التوحيد الكامل
   async getSettings(): Promise<SiteSettings> {
-    try {
-      console.log('🔧 [SettingsService] Fetching settings with unified structure...');
-      
-      // أولاً، جلب من Supabase مع دمج مع الإعدادات الافتراضية
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('*')
-        .eq('id', 1)
-        .single();
+    if (this.inFlightGet) return this.inFlightGet;
 
-      if (error) {
-        console.error('❌ [SettingsService] Supabase fetch error:', error);
-        console.log('🔄 [SettingsService] Falling back to localStorage/default settings');
+    this.inFlightGet = (async () => {
+      try {
+        // 24h cache policy: prefer last known good settings to prevent any UI flicker.
+        // We only refetch from Supabase when cache is missing or older than TTL.
+        const cachedRaw = localStorage.getItem(SettingsService.SETTINGS_CACHE_KEY);
+        const cachedTsRaw = localStorage.getItem(SettingsService.SETTINGS_CACHE_TS_KEY);
+        const cachedTs = cachedTsRaw ? Number(cachedTsRaw) : 0;
+        const cacheFresh = !!cachedRaw && Number.isFinite(cachedTs) && cachedTs > 0 && (Date.now() - cachedTs) < SettingsService.SETTINGS_CACHE_TTL_MS;
 
-        // محاولة التحميل من localStorage كخيار احتياطي
-        const localSettings = localStorage.getItem('tivro_settings');
-        if (localSettings) {
+        if (cacheFresh) {
           try {
-            const parsed = JSON.parse(localSettings);
+            const parsed = JSON.parse(cachedRaw as string);
             const validated = validateSettings(parsed);
-            console.log('✅ [SettingsService] Loaded and validated from localStorage (fallback)');
+            console.log('✅ [SettingsService] Using cached settings (<24h)');
             return validated;
-          } catch (parseError) {
-            console.error('❌ [SettingsService] LocalStorage parse error in fallback:', parseError);
+          } catch {
+            // ignore invalid cache and continue to Supabase
           }
         }
 
-        // في حال فشل Supabase و localStorage، نعود للافتراضي
-        localStorage.setItem('tivro_settings', JSON.stringify(defaultSettings));
-        localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
-        return defaultSettings;
-      }
+        console.log('🔧 [SettingsService] Fetching settings with unified structure...');
+        
+        // أولاً، جلب من Supabase مع دمج مع الإعدادات الافتراضية
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('id', 1)
+          .single();
 
-      console.log('✅ [SettingsService] Settings fetched from Supabase');
-      
-      // تحويل بيانات Supabase (snake_case) إلى SiteSettings (camelCase) ثم دمجها مع الافتراضيات والتحقق منها
-      const mappedFromDB = this.mapFromDB(data);
-      const validated = validateSettings(mappedFromDB);
-      
-      // حفظ البيانات المدمجة في localStorage
-      localStorage.setItem('tivro_settings', JSON.stringify(validated));
-      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
-      
-      console.log('🔗 [SettingsService] Merged Supabase data with defaults');
-      return validated;
-    } catch (error) {
-      console.error('❌ [SettingsService] Critical error:', error);
-      console.log('🔄 [SettingsService] Using default settings as final fallback');
-      
-      // الحل النهائي: الإعدادات الافتراضية
-      localStorage.setItem('tivro_settings', JSON.stringify(defaultSettings));
-      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
-      
-      return defaultSettings;
-    }
+        if (error) {
+          console.error('❌ [SettingsService] Supabase fetch error:', error);
+          console.log('🔄 [SettingsService] Falling back to localStorage/default settings');
+
+          // محاولة التحميل من localStorage كخيار احتياطي
+          const localSettings = localStorage.getItem(SettingsService.SETTINGS_CACHE_KEY);
+          if (localSettings) {
+            try {
+              const parsed = JSON.parse(localSettings);
+              const validated = validateSettings(parsed);
+              console.log('✅ [SettingsService] Loaded and validated from localStorage (fallback)');
+              return validated;
+            } catch (parseError) {
+              console.error('❌ [SettingsService] LocalStorage parse error in fallback:', parseError);
+            }
+          }
+
+          // في حال فشل Supabase و localStorage، نعود للافتراضي (بدون الكتابة إلى localStorage لتجنب فلاش بيانات قديمة)
+          return defaultSettings;
+        }
+
+        console.log('✅ [SettingsService] Settings fetched from Supabase');
+        
+        // تحويل بيانات Supabase (snake_case) إلى SiteSettings (camelCase) ثم دمجها مع الافتراضيات والتحقق منها
+        const mappedFromDB = this.mapFromDB(data);
+        const validated = validateSettings(mappedFromDB);
+        
+        // حفظ البيانات المدمجة في localStorage (cache only)
+        localStorage.setItem(SettingsService.SETTINGS_CACHE_KEY, JSON.stringify(validated));
+        localStorage.setItem(SettingsService.SETTINGS_CACHE_TS_KEY, Date.now().toString());
+        
+        console.log('🔗 [SettingsService] Merged Supabase data with defaults');
+        return validated;
+      } catch (error) {
+        console.error('❌ [SettingsService] Critical error:', error);
+        console.log('🔄 [SettingsService] Using default settings as final fallback');
+        return defaultSettings;
+      } finally {
+        this.inFlightGet = null;
+      }
+    })();
+
+    return this.inFlightGet;
   }
 
   // حفظ الإعدادات مع التوحيد الكامل
@@ -83,9 +145,12 @@ export class SettingsService {
       console.log('📦 [SettingsService] Validated settings:', validated);
 
       // أولاً، احفظ في localStorage دائماً
-      localStorage.setItem('tivro_settings', JSON.stringify(validated));
-      localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
+      localStorage.setItem(SettingsService.SETTINGS_CACHE_KEY, JSON.stringify(validated));
+      localStorage.setItem(SettingsService.SETTINGS_CACHE_TS_KEY, Date.now().toString());
       console.log('✅ [SettingsService] Saved to localStorage immediately');
+
+      // Ensure subsequent getSettings() calls will serve this latest value immediately
+      this.inFlightGet = null;
 
       // ثانياً، حاول الحفظ في Supabase
       const payload = this.mapToDB(validated);
@@ -100,31 +165,76 @@ export class SettingsService {
           .single();
       };
 
-      let { data, error } = await upsertOnce(payload);
+      let workingPayload: any = { ...(payload as any) };
+      let { data, error } = await upsertOnce(workingPayload);
 
-      if (error && (error as any).code === 'PGRST204') {
+      let safety = 0;
+      while (error && (error as any).code === 'PGRST204' && safety < 25) {
         const message = (error as any).message || '';
         const match = message.match(/Could not find the '([^']+)' column/i);
         const missingColumn = match?.[1];
-
-        if (missingColumn && Object.prototype.hasOwnProperty.call(payload, missingColumn)) {
-          console.warn(`⚠️ [SettingsService] Missing column '${missingColumn}' in Supabase schema. Retrying save without it...`);
-          const retryPayload = { ...(payload as any) };
-          delete retryPayload[missingColumn];
-          ({ data, error } = await upsertOnce(retryPayload));
+        if (!missingColumn || !Object.prototype.hasOwnProperty.call(workingPayload, missingColumn)) {
+          break;
         }
+
+        console.warn(`⚠️ [SettingsService] Missing column '${missingColumn}' in Supabase schema. Retrying save without it...`);
+        delete workingPayload[missingColumn];
+        ({ data, error } = await upsertOnce(workingPayload));
+        safety += 1;
       }
 
       if (error) {
         console.error('❌ [SettingsService] Supabase save error:', error);
         console.log('⚠️ [SettingsService] Data saved to localStorage only (Supabase failed)');
-        // لا نفشل الواجهة طالما localStorage تم حفظه بنجاح
-        return true;
+        // نُرجع فشل لأن البيانات لم تُحفظ بشكل عام (DB)
+        return false;
       }
 
       console.log('✅ [SettingsService] Settings saved to Supabase successfully:', data);
+
+      // Verify persistence: refetch and ensure key fields match what we attempted to save
+      try {
+        const { data: verifyRow, error: verifyError } = await supabase
+          .from('site_settings')
+          .select('id, updated_at, section_texts')
+          .eq('id', 1)
+          .single();
+
+        if (verifyError) {
+          console.error('❌ [SettingsService] Verification fetch failed after save:', verifyError);
+          return false;
+        }
+
+        const expectedAdminNav = Array.isArray(validated.adminNavigation) ? validated.adminNavigation : [];
+        const expectedCustomPages = Array.isArray(validated.customPages) ? validated.customPages : [];
+
+        const sectionTexts = this.coerceJsonObject((verifyRow as any)?.section_texts);
+
+        const dbAdminNav = Array.isArray(sectionTexts[SettingsService.EXTENSION_KEYS.adminNavigation])
+          ? sectionTexts[SettingsService.EXTENSION_KEYS.adminNavigation]
+          : [];
+        const dbCustomPages = Array.isArray(sectionTexts[SettingsService.EXTENSION_KEYS.customPages])
+          ? sectionTexts[SettingsService.EXTENSION_KEYS.customPages]
+          : [];
+
+        const sameAdminNav = this.stableStringify(dbAdminNav) === this.stableStringify(expectedAdminNav);
+        const sameCustomPages = this.stableStringify(dbCustomPages) === this.stableStringify(expectedCustomPages);
+
+        if (!sameAdminNav || !sameCustomPages) {
+          console.error('❌ [SettingsService] Save verification failed: DB does not reflect saved values.');
+          console.log('   expected.adminNavigation.length:', expectedAdminNav.length);
+          console.log('   db.__tivro_admin_navigation.length:', dbAdminNav.length);
+          console.log('   expected.customPages.length:', expectedCustomPages.length);
+          console.log('   db.__tivro_custom_pages.length:', dbCustomPages.length);
+          console.log('   db.updated_at:', (verifyRow as any)?.updated_at);
+          return false;
+        }
+      } catch (e) {
+        console.error('❌ [SettingsService] Verification exception after save:', e);
+        return false;
+      }
+
       console.log('🔗 [SettingsService] Data synchronized between localStorage and Supabase');
-      
       return true;
     } catch (error) {
       console.error('❌ [SettingsService] Critical save error:', error);
@@ -135,12 +245,17 @@ export class SettingsService {
       localStorage.setItem('tivro_settings', JSON.stringify(validated));
       localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
       console.log('✅ [SettingsService] Saved to localStorage as fallback');
-      return true;
+      return false;
     }
   }
 
   // تحويل من قاعدة البيانات إلى الواجهة
   private mapFromDB(row: any): SiteSettings {
+    const sectionTextsObj = this.coerceJsonObject(row?.section_texts);
+    const extAdminNav = sectionTextsObj[SettingsService.EXTENSION_KEYS.adminNavigation];
+    const extCustomPages = sectionTextsObj[SettingsService.EXTENSION_KEYS.customPages];
+    const extContactUs = sectionTextsObj[SettingsService.EXTENSION_KEYS.contactUs];
+
     return {
       siteName: row.site_name || { ar: 'تيفرو', en: 'Tivro' },
       contactEmail: row.contact_email || 'info@tivro.sa',
@@ -177,13 +292,22 @@ export class SettingsService {
         servicesSubtitle: 'text-lg',
         teamTitle: 'text-2xl'
       },
-      contactUs: row.contact_us || defaultSettings.contactUs,
+      contactUs:
+        (extContactUs && typeof extContactUs === 'object' ? extContactUs : null) ||
+        row.contact_us ||
+        defaultSettings.contactUs,
       // استرجاع إعدادات الفوتر المخزنة داخل section_texts في قاعدة البيانات
       footerDescription: (row.section_texts && row.section_texts.footerDescription) || defaultSettings.footerDescription,
       copyrightText: (row.section_texts && row.section_texts.copyrightText) || defaultSettings.copyrightText,
       footerLinks: (row.section_texts && row.section_texts.footerLinks) || defaultSettings.footerLinks,
       privacyPolicy: row.privacy_policy || { ar: '', en: '' },
-      termsOfService: row.terms_of_service || { ar: '', en: '' }
+      termsOfService: row.terms_of_service || { ar: '', en: '' },
+      customPages: Array.isArray(extCustomPages)
+        ? extCustomPages
+        : (Array.isArray(row.custom_pages) ? row.custom_pages : []),
+      adminNavigation: Array.isArray(extAdminNav)
+        ? extAdminNav
+        : (Array.isArray(row.admin_navigation) ? row.admin_navigation : [])
     };
   }
 
@@ -208,11 +332,18 @@ export class SettingsService {
         footerDescription: settings.footerDescription,
         copyrightText: settings.copyrightText,
         footerLinks: settings.footerLinks,
+        // Extensions (fallback persistence when dedicated columns are missing)
+        [SettingsService.EXTENSION_KEYS.adminNavigation]: Array.isArray(settings.adminNavigation) ? settings.adminNavigation : [],
+        [SettingsService.EXTENSION_KEYS.customPages]: Array.isArray(settings.customPages) ? settings.customPages : [],
+        [SettingsService.EXTENSION_KEYS.contactUs]: settings.contactUs,
       },
       home_sections: settings.homeSections,
+      // Dedicated columns if present in schema (will be automatically stripped if missing)
       contact_us: settings.contactUs,
       privacy_policy: settings.privacyPolicy,
       terms_of_service: settings.termsOfService,
+      custom_pages: Array.isArray(settings.customPages) ? settings.customPages : [],
+      admin_navigation: Array.isArray(settings.adminNavigation) ? settings.adminNavigation : [],
       updated_at: new Date().toISOString()
     };
   }
@@ -244,9 +375,12 @@ export class SettingsService {
       bottomBanner: { enabled: false, title: { ar: '', en: '' } },
       sectionTexts: {
         workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
-        workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' }
+        workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' },
+        privacyLink: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+        termsLink: { ar: 'شروط الخدمة', en: 'Terms of Service' }
       },
       homeSections: {
+        heroBadge: { ar: '🚀 الوكالة الرقمية الأسرع نمواً', en: '🚀 Fastest Growing Digital Agency' },
         heroTitle: { ar: '🚀 الوكالة الرقمية الأسرع نمواً', en: '🚀 Fastest Growing Digital Agency' },
         heroSubtitle: { ar: 'شريكك الاستراتيجي للنمو الرقمي', en: 'Your Strategic Partner for Digital Growth' },
         servicesTitle: { ar: 'أعمالنا', en: 'Our Work' },
@@ -264,8 +398,14 @@ export class SettingsService {
         servicesSubtitle: 'text-lg',
         teamTitle: 'text-2xl'
       },
+      contactUs: defaultSettings.contactUs,
+      footerDescription: defaultSettings.footerDescription,
+      copyrightText: defaultSettings.copyrightText,
+      footerLinks: defaultSettings.footerLinks,
       privacyPolicy: { ar: '', en: '' },
-      termsOfService: { ar: '', en: '' }
+      termsOfService: { ar: '', en: '' },
+      customPages: [],
+      adminNavigation: []
     };
   }
 

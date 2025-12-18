@@ -4,6 +4,7 @@ import { AppProvider } from './context/AppContext';
 import { Home } from './pages/Home';
 import { Admin } from './pages/Admin';
 import { Legal } from './pages/Legal';
+import { db } from './services/db';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -70,6 +71,35 @@ const Router = () => {
 };
 
 function App() {
+  const [bootstrapped, setBootstrapped] = useState(false);
+
+  useEffect(() => {
+    let canceled = false;
+    const bootstrap = async () => {
+      try {
+        // Ensure we have the latest settings before showing any UI.
+        await db.settings.get();
+      } catch {
+        // ignore bootstrap failures; UI will fallback to defaults
+      } finally {
+        if (canceled) return;
+        setBootstrapped(true);
+        try {
+          document.documentElement.style.visibility = 'visible';
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    bootstrap();
+    return () => {
+      canceled = true;
+    };
+  }, []);
+
+  if (!bootstrapped) return null;
+
   return (
     <ErrorBoundary>
       <AppProvider>
