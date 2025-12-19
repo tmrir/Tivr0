@@ -13,6 +13,22 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
   const { lang } = useApp();
   const [pages, setPages] = useState<CustomPage[]>([]);
 
+  const hexToRgba = (hex: string, opacity01: number) => {
+    const h = (hex || '').trim();
+    let full = h;
+    if (full.startsWith('#') && full.length === 4) {
+      full = `#${full[1]}${full[1]}${full[2]}${full[2]}${full[3]}${full[3]}`;
+    }
+    const a = Math.max(0, Math.min(1, opacity01));
+    if (!full.startsWith('#') || full.length !== 7) {
+      return `rgba(0,0,0,${a})`;
+    }
+    const r = parseInt(full.slice(1, 3), 16);
+    const g = parseInt(full.slice(3, 5), 16);
+    const b = parseInt(full.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  };
+
   // السبب الفعلي لعدم ظهور الصفحات سابقاً: Home كان يعتمد على displayLocation (غير محفوظ من PageManager) لذلك كانت الفلترة تُرجع 0 صفحات.
   const normalizePages = (input: any[]): { pages: CustomPage[]; didMigrate: boolean } => {
     const mapLegacyLocationToPlacement = (legacy?: string): CustomPage['placement'] | undefined => {
