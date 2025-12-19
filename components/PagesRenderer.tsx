@@ -246,7 +246,9 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
             <div className="max-w-4xl mx-auto">
               {looksLikeHtml ? (
                 <div
-                  className={isHero ? 'text-lg leading-relaxed' : 'text-lg text-slate-700 leading-relaxed'}
+                  className={isHero
+                    ? 'prose prose-lg max-w-none prose-invert leading-relaxed'
+                    : 'prose prose-lg max-w-none text-slate-700 leading-relaxed'}
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}
                 />
               ) : (

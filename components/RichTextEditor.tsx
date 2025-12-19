@@ -6,6 +6,25 @@ import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import Placeholder from '@tiptap/extension-placeholder';
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Strikethrough,
+  Code as CodeIcon,
+  Quote,
+  List,
+  ListOrdered,
+  Undo2,
+  Redo2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Link as LinkIcon,
+  Unlink,
+  Highlighter,
+  RemoveFormatting,
+} from 'lucide-react';
 
 interface RichTextEditorProps {
   value: string;
@@ -53,177 +72,234 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
     const current = editor.getHTML();
     const next = value || '';
     if (current !== next) {
-      editor.commands.setContent(next, false);
+      editor.commands.setContent(next, { emitUpdate: false });
     }
   }, [editor, value]);
 
   if (!editor) return null;
 
-  const buttonBase = 'px-2 py-1 rounded border border-slate-200 bg-white text-xs hover:bg-slate-50';
-  const active = 'bg-slate-100';
+  const btnBase =
+    'h-9 w-9 inline-flex items-center justify-center rounded-md border border-transparent text-slate-700 hover:bg-slate-100 active:scale-[0.98] transition disabled:opacity-40 disabled:hover:bg-transparent';
+  const btnActive = 'bg-white border-slate-200 shadow-sm';
+  const groupBase = 'flex items-center gap-1';
+  const separator = <div className="w-px h-7 bg-slate-200 mx-2" />;
+
+  const promptForLink = () => {
+    const previousUrl = editor.getAttributes('link').href as string | undefined;
+    const url = window.prompt('URL', previousUrl || '');
+    if (url === null) return;
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
+
+  const pasteAsPlainText = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) editor.chain().focus().insertContent(text).run();
+    } catch {
+      // ignore
+    }
+  };
 
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-      <div className="flex flex-wrap gap-2 p-2 border-b border-slate-200 bg-slate-50">
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`${buttonBase} ${editor.isActive('bold') ? active : ''}`}
-        >
-          B
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`${buttonBase} ${editor.isActive('italic') ? active : ''}`}
-        >
-          I
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={`${buttonBase} ${editor.isActive('underline') ? active : ''}`}
-        >
-          U
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          className={`${buttonBase} ${editor.isActive('strike') ? active : ''}`}
-        >
-          S
-        </button>
+    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+      <div
+        role="toolbar"
+        aria-label="toolbar"
+        className="sticky top-0 z-20 flex items-start justify-center p-2 border-b border-slate-200 bg-slate-100"
+      >
+        <div className="flex-1" />
 
-        <div className="w-px h-6 bg-slate-200 mx-1" />
+        <div className="flex items-center flex-wrap justify-center">
+          <div className={groupBase}>
+            <button type="button" title={dir === 'rtl' ? 'لصق كنص عادي' : 'Paste as plain text'} className={btnBase} onClick={pasteAsPlainText}>
+              <RemoveFormatting className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title={dir === 'rtl' ? 'مسح التنسيق' : 'Clear formatting'}
+              className={btnBase}
+              onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+            >
+              <RemoveFormatting className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Redo"
+              className={btnBase}
+              disabled={!editor.can().chain().focus().redo().run()}
+              onClick={() => editor.chain().focus().redo().run()}
+            >
+              <Redo2 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Undo"
+              className={btnBase}
+              disabled={!editor.can().chain().focus().undo().run()}
+              onClick={() => editor.chain().focus().undo().run()}
+            >
+              <Undo2 className="w-4 h-4" />
+            </button>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={`${buttonBase} ${editor.isActive('heading', { level: 2 }) ? active : ''}`}
-        >
-          H2
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={`${buttonBase} ${editor.isActive('heading', { level: 3 }) ? active : ''}`}
-        >
-          H3
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().setParagraph().run()}
-          className={`${buttonBase} ${editor.isActive('paragraph') ? active : ''}`}
-        >
-          P
-        </button>
+          {separator}
 
-        <div className="w-px h-6 bg-slate-200 mx-1" />
+          <div className={groupBase}>
+            <select
+              value={editor.isActive('heading', { level: 2 }) ? 'h2' : editor.isActive('heading', { level: 3 }) ? 'h3' : 'p'}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
+                else if (v === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
+                else editor.chain().focus().setParagraph().run();
+              }}
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+            >
+              <option value="p">P</option>
+              <option value="h2">H2</option>
+              <option value="h3">H3</option>
+            </select>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`${buttonBase} ${editor.isActive('bulletList') ? active : ''}`}
-        >
-          UL
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={`${buttonBase} ${editor.isActive('orderedList') ? active : ''}`}
-        >
-          OL
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className={`${buttonBase} ${editor.isActive('blockquote') ? active : ''}`}
-        >
-          “ ”
-        </button>
+          {separator}
 
-        <div className="w-px h-6 bg-slate-200 mx-1" />
+          <div className={groupBase}>
+            <button
+              type="button"
+              title="Bold"
+              className={`${btnBase} ${editor.isActive('bold') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleBold().run()}
+            >
+              <Bold className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Italic"
+              className={`${btnBase} ${editor.isActive('italic') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+            >
+              <Italic className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Underline"
+              className={`${btnBase} ${editor.isActive('underline') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleUnderline().run()}
+            >
+              <UnderlineIcon className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Strike"
+              className={`${btnBase} ${editor.isActive('strike') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleStrike().run()}
+            >
+              <Strikethrough className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Highlight"
+              className={`${btnBase} ${editor.isActive('highlight') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleHighlight().run()}
+            >
+              <Highlighter className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Code"
+              className={`${btnBase} ${editor.isActive('code') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleCode().run()}
+            >
+              <CodeIcon className="w-4 h-4" />
+            </button>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          className={`${buttonBase} ${editor.isActive({ textAlign: 'left' }) ? active : ''}`}
-        >
-          Left
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          className={`${buttonBase} ${editor.isActive({ textAlign: 'center' }) ? active : ''}`}
-        >
-          Center
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          className={`${buttonBase} ${editor.isActive({ textAlign: 'right' }) ? active : ''}`}
-        >
-          Right
-        </button>
+          {separator}
 
-        <div className="w-px h-6 bg-slate-200 mx-1" />
+          <div className={groupBase}>
+            <button
+              type="button"
+              title="Bullet List"
+              className={`${btnBase} ${editor.isActive('bulletList') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Ordered List"
+              className={`${btnBase} ${editor.isActive('orderedList') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            >
+              <ListOrdered className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Blockquote"
+              className={`${btnBase} ${editor.isActive('blockquote') ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            >
+              <Quote className="w-4 h-4" />
+            </button>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          className={`${buttonBase} ${editor.isActive('highlight') ? active : ''}`}
-        >
-          Mark
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleCode().run()}
-          className={`${buttonBase} ${editor.isActive('code') ? active : ''}`}
-        >
-          Code
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          className={`${buttonBase} ${editor.isActive('codeBlock') ? active : ''}`}
-        >
-          CodeBlock
-        </button>
+          {separator}
 
-        <div className="w-px h-6 bg-slate-200 mx-1" />
+          <div className={groupBase}>
+            <button
+              type="button"
+              title="Align Left"
+              className={`${btnBase} ${editor.isActive({ textAlign: 'left' }) ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            >
+              <AlignLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Align Center"
+              className={`${btnBase} ${editor.isActive({ textAlign: 'center' }) ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            >
+              <AlignCenter className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Align Right"
+              className={`${btnBase} ${editor.isActive({ textAlign: 'right' }) ? btnActive : ''}`}
+              onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            >
+              <AlignRight className="w-4 h-4" />
+            </button>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            const previousUrl = editor.getAttributes('link').href as string | undefined;
-            const url = window.prompt('URL', previousUrl || '');
-            if (url === null) return;
-            if (url === '') {
-              editor.chain().focus().extendMarkRange('link').unsetLink().run();
-              return;
-            }
-            editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-          }}
-          className={`${buttonBase} ${editor.isActive('link') ? active : ''}`}
-        >
-          Link
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().unsetLink().run()}
-          className={buttonBase}
-        >
-          Unlink
-        </button>
+          {separator}
 
-        <div className="w-px h-6 bg-slate-200 mx-1" />
+          <div className={groupBase}>
+            <button
+              type="button"
+              title="Link"
+              className={`${btnBase} ${editor.isActive('link') ? btnActive : ''}`}
+              onClick={promptForLink}
+            >
+              <LinkIcon className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Unlink"
+              className={btnBase}
+              disabled={!editor.isActive('link')}
+              onClick={() => editor.chain().focus().unsetLink().run()}
+            >
+              <Unlink className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-        <button type="button" onClick={() => editor.chain().focus().undo().run()} className={buttonBase}>
-          Undo
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().redo().run()} className={buttonBase}>
-          Redo
-        </button>
+        <div className="flex-1" />
       </div>
 
       <EditorContent editor={editor} />
