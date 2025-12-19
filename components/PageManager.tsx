@@ -20,6 +20,55 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pages' | 'templates' | 'navigation'>('pages');
 
+  const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+  const normalizeHex = (hex: string): string => {
+    const h = (hex || '').trim();
+    if (!h) return '#000000';
+    if (h.startsWith('#')) {
+      if (h.length === 4) {
+        return `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}`.toLowerCase();
+      }
+      if (h.length === 7) return h.toLowerCase();
+    }
+    return '#000000';
+  };
+
+  const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+    const h = normalizeHex(hex);
+    const r = parseInt(h.slice(1, 3), 16);
+    const g = parseInt(h.slice(3, 5), 16);
+    const b = parseInt(h.slice(5, 7), 16);
+    return { r, g, b };
+  };
+
+  const srgbToLin = (c: number) => {
+    const v = clamp(c, 0, 255) / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+
+  const relativeLuminance = (hex: string) => {
+    const { r, g, b } = hexToRgb(hex);
+    const R = srgbToLin(r);
+    const G = srgbToLin(g);
+    const B = srgbToLin(b);
+    return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+  };
+
+  const contrastRatio = (a: string, b: string) => {
+    const L1 = relativeLuminance(a);
+    const L2 = relativeLuminance(b);
+    const lighter = Math.max(L1, L2);
+    const darker = Math.min(L1, L2);
+    return (lighter + 0.05) / (darker + 0.05);
+  };
+
+  const bestTextColorBW = (bg: string) => {
+    const white = contrastRatio(bg, '#ffffff');
+    const black = contrastRatio(bg, '#000000');
+    return white >= black ? '#ffffff' : '#000000';
+  };
+
   // Load pages from global settings (Supabase)
   useEffect(() => {
     const load = async () => {
@@ -668,6 +717,21 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     }
                     className="w-full h-10 border border-slate-200 rounded-lg"
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const bg = editingPage.heroSettings?.backgroundColor || '#0f172a';
+                      const suggested = bestTextColorBW(bg);
+                      setEditingPage({
+                        ...editingPage,
+                        heroSettings: { ...editingPage.heroSettings, textColor: suggested }
+                      });
+                    }}
+                    className="mt-2 w-full border border-slate-200 rounded-lg py-2 text-sm bg-white hover:bg-slate-50"
+                  >
+                    {lang === 'ar' ? 'اقتراح لون نص مناسب تلقائياً' : 'Auto-pick readable text color'}
+                  </button>
                 </div>
 
                 <div>
@@ -686,6 +750,48 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     className="w-full h-10 border border-slate-200 rounded-lg"
                   />
                 </div>
+
+                {(() => {
+                  const bg = editingPage.heroSettings?.backgroundColor || '#0f172a';
+                  const text = editingPage.heroSettings?.textColor || '#ffffff';
+                  const box = editingPage.heroSettings?.textBoxBackgroundColor || '#0b1220';
+                  const sectionRatio = contrastRatio(bg, text);
+                  const boxRatio = contrastRatio(box, text);
+                  const status = (r: number) => {
+                    if (r >= 7) return { label: lang === 'ar' ? 'AAA' : 'AAA', cls: 'text-emerald-700' };
+                    if (r >= 4.5) return { label: lang === 'ar' ? 'AA' : 'AA', cls: 'text-emerald-700' };
+                    if (r >= 3) return { label: lang === 'ar' ? 'AA (نص كبير)' : 'AA (Large)' , cls: 'text-amber-700' };
+                    return { label: lang === 'ar' ? 'ضعيف' : 'Low', cls: 'text-red-700' };
+                  };
+                  const s1 = status(sectionRatio);
+                  const s2 = status(boxRatio);
+
+                  return (
+                    <div className="space-y-2 p-3 border border-slate-200 rounded-lg bg-white">
+                      <div className="text-sm font-medium text-slate-700">
+                        {lang === 'ar' ? 'إمكانية القراءة (التباين)' : 'Readability (Contrast)'}
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="text-slate-600">
+                          {lang === 'ar' ? 'تباين النص مع خلفية القسم' : 'Text vs section background'}
+                        </div>
+                        <div className="font-medium text-slate-900">
+                          {sectionRatio.toFixed(2)}:1 <span className={`${s1.cls} ml-2`}>{s1.label}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="text-slate-600">
+                          {lang === 'ar' ? 'تباين النص مع خلفية صندوق النص' : 'Text vs text box background'}
+                        </div>
+                        <div className="font-medium text-slate-900">
+                          {boxRatio.toFixed(2)}:1 <span className={`${s2.cls} ml-2`}>{s2.label}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
