@@ -50,7 +50,7 @@ const LineHeight = Extension.create({
             renderHTML: (attributes) => {
               if (!attributes.lineHeight) return {};
               return {
-                style: `line-height: ${attributes.lineHeight}`
+                style: `line-height: ${attributes.lineHeight} !important;`
               };
             }
           }
@@ -74,6 +74,46 @@ const LineHeight = Extension.create({
   }
 });
 
+const ParagraphSpacing = Extension.create({
+  name: 'paragraphSpacing',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['paragraph', 'heading'],
+        attributes: {
+          paragraphSpacing: {
+            default: null,
+            parseHTML: (element) => {
+              const style = (element as HTMLElement).style?.marginBottom;
+              return style || null;
+            },
+            renderHTML: (attributes) => {
+              if (!attributes.paragraphSpacing) return {};
+              return {
+                style: `margin-bottom: ${attributes.paragraphSpacing} !important;`
+              };
+            }
+          }
+        }
+      }
+    ];
+  },
+  addCommands() {
+    return {
+      setParagraphSpacing:
+        (value: string) =>
+        ({ chain }) => {
+          return chain().focus().updateAttributes('paragraph', { paragraphSpacing: value }).updateAttributes('heading', { paragraphSpacing: value }).run();
+        },
+      unsetParagraphSpacing:
+        () =>
+        ({ chain }) => {
+          return chain().focus().updateAttributes('paragraph', { paragraphSpacing: null }).updateAttributes('heading', { paragraphSpacing: null }).run();
+        }
+    } as any;
+  }
+});
+
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder, dir }) => {
   const editor = useEditor({
     extensions: [
@@ -81,6 +121,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
       Underline,
       Highlight,
       LineHeight,
+      ParagraphSpacing,
       Link.configure({
         openOnClick: false,
         autolink: true,
@@ -135,6 +176,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
     const p = editor.getAttributes('paragraph') as { lineHeight?: string | null };
     const h = editor.getAttributes('heading') as { lineHeight?: string | null };
     return (h?.lineHeight || p?.lineHeight || '') as string;
+  };
+
+  const getCurrentParagraphSpacing = () => {
+    const p = editor.getAttributes('paragraph') as { paragraphSpacing?: string | null };
+    const h = editor.getAttributes('heading') as { paragraphSpacing?: string | null };
+    return (h?.paragraphSpacing || p?.paragraphSpacing || '') as string;
   };
 
   const promptForLink = () => {
@@ -207,7 +254,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
           <div className={groupBase}>
             <select
               value={editor.isActive('heading', { level: 2 }) ? 'h2' : editor.isActive('heading', { level: 3 }) ? 'h3' : 'p'}
-              onMouseDown={preventMouseDown}
               onChange={(e) => {
                 const v = e.target.value;
                 if (v === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
@@ -227,7 +273,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
           <div className={groupBase}>
             <select
               value={getCurrentLineHeight()}
-              onMouseDown={preventMouseDown}
               onChange={(e) => {
                 const v = e.target.value;
                 if (!v) (editor as any).commands.unsetLineHeight();
@@ -241,6 +286,26 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               <option value="1.15">1.15</option>
               <option value="1.5">1.5</option>
               <option value="2">2</option>
+            </select>
+          </div>
+
+          <div className={groupBase}>
+            <select
+              value={getCurrentParagraphSpacing()}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (!v) (editor as any).commands.unsetParagraphSpacing();
+                else (editor as any).commands.setParagraphSpacing(v);
+              }}
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+              title={dir === 'rtl' ? 'مسافة بين الفقرات' : 'Paragraph spacing'}
+            >
+              <option value="">PS</option>
+              <option value="0">0</option>
+              <option value="0.25rem">4px</option>
+              <option value="0.5rem">8px</option>
+              <option value="0.75rem">12px</option>
+              <option value="1rem">16px</option>
             </select>
           </div>
 
