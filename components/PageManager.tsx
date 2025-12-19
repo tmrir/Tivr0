@@ -700,6 +700,31 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     }
                     className="w-full h-10 border border-slate-200 rounded-lg"
                   />
+
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {lang === 'ar' ? 'شفافية خلفية القسم' : 'Section Background Opacity'}
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={Math.round(editingPage.heroSettings?.backgroundOpacity ?? 100)}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          setEditingPage({
+                            ...editingPage,
+                            heroSettings: { ...editingPage.heroSettings, backgroundOpacity: v }
+                          });
+                        }}
+                        className="w-full"
+                      />
+                      <div className="text-sm text-slate-700 w-16 text-end">
+                        {Math.round(editingPage.heroSettings?.backgroundOpacity ?? 100)}%
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -721,11 +746,14 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                   <button
                     type="button"
                     onClick={() => {
-                      const bg = editingPage.heroSettings?.backgroundColor || '#0f172a';
-                      const suggested = bestTextColorBW(bg);
-                      setEditingPage({
-                        ...editingPage,
-                        heroSettings: { ...editingPage.heroSettings, textColor: suggested }
+                      setEditingPage((prev) => {
+                        if (!prev) return prev;
+                        const bg = prev.heroSettings?.backgroundColor || '#0f172a';
+                        const suggested = bestTextColorBW(bg);
+                        return {
+                          ...prev,
+                          heroSettings: { ...prev.heroSettings, textColor: suggested }
+                        };
                       });
                     }}
                     className="mt-2 w-full border border-slate-200 rounded-lg py-2 text-sm bg-white hover:bg-slate-50"
@@ -749,6 +777,31 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     }
                     className="w-full h-10 border border-slate-200 rounded-lg"
                   />
+
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {lang === 'ar' ? 'شفافية خلفية صندوق النص' : 'Text Box Background Opacity'}
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={Math.round(editingPage.heroSettings?.textBoxBackgroundOpacity ?? 40)}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          setEditingPage({
+                            ...editingPage,
+                            heroSettings: { ...editingPage.heroSettings, textBoxBackgroundOpacity: v }
+                          });
+                        }}
+                        className="w-full"
+                      />
+                      <div className="text-sm text-slate-700 w-16 text-end">
+                        {Math.round(editingPage.heroSettings?.textBoxBackgroundOpacity ?? 40)}%
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {(() => {

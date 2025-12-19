@@ -358,7 +358,12 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
           id={(page as any).slug ? `page-${(page as any).slug}` : undefined}
           className={((page as any).sectionVariant || 'default') === 'hero' ? 'relative overflow-hidden pt-20 pb-24' : 'py-16 bg-white'}
           style={((page as any).sectionVariant || 'default') === 'hero' ? {
-            backgroundColor: (page as any).heroSettings?.backgroundColor || '#0f172a',
+            backgroundColor: (() => {
+              const hs = (page as any).heroSettings || {};
+              const color = hs.backgroundColor || '#0f172a';
+              const opacityPct = typeof hs.backgroundOpacity === 'number' ? hs.backgroundOpacity : 100;
+              return hexToRgba(color, opacityPct / 100);
+            })(),
             color: (page as any).heroSettings?.textColor || '#ffffff',
             backgroundImage: ((page as any).heroSettings?.imagePosition === 'background' && (page.components || []).find((c: any) => c.type === 'image' && c.isVisible !== false)?.content?.src)
               ? `url(${(page.components || []).find((c: any) => c.type === 'image' && c.isVisible !== false)?.content?.src})`
@@ -385,7 +390,11 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
               const contentComponents = nonImage.filter((c: any) => c.type !== 'button');
 
               const textBoxStyle: React.CSSProperties = {
-                backgroundColor: heroSettings.textBoxBackgroundColor || 'rgba(15, 23, 42, 0.4)'
+                backgroundColor: (() => {
+                  const color = heroSettings.textBoxBackgroundColor || '#0b1220';
+                  const opacityPct = typeof heroSettings.textBoxBackgroundOpacity === 'number' ? heroSettings.textBoxBackgroundOpacity : 40;
+                  return hexToRgba(color, opacityPct / 100);
+                })()
               };
 
               const ImageBlock = () => {

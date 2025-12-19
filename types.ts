@@ -288,8 +288,10 @@ export interface CustomPage {
   sectionVariant?: 'default' | 'hero';
   heroSettings?: {
     backgroundColor?: string;
+    backgroundOpacity?: number;
     textColor?: string;
     textBoxBackgroundColor?: string;
+    textBoxBackgroundOpacity?: number;
     imagePosition?: 'left' | 'right' | 'top' | 'bottom' | 'background';
   };
   underConstruction?: boolean;
