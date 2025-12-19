@@ -333,7 +333,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const uploadMediaFile = async (file: File): Promise<{ url: string; mime: string } | null> => {
     setUploadError(null);
 
-    const maxBytes = 10 * 1024 * 1024;
+    const maxBytes = 4 * 1024 * 1024;
     if (file.size <= 0 || file.size > maxBytes) {
       setUploadError(lang === 'ar' ? 'حجم الملف غير مسموح' : 'File size not allowed');
       return null;
@@ -348,8 +348,31 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
 
     setUploading(true);
     try {
+      const currentSrc = (selectedComponent as any)?.content?.src as string | undefined;
+      const extractOldPath = (url?: string): string | null => {
+        if (!url) return null;
+        try {
+          const marker = '/storage/v1/object/public/';
+          const idx = url.indexOf(marker);
+          if (idx === -1) return null;
+          const rest = url.slice(idx + marker.length);
+          const parts = rest.split('/');
+          if (parts.length < 2) return null;
+          parts.shift();
+          const path = parts.join('/');
+          return path || null;
+        } catch {
+          return null;
+        }
+      };
+
       const formData = new FormData();
       formData.append('file', file);
+
+      const oldPath = extractOldPath(currentSrc);
+      if (oldPath) {
+        formData.append('oldPath', oldPath);
+      }
 
       const res = await fetch('/api/uploads/create', {
         method: 'POST',

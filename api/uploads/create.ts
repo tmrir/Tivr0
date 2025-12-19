@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 const require = createRequire(import.meta.url);
 const Busboy = require('busboy') as any;
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024; // 4MB (avoid Vercel 413)
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -26,6 +26,14 @@ const MEDIA_BUCKET = process.env.SUPABASE_MEDIA_BUCKET || 'uploads';
 function getExtensionFromFilename(filename: string): string {
   const last = filename.split('.').pop() || '';
   return last.toLowerCase().trim();
+}
+
+function isSafeObjectPath(path: string): boolean {
+  const p = path.trim();
+  if (!p) return false;
+  if (p.startsWith('/') || p.startsWith('\\')) return false;
+  if (p.includes('..')) return false;
+  return true;
 }
 
 function bytesStartWith(bytes: Buffer, signature: number[]): boolean {
@@ -105,9 +113,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let filename = '';
     let mime = '';
     let ext = '';
+    let oldPath: string | null = null;
     let rejected: { status: number; error: string } | null = null;
 
     const done = new Promise<void>((resolve, reject) => {
+      busboy.on('field', (name, value) => {
+        if (name === 'oldPath' && typeof value === 'string') {
+          const trimmed = value.trim();
+          if (trimmed && trimmed.length < 1024) {
+            oldPath = trimmed;
+          }
+        }
+      });
+
       busboy.on('file', (_name, file, info) => {
         filename = info.filename || '';
         mime = (info.mimeType || '').toLowerCase();
@@ -178,6 +196,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           size: fileBuffer.length,
         }
       });
+    }
+
+    if (oldPath && oldPath !== objectPath && isSafeObjectPath(oldPath)) {
+      try {
+        await supabaseAdmin.storage.from(MEDIA_BUCKET).remove([oldPath]);
+      } catch {
+        // ignore deletion failures
+      }
     }
 
     const { data: publicData } = supabaseAdmin.storage.from(MEDIA_BUCKET).getPublicUrl(objectPath);
