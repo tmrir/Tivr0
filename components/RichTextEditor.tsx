@@ -25,6 +25,7 @@ import {
   Unlink,
   Highlighter,
   RemoveFormatting,
+  Type,
 } from 'lucide-react';
 
 interface RichTextEditorProps {
