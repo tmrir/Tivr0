@@ -242,8 +242,25 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
 
       case 'image': {
         const src = (component as any).content?.src || (component as any).content?.url;
+        const mime = ((component as any).content?.mime || '') as string;
         const alt = (component as any).content?.alt?.[lang] || '';
         if (!src) return null;
+
+        const isPdf = (mime && mime.toLowerCase() === 'application/pdf') || /\.pdf(\?|#|$)/i.test(String(src));
+        if (isPdf) {
+          return (
+            <div className="max-w-4xl mx-auto">
+              <a
+                href={src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-slate-900 text-white hover:bg-slate-800 transition"
+              >
+                {alt || (lang === 'ar' ? 'فتح ملف PDF' : 'Open PDF')}
+              </a>
+            </div>
+          );
+        }
         return (
           <div className="max-w-4xl mx-auto">
             <img src={src} alt={alt} className="w-full h-auto rounded-xl" />

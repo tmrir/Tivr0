@@ -16,6 +16,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const [editingPage, setEditingPage] = useState<CustomPage | null>(null);
   const [selectedComponent, setSelectedComponent] = useState<PageComponent | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pages' | 'templates' | 'navigation'>('pages');
 
   // Load pages from global settings (Supabase)
@@ -326,6 +328,49 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
         c.id === updatedComponent.id ? updatedComponent : c
       )
     });
+  };
+
+  const uploadMediaFile = async (file: File): Promise<{ url: string; mime: string } | null> => {
+    setUploadError(null);
+
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size <= 0 || file.size > maxBytes) {
+      setUploadError(lang === 'ar' ? 'حجم الملف غير مسموح' : 'File size not allowed');
+      return null;
+    }
+
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']);
+    const mime = (file.type || '').toLowerCase();
+    if (!allowed.has(mime)) {
+      setUploadError(lang === 'ar' ? 'نوع الملف غير مسموح' : 'File type not allowed');
+      return null;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/uploads/create', {
+        method: 'POST',
+        body: formData
+      });
+
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok || !json?.data?.url) {
+        setUploadError(
+          (json?.error as string) || (lang === 'ar' ? 'فشل رفع الملف' : 'Upload failed')
+        );
+        return null;
+      }
+
+      return { url: json.data.url as string, mime: (json.data.mime as string) || mime };
+    } catch (e: any) {
+      setUploadError(e?.message || (lang === 'ar' ? 'فشل رفع الملف' : 'Upload failed'));
+      return null;
+    } finally {
+      setUploading(false);
+    }
   };
 
   const getComponentIcon = (type: PageComponent['type']) => {
@@ -949,6 +994,47 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                         placeholder="https://example.com/image.jpg"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        {lang === 'ar' ? 'رفع ملف (صور/PDF)' : 'Upload File (Images/PDF)'}
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                        disabled={uploading}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (!file) return;
+
+                          const uploaded = await uploadMediaFile(file);
+                          if (!uploaded) return;
+
+                          const updatedComponent = {
+                            ...selectedComponent,
+                            content: {
+                              ...selectedComponent.content,
+                              src: uploaded.url,
+                              mime: uploaded.mime
+                            }
+                          };
+                          setSelectedComponent(updatedComponent);
+                          updateComponentInPage(updatedComponent);
+                        }}
+                        className="w-full border border-slate-200 rounded-lg p-2 bg-white"
+                      />
+
+                      {uploading && (
+                        <div className="text-sm text-slate-600">
+                          {lang === 'ar' ? 'جاري الرفع...' : 'Uploading...'}
+                        </div>
+                      )}
+                      {uploadError && (
+                        <div className="text-sm text-red-600">{uploadError}</div>
+                      )}
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
                         {lang === 'ar' ? 'النص البديل (عربي)' : 'Alt Text (Arabic)'}
