@@ -78,6 +78,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
 
   if (!editor) return null;
 
+  const preventMouseDown = (e: React.MouseEvent) => {
+    // Keep selection inside the editor when interacting with the toolbar.
+    e.preventDefault();
+  };
+
   const btnBase =
     'h-9 w-9 inline-flex items-center justify-center rounded-md border border-transparent text-slate-700 hover:bg-slate-100 active:scale-[0.98] transition disabled:opacity-40 disabled:hover:bg-transparent';
   const btnActive = 'bg-white border-slate-200 shadow-sm';
@@ -115,13 +120,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
 
         <div className="flex items-center flex-wrap justify-center">
           <div className={groupBase}>
-            <button type="button" title={dir === 'rtl' ? 'لصق كنص عادي' : 'Paste as plain text'} className={btnBase} onClick={pasteAsPlainText}>
+            <button type="button" title={dir === 'rtl' ? 'لصق كنص عادي' : 'Paste as plain text'} className={btnBase} onMouseDown={preventMouseDown} onClick={pasteAsPlainText}>
               <RemoveFormatting className="w-4 h-4" />
             </button>
             <button
               type="button"
               title={dir === 'rtl' ? 'مسح التنسيق' : 'Clear formatting'}
               className={btnBase}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
             >
               <RemoveFormatting className="w-4 h-4" />
@@ -131,6 +137,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               title="Redo"
               className={btnBase}
               disabled={!editor.can().chain().focus().redo().run()}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().redo().run()}
             >
               <Redo2 className="w-4 h-4" />
@@ -140,6 +147,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               title="Undo"
               className={btnBase}
               disabled={!editor.can().chain().focus().undo().run()}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().undo().run()}
             >
               <Undo2 className="w-4 h-4" />
@@ -151,6 +159,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
           <div className={groupBase}>
             <select
               value={editor.isActive('heading', { level: 2 }) ? 'h2' : editor.isActive('heading', { level: 3 }) ? 'h3' : 'p'}
+              onMouseDown={preventMouseDown}
               onChange={(e) => {
                 const v = e.target.value;
                 if (v === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
@@ -172,6 +181,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Bold"
               className={`${btnBase} ${editor.isActive('bold') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleBold().run()}
             >
               <Bold className="w-4 h-4" />
@@ -180,6 +190,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Italic"
               className={`${btnBase} ${editor.isActive('italic') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleItalic().run()}
             >
               <Italic className="w-4 h-4" />
@@ -188,6 +199,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Underline"
               className={`${btnBase} ${editor.isActive('underline') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleUnderline().run()}
             >
               <UnderlineIcon className="w-4 h-4" />
@@ -196,6 +208,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Strike"
               className={`${btnBase} ${editor.isActive('strike') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleStrike().run()}
             >
               <Strikethrough className="w-4 h-4" />
@@ -204,6 +217,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Highlight"
               className={`${btnBase} ${editor.isActive('highlight') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleHighlight().run()}
             >
               <Highlighter className="w-4 h-4" />
@@ -212,6 +226,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Code"
               className={`${btnBase} ${editor.isActive('code') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleCode().run()}
             >
               <CodeIcon className="w-4 h-4" />
@@ -225,6 +240,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Bullet List"
               className={`${btnBase} ${editor.isActive('bulletList') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleBulletList().run()}
             >
               <List className="w-4 h-4" />
@@ -233,6 +249,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Ordered List"
               className={`${btnBase} ${editor.isActive('orderedList') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleOrderedList().run()}
             >
               <ListOrdered className="w-4 h-4" />
@@ -241,6 +258,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Blockquote"
               className={`${btnBase} ${editor.isActive('blockquote') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
             >
               <Quote className="w-4 h-4" />
@@ -254,6 +272,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Align Left"
               className={`${btnBase} ${editor.isActive({ textAlign: 'left' }) ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().setTextAlign('left').run()}
             >
               <AlignLeft className="w-4 h-4" />
@@ -262,6 +281,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Align Center"
               className={`${btnBase} ${editor.isActive({ textAlign: 'center' }) ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().setTextAlign('center').run()}
             >
               <AlignCenter className="w-4 h-4" />
@@ -270,6 +290,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Align Right"
               className={`${btnBase} ${editor.isActive({ textAlign: 'right' }) ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().setTextAlign('right').run()}
             >
               <AlignRight className="w-4 h-4" />
@@ -283,6 +304,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               type="button"
               title="Link"
               className={`${btnBase} ${editor.isActive('link') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
               onClick={promptForLink}
             >
               <LinkIcon className="w-4 h-4" />
@@ -292,6 +314,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               title="Unlink"
               className={btnBase}
               disabled={!editor.isActive('link')}
+              onMouseDown={preventMouseDown}
               onClick={() => editor.chain().focus().unsetLink().run()}
             >
               <Unlink className="w-4 h-4" />
