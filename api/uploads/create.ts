@@ -1,6 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import Busboy from 'busboy';
+import { createRequire } from 'node:module';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+
+const require = createRequire(import.meta.url);
+const Busboy = require('busboy') as any;
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -68,7 +72,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return json(res, 500, { ok: false, error: 'Missing Supabase env vars' });
+    return json(res, 500, {
+      ok: false,
+      error: 'Missing Supabase env vars',
+      details: {
+        hasSupabaseUrl: !!SUPABASE_URL,
+        hasServiceRoleKey: !!SUPABASE_SERVICE_ROLE_KEY,
+      }
+    });
   }
 
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -147,7 +158,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, 400, { ok: false, error: 'Invalid file signature' });
     }
 
-    const safeId = (globalThis.crypto as any)?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+    const safeId = randomUUID();
     const objectPath = `${new Date().toISOString().slice(0, 10)}/${safeId}.${ext}`;
 
     const uploadRes = await supabaseAdmin.storage.from(MEDIA_BUCKET).upload(objectPath, fileBuffer, {
@@ -157,7 +168,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (uploadRes.error) {
-      return json(res, 500, { ok: false, error: uploadRes.error.message });
+      return json(res, 500, {
+        ok: false,
+        error: uploadRes.error.message,
+        details: {
+          bucket: MEDIA_BUCKET,
+          path: objectPath,
+          mime,
+          size: fileBuffer.length,
+        }
+      });
     }
 
     const { data: publicData } = supabaseAdmin.storage.from(MEDIA_BUCKET).getPublicUrl(objectPath);
@@ -173,6 +193,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
   } catch (e: any) {
-    return json(res, 500, { ok: false, error: 'Internal Server Error', message: e?.message || 'Unknown error' });
+    return json(res, 500, {
+      ok: false,
+      error: 'Internal Server Error',
+      message: e?.message || 'Unknown error'
+    });
   }
 }
