@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
+import { Extension } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -33,14 +34,55 @@ interface RichTextEditorProps {
   dir?: 'rtl' | 'ltr';
 }
 
+const LineHeight = Extension.create({
+  name: 'lineHeight',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['paragraph', 'heading'],
+        attributes: {
+          lineHeight: {
+            default: null,
+            parseHTML: (element) => {
+              const style = (element as HTMLElement).style?.lineHeight;
+              return style || null;
+            },
+            renderHTML: (attributes) => {
+              if (!attributes.lineHeight) return {};
+              return {
+                style: `line-height: ${attributes.lineHeight}`
+              };
+            }
+          }
+        }
+      }
+    ];
+  },
+  addCommands() {
+    return {
+      setLineHeight:
+        (value: string) =>
+        ({ chain }) => {
+          return chain().focus().updateAttributes('paragraph', { lineHeight: value }).updateAttributes('heading', { lineHeight: value }).run();
+        },
+      unsetLineHeight:
+        () =>
+        ({ chain }) => {
+          return chain().focus().updateAttributes('paragraph', { lineHeight: null }).updateAttributes('heading', { lineHeight: null }).run();
+        }
+    } as any;
+  }
+});
+
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder, dir }) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       Highlight,
+      LineHeight,
       Link.configure({
-        openOnClick: true,
+        openOnClick: false,
         autolink: true,
         HTMLAttributes: {
           rel: 'noreferrer',
@@ -88,6 +130,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
   const btnActive = 'bg-white border-slate-200 shadow-sm';
   const groupBase = 'flex items-center gap-1';
   const separator = <div className="w-px h-7 bg-slate-200 mx-2" />;
+
+  const getCurrentLineHeight = () => {
+    const p = editor.getAttributes('paragraph') as { lineHeight?: string | null };
+    const h = editor.getAttributes('heading') as { lineHeight?: string | null };
+    return (h?.lineHeight || p?.lineHeight || '') as string;
+  };
 
   const promptForLink = () => {
     const previousUrl = editor.getAttributes('link').href as string | undefined;
@@ -171,6 +219,28 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
               <option value="p">P</option>
               <option value="h2">H2</option>
               <option value="h3">H3</option>
+            </select>
+          </div>
+
+          {separator}
+
+          <div className={groupBase}>
+            <select
+              value={getCurrentLineHeight()}
+              onMouseDown={preventMouseDown}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (!v) (editor as any).commands.unsetLineHeight();
+                else (editor as any).commands.setLineHeight(v);
+              }}
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+              title={dir === 'rtl' ? 'تباعد الأسطر' : 'Line height'}
+            >
+              <option value="">LH</option>
+              <option value="1">1</option>
+              <option value="1.15">1.15</option>
+              <option value="1.5">1.5</option>
+              <option value="2">2</option>
             </select>
           </div>
 
