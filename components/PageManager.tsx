@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext';
 import { CustomPage, PageComponent, SectionTemplate, NavigationItem } from '../types';
 import { db } from '../services/db';
 import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer } from 'lucide-react';
-import { RichTextEditor } from './RichTextEditor';
+import { WordLikeEditor } from './WordLikeEditor';
+import { sanitizeHtml } from './PagesRenderer';
 
 interface PageManagerProps {
   onUpdate?: () => void;
@@ -938,7 +939,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                       <label className="block text-sm font-medium text-slate-700 mb-1">
                         {lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}
                       </label>
-                      <RichTextEditor
+                      <WordLikeEditor
                         dir="rtl"
                         value={selectedComponent.content.text?.ar || ''}
                         placeholder={lang === 'ar' ? 'اكتب النص هنا...' : 'Write here...'}
@@ -962,7 +963,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                       <label className="block text-sm font-medium text-slate-700 mb-1">
                         {lang === 'ar' ? 'النص (إنجليزي)' : 'Text (English)'}
                       </label>
-                      <RichTextEditor
+                      <WordLikeEditor
                         dir="ltr"
                         value={selectedComponent.content.text?.en || ''}
                         placeholder={lang === 'ar' ? 'اكتب النص هنا...' : 'Write here...'}
