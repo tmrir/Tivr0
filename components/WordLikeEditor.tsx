@@ -212,6 +212,9 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
   const [isFocused, setIsFocused] = useState(false);
   const [checkColor, setCheckColor] = useState('#16a34a');
   const [uncheckColor, setUncheckColor] = useState('#dc2626');
+  const [fontSizePx, setFontSizePx] = useState(17);
+  const [lineHeight, setLineHeight] = useState('');
+  const [blockType, setBlockType] = useState<'p' | 'h1' | 'h2' | 'h3'>('p');
 
   const placeholderText = useMemo(() => {
     return placeholder || '';
@@ -243,6 +246,74 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
     const url = window.prompt('URL', 'https://');
     if (!url) return;
     exec('createLink', url);
+  };
+
+  const wrapSelectionWithSpanStyle = (style: string) => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!ref.current || !ref.current.contains(range.commonAncestorContainer)) return;
+
+    const extracted = range.extractContents();
+    const wrapper = document.createElement('span');
+    wrapper.setAttribute('style', style);
+    wrapper.appendChild(extracted);
+    range.insertNode(wrapper);
+
+    // Move caret after wrapper
+    sel.removeAllRanges();
+    const newRange = document.createRange();
+    newRange.setStartAfter(wrapper);
+    newRange.collapse(true);
+    sel.addRange(newRange);
+
+    const el = ref.current;
+    if (el) onChange(el.innerHTML);
+  };
+
+  const applyFontSize = (px: number) => {
+    const clamped = Math.max(8, Math.min(70, Math.round(px || 0)));
+    setFontSizePx(clamped);
+    wrapSelectionWithSpanStyle(`font-size: ${clamped}px`);
+  };
+
+  const getClosestBlockEl = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    let node: Node | null = range.startContainer;
+    if (!ref.current || !ref.current.contains(node)) return null;
+
+    while (node && node !== ref.current) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'p' || tag === 'div' || tag === 'li' || tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'blockquote' || tag === 'pre') {
+          return el;
+        }
+      }
+      node = node.parentNode;
+    }
+    return ref.current;
+  };
+
+  const applyLineHeight = (v: string) => {
+    setLineHeight(v);
+    const block = getClosestBlockEl();
+    if (!block) return;
+    if (!v) block.style.removeProperty('line-height');
+    else block.style.lineHeight = v;
+    const el = ref.current;
+    if (el) onChange(el.innerHTML);
+  };
+
+  const applyBlockType = (v: 'p' | 'h1' | 'h2' | 'h3') => {
+    setBlockType(v);
+    if (v === 'p') {
+      exec('formatBlock', 'p');
+      return;
+    }
+    exec('formatBlock', v);
   };
 
   const insertCheck = () => {
@@ -277,6 +348,49 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
             <button type="button" title="Redo" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('redo')}>
               <Redo2 className="w-4 h-4" />
             </button>
+          </div>
+
+          <div className="w-px h-7 bg-slate-200 mx-1" />
+
+          <div className="flex items-center gap-1">
+            <select
+              value={blockType}
+              onChange={(e) => applyBlockType(e.target.value as any)}
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+              title="Heading"
+            >
+              <option value="p">P</option>
+              <option value="h1">H1</option>
+              <option value="h2">H2</option>
+              <option value="h3">H3</option>
+            </select>
+
+            <select
+              value={String(fontSizePx)}
+              onChange={(e) => applyFontSize(Number(e.target.value))}
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+              title="Font size"
+            >
+              {[10, 12, 14, 16, 17, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 70].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={lineHeight}
+              onChange={(e) => applyLineHeight(e.target.value)}
+              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+              title={dir === 'rtl' ? 'تباعد الأسطر' : 'Line height'}
+            >
+              <option value="">LH</option>
+              <option value="1">1</option>
+              <option value="1.15">1.15</option>
+              <option value="1.5">1.5</option>
+              <option value="2">2</option>
+              <option value="2.5">2.5</option>
+            </select>
           </div>
 
           <div className="w-px h-7 bg-slate-200 mx-1" />
