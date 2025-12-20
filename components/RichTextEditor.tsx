@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Extension, Mark } from '@tiptap/core';
+import { Plugin } from 'prosemirror-state';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -141,35 +142,31 @@ const WordPasteSanitizer = Extension.create({
     };
 
     return [
-      // Lazy import to avoid adding a hard dependency in the module graph.
-      // ProseMirror Plugin types are available at runtime via editor.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      require('prosemirror-state').Plugin &&
-        new (require('prosemirror-state').Plugin)({
-          props: {
-            handlePaste: (view: any, event: ClipboardEvent) => {
-              try {
-                const html = event.clipboardData?.getData('text/html');
-                if (!html) return false;
+      new Plugin({
+        props: {
+          handlePaste: (view, event) => {
+            try {
+              const html = (event as ClipboardEvent).clipboardData?.getData('text/html');
+              if (!html) return false;
 
-                const cleaned = sanitizeHtml(html);
-                if (!cleaned) return false;
+              const cleaned = sanitizeHtml(html);
+              if (!cleaned) return false;
 
-                // Let TipTap parse HTML into schema, with our style mark preserving key styles.
-                const editor = (view as any)?.editor;
-                if (editor) {
-                  editor.chain().focus().insertContent(cleaned).run();
-                  return true;
-                }
-
-                return false;
-              } catch {
-                return false;
+              // Let TipTap parse HTML into schema, with our style mark preserving key styles.
+              const editor = (view as any)?.editor;
+              if (editor) {
+                editor.chain().focus().insertContent(cleaned).run();
+                return true;
               }
+
+              return false;
+            } catch {
+              return false;
             }
           }
-        })
-    ].filter(Boolean);
+        }
+      })
+    ];
   }
 });
 
@@ -256,7 +253,11 @@ const ParagraphSpacing = Extension.create({
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder, dir }) => {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        // Avoid duplicate extension warnings if StarterKit already bundles these.
+        link: false as any,
+        underline: false as any,
+      }),
       SanitizedTextStyle,
       Underline,
       Highlight,
