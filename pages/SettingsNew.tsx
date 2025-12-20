@@ -271,6 +271,26 @@ export const SettingsNewPage: React.FC = () => {
                                 <LocalizedInput label="شريط صغير فوق العنوان (Hero Badge)" value={safeSettings.homeSections.heroBadge} onChange={v => updateNestedField('homeSections', 'heroBadge', v)} />
                                 <LocalizedInput label="عنوان قسم الهيرو" value={safeSettings.homeSections.heroTitle} onChange={v => updateNestedField('homeSections', 'heroTitle', v)} />
                                 <LocalizedInput label="وصف قسم الهيرو" value={safeSettings.homeSections.heroSubtitle} onChange={v => updateNestedField('homeSections', 'heroSubtitle', v)} />
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={safeSettings.homeSections.heroButtonsEnabled !== false}
+                                            onChange={(e) => updateNestedField('homeSections', 'heroButtonsEnabled', e.target.checked)}
+                                        />
+                                        إظهار أزرار الهيرو (CTA Buttons)
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={safeSettings.homeSections.heroStatsEnabled !== false}
+                                            onChange={(e) => updateNestedField('homeSections', 'heroStatsEnabled', e.target.checked)}
+                                        />
+                                        إظهار شريط الإحصائيات أسفل الهيرو
+                                    </label>
+                                </div>
+
                                 <LocalizedInput label="عنوان قسم الخدمات" value={safeSettings.homeSections.servicesTitle} onChange={v => updateNestedField('homeSections', 'servicesTitle', v)} />
                                 <LocalizedInput label="وصف قسم الخدمات" value={safeSettings.homeSections.servicesSubtitle} onChange={v => updateNestedField('homeSections', 'servicesSubtitle', v)} />
                                 <LocalizedInput label="عنوان قسم الفريق" value={safeSettings.homeSections.teamTitle} onChange={v => updateNestedField('homeSections', 'teamTitle', v)} />

@@ -90,6 +90,8 @@ export interface HomeSectionsSettings {
     heroBadge: LocalizedString;
     heroTitle: LocalizedString;
     heroSubtitle: LocalizedString;
+    heroButtonsEnabled?: boolean;
+    heroStatsEnabled?: boolean;
     servicesTitle: LocalizedString;
     servicesSubtitle: LocalizedString;
     teamTitle: LocalizedString;
