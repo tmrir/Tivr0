@@ -291,6 +291,91 @@ export const SettingsNewPage: React.FC = () => {
                                     </label>
                                 </div>
 
+                                {safeSettings.homeSections.heroButtonsEnabled !== false && (
+                                  <div className="border border-slate-200 rounded-lg p-4 bg-white space-y-4">
+                                    <h5 className="font-bold text-slate-800">إعدادات أزرار الهيرو</h5>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">رابط الزر الأساسي</label>
+                                        <input
+                                          className="w-full border p-2 rounded"
+                                          value={safeSettings.homeSections.heroPrimaryCta?.href || ''}
+                                          onChange={(e) => updateNestedField('homeSections', 'heroPrimaryCta', {
+                                            ...(safeSettings.homeSections.heroPrimaryCta || { label: { ar: '', en: '' }, href: '' }),
+                                            href: e.target.value
+                                          })}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">رابط الزر الثانوي</label>
+                                        <input
+                                          className="w-full border p-2 rounded"
+                                          value={safeSettings.homeSections.heroSecondaryCta?.href || ''}
+                                          onChange={(e) => updateNestedField('homeSections', 'heroSecondaryCta', {
+                                            ...(safeSettings.homeSections.heroSecondaryCta || { label: { ar: '', en: '' }, href: '' }),
+                                            href: e.target.value
+                                          })}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <LocalizedInput
+                                      label="نص الزر الأساسي"
+                                      value={safeSettings.homeSections.heroPrimaryCta?.label || { ar: '', en: '' }}
+                                      onChange={(v) => updateNestedField('homeSections', 'heroPrimaryCta', {
+                                        ...(safeSettings.homeSections.heroPrimaryCta || { label: { ar: '', en: '' }, href: '' }),
+                                        label: v
+                                      })}
+                                    />
+
+                                    <LocalizedInput
+                                      label="نص الزر الثانوي"
+                                      value={safeSettings.homeSections.heroSecondaryCta?.label || { ar: '', en: '' }}
+                                      onChange={(v) => updateNestedField('homeSections', 'heroSecondaryCta', {
+                                        ...(safeSettings.homeSections.heroSecondaryCta || { label: { ar: '', en: '' }, href: '' }),
+                                        label: v
+                                      })}
+                                    />
+                                  </div>
+                                )}
+
+                                {safeSettings.homeSections.heroStatsEnabled !== false && (
+                                  <div className="border border-slate-200 rounded-lg p-4 bg-white space-y-4">
+                                    <h5 className="font-bold text-slate-800">إعدادات شريط الإحصائيات</h5>
+
+                                    {(safeSettings.homeSections.heroStats || []).slice(0, 3).map((stat: any, idx: number) => (
+                                      <div key={idx} className="border border-slate-100 rounded-lg p-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                          <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">القيمة</label>
+                                            <input
+                                              className="w-full border p-2 rounded"
+                                              value={stat?.value || ''}
+                                              onChange={(e) => {
+                                                const next = [...(safeSettings.homeSections.heroStats || [])];
+                                                next[idx] = { ...(next[idx] || {}), value: e.target.value, label: (next[idx]?.label || { ar: '', en: '' }) };
+                                                updateNestedField('homeSections', 'heroStats', next);
+                                              }}
+                                            />
+                                          </div>
+                                          <div>
+                                            <LocalizedInput
+                                              label="عنوان الإحصائية"
+                                              value={stat?.label || { ar: '', en: '' }}
+                                              onChange={(v) => {
+                                                const next = [...(safeSettings.homeSections.heroStats || [])];
+                                                next[idx] = { ...(next[idx] || {}), value: (next[idx]?.value || ''), label: v };
+                                                updateNestedField('homeSections', 'heroStats', next);
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
                                 <LocalizedInput label="عنوان قسم الخدمات" value={safeSettings.homeSections.servicesTitle} onChange={v => updateNestedField('homeSections', 'servicesTitle', v)} />
                                 <LocalizedInput label="وصف قسم الخدمات" value={safeSettings.homeSections.servicesSubtitle} onChange={v => updateNestedField('homeSections', 'servicesSubtitle', v)} />
                                 <LocalizedInput label="عنوان قسم الفريق" value={safeSettings.homeSections.teamTitle} onChange={v => updateNestedField('homeSections', 'teamTitle', v)} />

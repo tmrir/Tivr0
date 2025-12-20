@@ -383,6 +383,15 @@ export class SettingsService {
         heroBadge: { ar: '🚀 الوكالة الرقمية الأسرع نمواً', en: '🚀 Fastest Growing Digital Agency' },
         heroTitle: { ar: '🚀 الوكالة الرقمية الأسرع نمواً', en: '🚀 Fastest Growing Digital Agency' },
         heroSubtitle: { ar: 'شريكك الاستراتيجي للنمو الرقمي', en: 'Your Strategic Partner for Digital Growth' },
+        heroButtonsEnabled: true,
+        heroStatsEnabled: true,
+        heroPrimaryCta: { label: { ar: 'ابدأ رحلة النمو', en: 'Start Growth Journey' }, href: '#contact' },
+        heroSecondaryCta: { label: { ar: 'أعمالنا', en: 'Our Work' }, href: '#work' },
+        heroStats: [
+          { value: '+150%', label: { ar: 'متوسط نمو العملاء', en: 'Avg Client Growth' } },
+          { value: '+50', label: { ar: 'عميل سعيد', en: 'Happy Client' } },
+          { value: '24/7', label: { ar: 'دعم فني', en: 'Support' } }
+        ],
         servicesTitle: { ar: 'أعمالنا', en: 'Our Work' },
         servicesSubtitle: { ar: 'نحول الأفكار إلى أرقام، ونقود علامتك التجارية نحو الصدارة في السوق السعودي.', en: 'We turn ideas into numbers, leading your brand to the forefront of the Saudi market.' },
         teamTitle: { ar: 'ابدأ رحلة النمو', en: 'Start Your Growth Journey' },

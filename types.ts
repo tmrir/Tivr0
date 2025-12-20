@@ -86,12 +86,25 @@ export interface FontSizeSettings {
     teamTitle: string;
 }
 
+export interface HeroCtaButtonSettings {
+    label: LocalizedString;
+    href: string;
+}
+
+export interface HeroStatItemSettings {
+    value: string;
+    label: LocalizedString;
+}
+
 export interface HomeSectionsSettings {
     heroBadge: LocalizedString;
     heroTitle: LocalizedString;
     heroSubtitle: LocalizedString;
     heroButtonsEnabled?: boolean;
     heroStatsEnabled?: boolean;
+    heroPrimaryCta?: HeroCtaButtonSettings;
+    heroSecondaryCta?: HeroCtaButtonSettings;
+    heroStats?: HeroStatItemSettings[];
     servicesTitle: LocalizedString;
     servicesSubtitle: LocalizedString;
     teamTitle: LocalizedString;

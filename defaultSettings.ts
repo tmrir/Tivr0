@@ -126,6 +126,19 @@ export const defaultSettings: SiteSettings = {
     heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة تقدم حلولاً مبتكرة لنمو عملك', en: 'A full-service digital marketing agency offering innovative solutions for your business growth' },
     heroButtonsEnabled: true,
     heroStatsEnabled: true,
+    heroPrimaryCta: {
+      label: { ar: 'ابدأ رحلة النمو', en: 'Start Growth Journey' },
+      href: '#contact'
+    },
+    heroSecondaryCta: {
+      label: { ar: 'أعمالنا', en: 'Our Work' },
+      href: '#work'
+    },
+    heroStats: [
+      { value: '+150%', label: { ar: 'متوسط نمو العملاء', en: 'Avg Client Growth' } },
+      { value: '+50', label: { ar: 'عميل سعيد', en: 'Happy Client' } },
+      { value: '24/7', label: { ar: 'دعم فني', en: 'Support' } }
+    ],
     
     // Services Section
     servicesTitle: { ar: 'خدماتنا', en: 'Our Services' },

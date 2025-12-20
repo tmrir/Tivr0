@@ -21,6 +21,10 @@ export const Home = () => {
 
   const heroButtonsEnabled = settings?.homeSections?.heroButtonsEnabled !== false;
   const heroStatsEnabled = settings?.homeSections?.heroStatsEnabled !== false;
+
+  const heroPrimaryCta = settings?.homeSections?.heroPrimaryCta;
+  const heroSecondaryCta = settings?.homeSections?.heroSecondaryCta;
+  const heroStats = settings?.homeSections?.heroStats;
   
   // State for navigation visibility and labels
   const [navigationState, setNavigationState] = useState<any[]>([
@@ -210,12 +214,12 @@ export const Home = () => {
             </p>
             {heroButtonsEnabled && (
               <div className="flex flex-col sm:flex-row gap-4">
-                <a href="#contact" className="bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2">
-                  {t('cta.start')}
+                <a href={heroPrimaryCta?.href || '#contact'} className="bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2">
+                  {heroPrimaryCta?.label?.[lang] || t('cta.start')}
                   {dir === 'rtl' ? <ArrowLeft /> : <ArrowRight />}
                 </a>
-                <a href="#work" className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold text-lg transition flex items-center justify-center">
-                  {t('nav.work')}
+                <a href={heroSecondaryCta?.href || '#work'} className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold text-lg transition flex items-center justify-center">
+                  {heroSecondaryCta?.label?.[lang] || t('nav.work')}
                 </a>
               </div>
             )}
@@ -224,9 +228,20 @@ export const Home = () => {
         {heroStatsEnabled && (
           <div className="absolute bottom-0 w-full border-t border-white/10 bg-white/5 backdrop-blur-sm py-6">
             <div className="container mx-auto px-4 flex justify-around text-center">
-              <div><div className="text-2xl font-bold text-tivro-primary">+150%</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'متوسط نمو العملاء' : 'Avg Client Growth'}</div></div>
-              <div><div className="text-2xl font-bold text-tivro-primary">+50</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'عميل سعيد' : 'Happy Client'}</div></div>
-              <div><div className="text-2xl font-bold text-tivro-primary">24/7</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'دعم فني' : 'Support'}</div></div>
+              {Array.isArray(heroStats) && heroStats.length > 0 ? (
+                heroStats.slice(0, 3).map((stat, idx) => (
+                  <div key={idx}>
+                    <div className="text-2xl font-bold text-tivro-primary">{stat.value}</div>
+                    <div className="text-sm text-slate-400">{stat.label?.[lang] || ''}</div>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div><div className="text-2xl font-bold text-tivro-primary">+150%</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'متوسط نمو العملاء' : 'Avg Client Growth'}</div></div>
+                  <div><div className="text-2xl font-bold text-tivro-primary">+50</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'عميل سعيد' : 'Happy Client'}</div></div>
+                  <div><div className="text-2xl font-bold text-tivro-primary">24/7</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'دعم فني' : 'Support'}</div></div>
+                </>
+              )}
             </div>
           </div>
         )}
