@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
-import { Extension } from '@tiptap/core';
+import { Extension, Mark } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -34,6 +34,144 @@ interface RichTextEditorProps {
   placeholder?: string;
   dir?: 'rtl' | 'ltr';
 }
+
+const SanitizedTextStyle = Mark.create({
+  name: 'sanitizedTextStyle',
+  group: 'inline',
+  inclusive: true,
+  parseHTML() {
+    return [
+      {
+        tag: 'span[style]'
+      },
+      {
+        tag: 'font[color]'
+      }
+    ];
+  },
+  addAttributes() {
+    return {
+      color: {
+        default: null,
+        parseHTML: (element) => {
+          const el = element as HTMLElement;
+          const color = el.style?.color || (el.getAttribute('color') || '');
+          return color || null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.color) return {};
+          return { style: `color: ${attributes.color};` };
+        }
+      },
+      backgroundColor: {
+        default: null,
+        parseHTML: (element) => {
+          const el = element as HTMLElement;
+          const bg = el.style?.backgroundColor;
+          return bg || null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.backgroundColor) return {};
+          return { style: `background-color: ${attributes.backgroundColor};` };
+        }
+      },
+      fontSize: {
+        default: null,
+        parseHTML: (element) => {
+          const el = element as HTMLElement;
+          const size = el.style?.fontSize;
+          return size || null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.fontSize) return {};
+          return { style: `font-size: ${attributes.fontSize};` };
+        }
+      },
+      fontFamily: {
+        default: null,
+        parseHTML: (element) => {
+          const el = element as HTMLElement;
+          const family = el.style?.fontFamily;
+          return family || null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.fontFamily) return {};
+          return { style: `font-family: ${attributes.fontFamily};` };
+        }
+      },
+    };
+  },
+  renderHTML({ HTMLAttributes }) {
+    // Merge multiple style fragments into a single style attribute.
+    const styleParts: string[] = [];
+    const rawStyle = (HTMLAttributes as any).style as string | undefined;
+    if (rawStyle) styleParts.push(rawStyle);
+
+    const merged: Record<string, any> = { ...HTMLAttributes };
+    if (styleParts.length) merged.style = styleParts.join(' ');
+    return ['span', merged, 0];
+  }
+});
+
+const WordPasteSanitizer = Extension.create({
+  name: 'wordPasteSanitizer',
+  addProseMirrorPlugins() {
+    const sanitizeHtml = (input: string) => {
+      let html = input || '';
+
+      // Remove comments and MSO/Office wrappers.
+      html = html
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<\/?(meta|link|style|xml|o:p|w:[^>]+|v:[^>]+)[^>]*>/gi, '')
+        .replace(/<\/?span[^>]*mso-[^>]*>/gi, '')
+        .replace(/\sclass\s*=\s*"[^"]*"/gi, '')
+        .replace(/\sclass\s*=\s*'[^']*'/gi, '')
+        .replace(/\sid\s*=\s*"[^"]*"/gi, '')
+        .replace(/\sid\s*=\s*'[^']*'/gi, '')
+        .replace(/\sdata-[\w-]+\s*=\s*"[^"]*"/gi, '')
+        .replace(/\sdata-[\w-]+\s*=\s*'[^']*'/gi, '');
+
+      // Strip event handlers
+      html = html
+        .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+        .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+        .replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
+
+      return html.trim();
+    };
+
+    return [
+      // Lazy import to avoid adding a hard dependency in the module graph.
+      // ProseMirror Plugin types are available at runtime via editor.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require('prosemirror-state').Plugin &&
+        new (require('prosemirror-state').Plugin)({
+          props: {
+            handlePaste: (view: any, event: ClipboardEvent) => {
+              try {
+                const html = event.clipboardData?.getData('text/html');
+                if (!html) return false;
+
+                const cleaned = sanitizeHtml(html);
+                if (!cleaned) return false;
+
+                // Let TipTap parse HTML into schema, with our style mark preserving key styles.
+                const editor = (view as any)?.editor;
+                if (editor) {
+                  editor.chain().focus().insertContent(cleaned).run();
+                  return true;
+                }
+
+                return false;
+              } catch {
+                return false;
+              }
+            }
+          }
+        })
+    ].filter(Boolean);
+  }
+});
 
 const LineHeight = Extension.create({
   name: 'lineHeight',
@@ -119,10 +257,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
   const editor = useEditor({
     extensions: [
       StarterKit,
+      SanitizedTextStyle,
       Underline,
       Highlight,
       LineHeight,
       ParagraphSpacing,
+      WordPasteSanitizer,
       Link.configure({
         openOnClick: false,
         autolink: true,
