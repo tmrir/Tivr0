@@ -4,6 +4,7 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  CheckSquare,
   Italic,
   Link as LinkIcon,
   List,
@@ -12,6 +13,7 @@ import {
   RemoveFormatting,
   Underline,
   Undo2,
+  XSquare,
 } from 'lucide-react';
 
 interface WordLikeEditorProps {
@@ -208,6 +210,8 @@ const sanitizeHtml = (html: string) => {
 export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange, placeholder, dir }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [checkColor, setCheckColor] = useState('#16a34a');
+  const [uncheckColor, setUncheckColor] = useState('#dc2626');
 
   const placeholderText = useMemo(() => {
     return placeholder || '';
@@ -241,6 +245,14 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
     exec('createLink', url);
   };
 
+  const insertCheck = () => {
+    exec('insertHTML', `<span style="color: ${checkColor}; font-weight: 700;">✓</span>`);
+  };
+
+  const insertUncheck = () => {
+    exec('insertHTML', `<span style="color: ${uncheckColor}; font-weight: 700;">✗</span>`);
+  };
+
   const clearFormatting = () => {
     exec('removeFormat');
     exec('unlink');
@@ -265,6 +277,44 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
             <button type="button" title="Redo" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('redo')}>
               <Redo2 className="w-4 h-4" />
             </button>
+          </div>
+
+          <div className="w-px h-7 bg-slate-200 mx-1" />
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              title="Checkbox"
+              className={btnBase}
+              onMouseDown={preventMouseDown}
+              onClick={insertCheck}
+            >
+              <CheckSquare className="w-4 h-4" style={{ color: checkColor }} />
+            </button>
+            <input
+              type="color"
+              value={checkColor}
+              onChange={(e) => setCheckColor(e.target.value)}
+              className="h-9 w-9 rounded-md border border-slate-200 bg-white p-1"
+              title="Checkbox color"
+            />
+
+            <button
+              type="button"
+              title="Uncheckbox"
+              className={btnBase}
+              onMouseDown={preventMouseDown}
+              onClick={insertUncheck}
+            >
+              <XSquare className="w-4 h-4" style={{ color: uncheckColor }} />
+            </button>
+            <input
+              type="color"
+              value={uncheckColor}
+              onChange={(e) => setUncheckColor(e.target.value)}
+              className="h-9 w-9 rounded-md border border-slate-200 bg-white p-1"
+              title="Uncheckbox color"
+            />
           </div>
 
           <div className="w-px h-7 bg-slate-200 mx-1" />
