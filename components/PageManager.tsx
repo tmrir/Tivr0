@@ -4,7 +4,6 @@ import { CustomPage, PageComponent, SectionTemplate, NavigationItem } from '../t
 import { db } from '../services/db';
 import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer, ChevronUp, ChevronDown } from 'lucide-react';
 import { WordLikeEditor } from './WordLikeEditor';
-import { sanitizeHtml } from './PagesRenderer';
 
 interface PageManagerProps {
   onUpdate?: () => void;
@@ -903,6 +902,27 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     <option value="bottom">{lang === 'ar' ? 'أسفل' : 'Bottom'}</option>
                     <option value="background">{lang === 'ar' ? 'خلف النص (خلفية)' : 'Background'}
                     </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {lang === 'ar' ? 'حجم العنوان' : 'Title Size'}
+                  </label>
+                  <select
+                    value={editingPage.heroSettings?.titleSize || 'md'}
+                    onChange={(e) =>
+                      setEditingPage({
+                        ...editingPage,
+                        heroSettings: { ...editingPage.heroSettings, titleSize: e.target.value as any }
+                      })
+                    }
+                    className="w-full border border-slate-200 rounded-lg p-2"
+                  >
+                    <option value="sm">{lang === 'ar' ? 'صغير' : 'Small'}</option>
+                    <option value="md">{lang === 'ar' ? 'متوسط' : 'Medium'}</option>
+                    <option value="lg">{lang === 'ar' ? 'كبير' : 'Large'}</option>
+                    <option value="xl">{lang === 'ar' ? 'كبير جداً' : 'Extra Large'}</option>
                   </select>
                 </div>
               </div>

@@ -430,7 +430,15 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
               const TextBox = () => (
                 <div className="w-full rounded-2xl border border-white/10 p-6 md:p-10 backdrop-blur" style={textBoxStyle}>
                   <div className="mb-6">
-                    <h2 className="text-4xl md:text-6xl font-bold leading-tight">
+                    <h2
+                      className={`${(() => {
+                        const size = heroSettings.titleSize || 'md';
+                        if (size === 'sm') return 'text-3xl md:text-5xl';
+                        if (size === 'lg') return 'text-5xl md:text-7xl';
+                        if (size === 'xl') return 'text-6xl md:text-8xl';
+                        return 'text-4xl md:text-6xl';
+                      })()} font-bold leading-tight`}
+                    >
                       {(page as any).title?.[lang] || page.name}
                     </h2>
                     {(page as any).description?.[lang] && (

@@ -317,6 +317,7 @@ export interface CustomPage {
     textBoxBackgroundColor?: string;
     textBoxBackgroundOpacity?: number;
     imagePosition?: 'left' | 'right' | 'top' | 'bottom' | 'background';
+    titleSize?: 'sm' | 'md' | 'lg' | 'xl';
   };
   underConstruction?: boolean;
   underConstructionButton?: {
