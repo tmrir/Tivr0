@@ -479,19 +479,21 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
               }
 
               if (imagePosition === 'left') {
+                const rtl = lang === 'ar';
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                    <ImageBlock />
-                    <TextBox />
+                    {rtl ? <TextBox /> : <ImageBlock />}
+                    {rtl ? <ImageBlock /> : <TextBox />}
                   </div>
                 );
               }
 
               if (imagePosition === 'right') {
+                const rtl = lang === 'ar';
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                    <TextBox />
-                    <ImageBlock />
+                    {rtl ? <ImageBlock /> : <TextBox />}
+                    {rtl ? <TextBox /> : <ImageBlock />}
                   </div>
                 );
               }
