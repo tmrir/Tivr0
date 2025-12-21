@@ -7,6 +7,9 @@ export const defaultSettings: SiteSettings = {
   contactEmail: 'info@tivro.sa',
   contactPhone: '+966 50 2026 151',
   address: { ar: 'الرياض، المملكة العربية السعودية', en: 'Riyadh, Saudi Arabia' },
+
+  enableEnglish: false,
+  tabTitle: { ar: 'وكالة التسويق الرقمي', en: 'Digital Marketing Agency' },
   
   // روابط التواصل الاجتماعي
   socialLinks: [

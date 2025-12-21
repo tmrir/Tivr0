@@ -62,6 +62,10 @@ export const SettingsNewPage: React.FC = () => {
     contactPhone: settings?.contactPhone || '+966 50 2026 151',
     address: settings?.address || { ar: 'الرياض، المملكة العربية السعودية', en: 'Riyadh, Saudi Arabia' },
     socialLinks: Array.isArray(settings?.socialLinks) ? settings.socialLinks : [],
+
+    enableEnglish: settings?.enableEnglish ?? false,
+    tabTitle: (settings as any)?.tabTitle || { ar: 'وكالة التسويق الرقمي', en: 'Digital Marketing Agency' },
+
     logoUrl: settings?.logoUrl || '',
     iconUrl: settings?.iconUrl || '',
     footerLogoUrl: settings?.footerLogoUrl || '',
@@ -252,6 +256,22 @@ export const SettingsNewPage: React.FC = () => {
                     <div className="space-y-6 animate-fade-in">
                         <h3 className="font-bold text-lg border-b pb-3 mb-4">{t('admin.settings.general')}</h3>
                         <LocalizedInput label="Site Name" value={safeSettings.siteName} onChange={v => updateField('siteName', v)} />
+
+                        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                          <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={!!safeSettings.enableEnglish}
+                              onChange={(e) => updateField('enableEnglish', e.target.checked)}
+                            />
+                            {lang === 'ar' ? 'إظهار خيار اللغة الإنجليزية في الموقع' : 'Enable English language option on the site'}
+                          </label>
+                          {!safeSettings.enableEnglish && (
+                            <div className="text-xs text-slate-500 mt-2">
+                              {lang === 'ar' ? 'عند الإيقاف: سيتم قفل اللغة على العربية وإخفاء زر التبديل.' : 'When disabled: the site is locked to Arabic and the toggle is hidden.'}
+                            </div>
+                          )}
+                        </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -309,6 +329,17 @@ export const SettingsNewPage: React.FC = () => {
                             <label className="block text-sm font-bold mb-1">Favicon URL (ICO/PNG)</label>
                             <input className="w-full border p-2 rounded" value={safeSettings.faviconUrl || ''} onChange={e => updateField('faviconUrl', e.target.value)} />
                             {settings.faviconUrl && <img src={safeSettings.faviconUrl} className="h-8 w-8 mt-2 border p-1"/>}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold mb-1">عنوان تبويب المتصفح (Tab Title)</label>
+                            <input
+                              className="w-full border p-2 rounded"
+                              dir="rtl"
+                              value={safeSettings.tabTitle?.ar || ''}
+                              onChange={e => updateField('tabTitle', { ...(safeSettings.tabTitle || { ar: '', en: '' }), ar: e.target.value })}
+                              placeholder="مثال: وكالة التسويق الرقمي"
+                            />
                         </div>
                     </div>
                 )}

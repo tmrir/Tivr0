@@ -1,7 +1,7 @@
-
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { Language, Translations } from '../types';
 import { supabase } from '../services/supabase';
+import { db } from '../services/db';
 
 interface AppContextProps {
   lang: Language;
@@ -126,22 +126,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [lang, setLangState] = useState<Language>('ar');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [enableEnglish, setEnableEnglish] = useState<boolean>(false);
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('tivro_lang') as Language;
-    if (savedLang) {
-        setLangState(savedLang);
-        document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
-        document.documentElement.lang = savedLang;
-    } else {
-        document.documentElement.dir = 'rtl';
-        document.documentElement.lang = 'ar';
-    }
+    const applyLang = (next: Language) => {
+      setLangState(next);
+      try {
+        localStorage.setItem('tivro_lang', next);
+      } catch {
+        // ignore
+      }
+      document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.lang = next;
+    };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAdmin(!!session);
-      setLoading(false);
-    });
+    const applyEnglishSetting = (enabled: boolean) => {
+      setEnableEnglish(enabled);
+      if (!enabled) {
+        applyLang('ar');
+      } else {
+        const savedLang = (localStorage.getItem('tivro_lang') as Language) || 'ar';
+        applyLang(savedLang === 'en' ? 'en' : 'ar');
+      }
+    };
+
+    const init = async () => {
+      let enabled = false;
+      try {
+        const settings = await db.settings.get();
+        enabled = !!(settings as any)?.enableEnglish;
+      } catch {
+        // ignore
+      }
+      applyEnglishSetting(enabled);
+
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setIsAdmin(!!session);
+        setLoading(false);
+      });
+    };
+
+    init();
 
     const {
       data: { subscription },
@@ -149,14 +174,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsAdmin(!!session);
     });
 
-    return () => subscription.unsubscribe();
+    const handleSettingsUpdated = (event: any) => {
+      const enabled = !!event?.detail?.enableEnglish;
+      applyEnglishSetting(enabled);
+    };
+
+    window.addEventListener('settingsUpdated', handleSettingsUpdated as EventListener);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('settingsUpdated', handleSettingsUpdated as EventListener);
+    };
   }, []);
 
   const setLang = (l: Language) => {
-    setLangState(l);
-    localStorage.setItem('tivro_lang', l);
-    document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = l;
+    if (!enableEnglish) {
+      setLangState('ar');
+      try {
+        localStorage.setItem('tivro_lang', 'ar');
+      } catch {
+        // ignore
+      }
+      document.documentElement.dir = 'rtl';
+      document.documentElement.lang = 'ar';
+      return;
+    }
+
+    const next: Language = l === 'en' ? 'en' : 'ar';
+    setLangState(next);
+    try {
+      localStorage.setItem('tivro_lang', next);
+    } catch {
+      // ignore
+    }
+    document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = next;
   };
 
   const t = (key: string): string => {

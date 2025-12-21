@@ -135,6 +135,8 @@ export interface SiteSettings {
   contactPhone: string;
   address: LocalizedString;
   socialLinks: SocialLink[];
+  enableEnglish: boolean;
+  tabTitle: LocalizedString;
   
   // CMS - Logos & Branding
   logoUrl: string;

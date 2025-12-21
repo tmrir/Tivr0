@@ -348,7 +348,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     };
   }, [navigationPages]);
 
-  const toggleLang = () => setLang(lang === 'ar' ? 'en' : 'ar');
+  const toggleLang = () => setLang('ar');
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.hash = '#';
@@ -449,10 +449,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
-            <button onClick={toggleLang} className="flex items-center gap-1 text-slate-500 hover:text-tivro-primary transition">
-              <Globe size={18} /> <span className="uppercase text-sm font-bold">{lang === 'ar' ? 'EN' : 'AR'}</span>
-            </button>
-            
+            {!!settings?.enableEnglish && (
+              <button onClick={toggleLang} className="flex items-center gap-1 text-slate-500 hover:text-tivro-primary transition">
+                <Globe size={18} /> <span className="uppercase text-sm font-bold">{lang === 'ar' ? 'EN' : 'AR'}</span>
+              </button>
+            )}
             {isAdmin ? (
               <div className="flex items-center gap-2">
                 <a href="#admin" className="btn-secondary flex items-center gap-2 px-4 py-2 rounded-full text-sm"><LayoutDashboard size={16} /> {t('admin.dashboard')}</a>
@@ -552,13 +553,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               {lang === 'ar' ? 'تواصل' : 'Contact'}
             </button>
 
-            <button
-              type="button"
-              onClick={() => toggleLang()}
-              className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
-            >
-              {lang === 'ar' ? 'EN' : 'AR'}
-            </button>
+            {!!settings?.enableEnglish && (
+              <button
+                type="button"
+                onClick={() => toggleLang()}
+                className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
+              >
+                {lang === 'ar' ? 'EN' : 'AR'}
+              </button>
+            )}
 
             {isAdmin && (
               <a

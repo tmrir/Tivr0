@@ -127,6 +127,24 @@ export const SettingsPage: React.FC = () => {
                             <input className="w-full border p-2 rounded" value={settings.faviconUrl || ''} onChange={e => setSettings({...settings, faviconUrl: e.target.value})} />
                             {settings.faviconUrl && <img src={settings.faviconUrl} className="h-8 w-8 mt-2 border p-1"/>}
                         </div>
+                        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                            <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={!!(settings as any).enableEnglish}
+                                    onChange={e => setSettings({ ...(settings as any), enableEnglish: e.target.checked })}
+                                />
+                                Enable English language option on the site
+                            </label>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Tab Title</label>
+                            <input
+                              className="w-full border p-2 rounded"
+                              value={(settings as any).tabTitle?.ar || ''}
+                              onChange={e => setSettings({ ...(settings as any), tabTitle: { ...((settings as any).tabTitle || { ar: '', en: '' }), ar: e.target.value } })}
+                            />
+                        </div>
                     </div>
                 )}
 
