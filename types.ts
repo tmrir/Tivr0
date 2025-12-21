@@ -96,10 +96,19 @@ export interface HeroStatItemSettings {
     label: LocalizedString;
 }
 
+export interface HeroImageSettings {
+    src: string;
+    mime?: string;
+    alt: LocalizedString;
+}
+
 export interface HomeSectionsSettings {
     heroBadge: LocalizedString;
     heroTitle: LocalizedString;
     heroSubtitle: LocalizedString;
+    heroImageUrl?: string;
+    heroImage?: HeroImageSettings;
+    heroImagePosition?: 'left' | 'right' | 'top' | 'bottom' | 'background';
     heroButtonsEnabled?: boolean;
     heroStatsEnabled?: boolean;
     heroPrimaryCta?: HeroCtaButtonSettings;

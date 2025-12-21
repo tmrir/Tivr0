@@ -44,6 +44,8 @@ export const SettingsNewPage: React.FC = () => {
   const [msg, setMsg] = useState<{type:'success'|'error', text:string} | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [testingDb, setTestingDb] = useState(false);
+  const [heroImageUploading, setHeroImageUploading] = useState(false);
+  const [heroImageUploadError, setHeroImageUploadError] = useState<string | null>(null);
 
   // إبقاء this component aware of first mount فقط لأغراض لوجية/عرضية
   useEffect(() => {
@@ -114,6 +116,70 @@ export const SettingsNewPage: React.FC = () => {
           setMsg({type: 'error', text: 'Error saving settings'});
       } finally {
           setTimeout(() => setMsg(null), 3000);
+      }
+  };
+
+  const uploadHeroMediaFile = async (file: File): Promise<{ url: string; mime: string } | null> => {
+      setHeroImageUploadError(null);
+
+      const maxBytes = 4 * 1024 * 1024;
+      if (file.size <= 0 || file.size > maxBytes) {
+          setHeroImageUploadError(lang === 'ar' ? 'حجم الملف غير مسموح' : 'File size not allowed');
+          return null;
+      }
+
+      const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']);
+      const mime = (file.type || '').toLowerCase();
+      if (!allowed.has(mime)) {
+          setHeroImageUploadError(lang === 'ar' ? 'نوع الملف غير مسموح' : 'File type not allowed');
+          return null;
+      }
+
+      setHeroImageUploading(true);
+      try {
+          const currentSrc = (safeSettings as any)?.homeSections?.heroImage?.src as string | undefined;
+          const extractOldPath = (url?: string): string | null => {
+              if (!url) return null;
+              try {
+                  const marker = '/storage/v1/object/public/';
+                  const idx = url.indexOf(marker);
+                  if (idx === -1) return null;
+                  const rest = url.slice(idx + marker.length);
+                  const parts = rest.split('/');
+                  if (parts.length < 2) return null;
+                  parts.shift();
+                  const path = parts.join('/');
+                  return path || null;
+              } catch {
+                  return null;
+              }
+          };
+
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const oldPath = extractOldPath(currentSrc);
+          if (oldPath) {
+              formData.append('oldPath', oldPath);
+          }
+
+          const res = await fetch('/api/uploads/create', {
+              method: 'POST',
+              body: formData
+          });
+
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json?.ok || !json?.data?.url) {
+              setHeroImageUploadError((json?.error as string) || (lang === 'ar' ? 'فشل رفع الملف' : 'Upload failed'));
+              return null;
+          }
+
+          return { url: json.data.url as string, mime: (json.data.mime as string) || mime };
+      } catch (e: any) {
+          setHeroImageUploadError(e?.message || (lang === 'ar' ? 'فشل رفع الملف' : 'Upload failed'));
+          return null;
+      } finally {
+          setHeroImageUploading(false);
       }
   };
 
@@ -271,6 +337,95 @@ export const SettingsNewPage: React.FC = () => {
                                 <LocalizedInput label="شريط صغير فوق العنوان (Hero Badge)" value={safeSettings.homeSections.heroBadge} onChange={v => updateNestedField('homeSections', 'heroBadge', v)} />
                                 <LocalizedInput label="عنوان قسم الهيرو" value={safeSettings.homeSections.heroTitle} onChange={v => updateNestedField('homeSections', 'heroTitle', v)} />
                                 <LocalizedInput label="وصف قسم الهيرو" value={safeSettings.homeSections.heroSubtitle} onChange={v => updateNestedField('homeSections', 'heroSubtitle', v)} />
+
+                                <div className="border border-slate-200 rounded-lg p-4 bg-white space-y-3">
+                                  <h5 className="font-bold text-slate-800">صورة الهيرو</h5>
+
+                                  <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">رابط صورة الهيرو (URL)</label>
+                                    <input
+                                      className="w-full border p-2 rounded"
+                                      value={safeSettings.homeSections.heroImage?.src || safeSettings.homeSections.heroImageUrl || ''}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        updateNestedField('homeSections', 'heroImage', {
+                                          ...(safeSettings.homeSections.heroImage || { src: '', alt: { ar: 'صورة', en: 'Image' } }),
+                                          src: v
+                                        });
+                                        updateNestedField('homeSections', 'heroImageUrl', v);
+                                      }}
+                                      placeholder="https://... أو /images/..."
+                                    />
+                                    {!!(safeSettings.homeSections.heroImage?.src || safeSettings.homeSections.heroImageUrl) && (
+                                      <div className="mt-3">
+                                        <img
+                                          src={safeSettings.homeSections.heroImage?.src || safeSettings.homeSections.heroImageUrl}
+                                          className="h-24 w-auto rounded border border-slate-200 bg-slate-50"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">رفع ملف (صور/PDF)</label>
+                                    <input
+                                      type="file"
+                                      accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                                      disabled={heroImageUploading}
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        e.target.value = '';
+                                        if (!file) return;
+
+                                        const uploaded = await uploadHeroMediaFile(file);
+                                        if (!uploaded) return;
+
+                                        updateNestedField('homeSections', 'heroImage', {
+                                          ...(safeSettings.homeSections.heroImage || { src: '', alt: { ar: 'صورة', en: 'Image' } }),
+                                          src: uploaded.url,
+                                          mime: uploaded.mime
+                                        });
+                                        updateNestedField('homeSections', 'heroImageUrl', uploaded.url);
+                                      }}
+                                      className="w-full border p-2 rounded bg-white"
+                                    />
+
+                                    {heroImageUploading && (
+                                      <div className="text-sm text-slate-600">
+                                        {lang === 'ar' ? 'جاري الرفع...' : 'Uploading...'}
+                                      </div>
+                                    )}
+                                    {heroImageUploadError && (
+                                      <div className="text-sm text-red-600">{heroImageUploadError}</div>
+                                    )}
+                                  </div>
+
+                                  <LocalizedInput
+                                    label={lang === 'ar' ? 'النص البديل (Alt) للصورة' : 'Image Alt Text'}
+                                    value={safeSettings.homeSections.heroImage?.alt || { ar: 'صورة', en: 'Image' }}
+                                    onChange={(v) => {
+                                      updateNestedField('homeSections', 'heroImage', {
+                                        ...(safeSettings.homeSections.heroImage || { src: '', alt: { ar: 'صورة', en: 'Image' } }),
+                                        alt: v
+                                      });
+                                    }}
+                                  />
+
+                                  <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">موضع الصورة</label>
+                                    <select
+                                      className="w-full border p-2 rounded"
+                                      value={safeSettings.homeSections.heroImagePosition || 'right'}
+                                      onChange={(e) => updateNestedField('homeSections', 'heroImagePosition', e.target.value)}
+                                    >
+                                      <option value="right">يمين (Right)</option>
+                                      <option value="left">يسار (Left)</option>
+                                      <option value="top">أعلى (Top)</option>
+                                      <option value="bottom">أسفل (Bottom)</option>
+                                      <option value="background">خلف النص (Background)</option>
+                                    </select>
+                                  </div>
+                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                     <label className="flex items-center gap-2 text-sm font-bold text-slate-700">

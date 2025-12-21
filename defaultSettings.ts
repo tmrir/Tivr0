@@ -124,6 +124,9 @@ export const defaultSettings: SiteSettings = {
     // Hero Section
     heroTitle: { ar: 'نحول أفكارك إلى واقع رقمي', en: 'We Turn Your Ideas into Digital Reality' },
     heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة تقدم حلولاً مبتكرة لنمو عملك', en: 'A full-service digital marketing agency offering innovative solutions for your business growth' },
+    heroImageUrl: '',
+    heroImage: { src: '', alt: { ar: 'صورة', en: 'Image' } },
+    heroImagePosition: 'right',
     heroButtonsEnabled: true,
     heroStatsEnabled: true,
     heroPrimaryCta: {

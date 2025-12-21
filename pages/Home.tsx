@@ -25,6 +25,11 @@ export const Home = () => {
   const heroPrimaryCta = settings?.homeSections?.heroPrimaryCta;
   const heroSecondaryCta = settings?.homeSections?.heroSecondaryCta;
   const heroStats = settings?.homeSections?.heroStats;
+
+  const heroImageUrl = settings?.homeSections?.heroImage?.src || settings?.homeSections?.heroImageUrl || '';
+  const heroImageMime = settings?.homeSections?.heroImage?.mime || '';
+  const heroImageAlt = settings?.homeSections?.heroImage?.alt?.[lang] || '';
+  const heroImagePosition = settings?.homeSections?.heroImagePosition || 'right';
   
   // State for navigation visibility and labels
   const [navigationState, setNavigationState] = useState<any[]>([
@@ -201,26 +206,89 @@ export const Home = () => {
       {/* Hero Section */}
       <section className="relative bg-tivro-dark text-white overflow-hidden pt-20 pb-32">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-tivro-primary/20 to-transparent pointer-events-none" />
+        {heroImageUrl && heroImagePosition === 'background' && (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: `url(${heroImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            />
+            <div className="absolute inset-0 bg-tivro-dark/70 pointer-events-none" />
+          </>
+        )}
         <div className="container mx-auto px-4 md:px-8 relative z-10">
-          <div className="max-w-3xl">
-            <div className="inline-block px-4 py-1 bg-tivro-primary/20 text-tivro-primary rounded-full text-sm font-bold mb-6 border border-tivro-primary/30">
-              {settings?.homeSections?.heroBadge?.[lang] || (lang === 'ar' ? '🚀 الوكالة الرقمية الأسرع نمواً' : '🚀 Fastest Growing Digital Agency')}
+          <div
+            className={
+              heroImageUrl && (heroImagePosition === 'left' || heroImagePosition === 'right')
+                ? 'grid grid-cols-1 lg:grid-cols-2 gap-10 items-center'
+                : 'block'
+            }
+          >
+            {heroImageUrl && (heroImagePosition === 'left' || heroImagePosition === 'top') && (
+              <div className={heroImagePosition === 'top' ? 'mb-10' : ''}>
+                {((heroImageMime && heroImageMime.toLowerCase() === 'application/pdf') || /\.pdf(\?|#|$)/i.test(String(heroImageUrl))) ? (
+                  <a
+                    href={heroImageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center w-full max-w-xl mx-auto px-6 py-4 rounded-2xl font-bold bg-white/10 hover:bg-white/20 backdrop-blur border border-white/10"
+                  >
+                    {heroImageAlt || (lang === 'ar' ? 'فتح ملف PDF' : 'Open PDF')}
+                  </a>
+                ) : (
+                  <img
+                    src={heroImageUrl}
+                    alt={heroImageAlt}
+                    className="w-full max-w-xl mx-auto rounded-2xl shadow-xl border border-white/10"
+                  />
+                )}
+              </div>
+            )}
+
+            <div className="max-w-3xl">
+              <div className="inline-block px-4 py-1 bg-tivro-primary/20 text-tivro-primary rounded-full text-sm font-bold mb-6 border border-tivro-primary/30">
+                {settings?.homeSections?.heroBadge?.[lang] || (lang === 'ar' ? '🚀 الوكالة الرقمية الأسرع نمواً' : '🚀 Fastest Growing Digital Agency')}
+              </div>
+              <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
+                {settings?.homeSections?.heroTitle?.[lang] || t('hero.title')}
+              </h1>
+              <p className="text-xl text-slate-300 mb-10 leading-relaxed max-w-2xl">
+                {settings?.homeSections?.heroSubtitle?.[lang] || t('hero.subtitle')}
+              </p>
+              {heroButtonsEnabled && (
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <a href={heroPrimaryCta?.href || '#contact'} className="bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2">
+                    {heroPrimaryCta?.label?.[lang] || t('cta.start')}
+                    {dir === 'rtl' ? <ArrowLeft /> : <ArrowRight />}
+                  </a>
+                  <a href={heroSecondaryCta?.href || '#work'} className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold text-lg transition flex items-center justify-center">
+                    {heroSecondaryCta?.label?.[lang] || t('nav.work')}
+                  </a>
+                </div>
+              )}
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
-              {settings?.homeSections?.heroTitle?.[lang] || t('hero.title')}
-            </h1>
-            <p className="text-xl text-slate-300 mb-10 leading-relaxed max-w-2xl">
-              {settings?.homeSections?.heroSubtitle?.[lang] || t('hero.subtitle')}
-            </p>
-            {heroButtonsEnabled && (
-              <div className="flex flex-col sm:flex-row gap-4">
-                <a href={heroPrimaryCta?.href || '#contact'} className="bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2">
-                  {heroPrimaryCta?.label?.[lang] || t('cta.start')}
-                  {dir === 'rtl' ? <ArrowLeft /> : <ArrowRight />}
-                </a>
-                <a href={heroSecondaryCta?.href || '#work'} className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold text-lg transition flex items-center justify-center">
-                  {heroSecondaryCta?.label?.[lang] || t('nav.work')}
-                </a>
+
+            {heroImageUrl && (heroImagePosition === 'right' || heroImagePosition === 'bottom') && (
+              <div className={heroImagePosition === 'bottom' ? 'mt-10' : ''}>
+                {((heroImageMime && heroImageMime.toLowerCase() === 'application/pdf') || /\.pdf(\?|#|$)/i.test(String(heroImageUrl))) ? (
+                  <a
+                    href={heroImageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center w-full max-w-xl mx-auto px-6 py-4 rounded-2xl font-bold bg-white/10 hover:bg-white/20 backdrop-blur border border-white/10"
+                  >
+                    {heroImageAlt || (lang === 'ar' ? 'فتح ملف PDF' : 'Open PDF')}
+                  </a>
+                ) : (
+                  <img
+                    src={heroImageUrl}
+                    alt={heroImageAlt}
+                    className="w-full max-w-xl mx-auto rounded-2xl shadow-xl border border-white/10"
+                  />
+                )}
               </div>
             )}
           </div>
