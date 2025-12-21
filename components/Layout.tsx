@@ -284,7 +284,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
           </a>
 
           <nav className="hidden md:flex items-center gap-8">
-            <NavLink href="#" label={t('nav.home')} />
             {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={resolveNavLabel(navigationLabels.services, t('nav.services'))} />}
             {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={resolveNavLabel(navigationLabels.packages, t('admin.tab.packages'))} />}
             {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={resolveNavLabel(navigationLabels.work, t('nav.work'))} />}
@@ -319,7 +318,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
         {isMenuOpen && (
             <div className="md:hidden fixed inset-0 top-0 bg-white z-[70] h-screen overflow-y-auto pt-24 px-6 pb-6 animate-fade-in">
                 <div className="flex flex-col space-y-2">
-                    <NavLink href="#" label={t('nav.home')} />
                     {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={resolveNavLabel(navigationLabels.services, t('nav.services'))} />}
                     {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={resolveNavLabel(navigationLabels.packages, t('admin.tab.packages'))} />}
                     {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={resolveNavLabel(navigationLabels.work, t('nav.work'))} />}
