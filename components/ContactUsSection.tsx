@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
 import { ContactUsSettings, ContactFormField } from '../types';
 import { TrendingUp, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
+import { ZeigarnikRing } from './ZeigarnikRing';
 
 interface ContactUsSectionProps {
   settings?: ContactUsSettings;
@@ -50,42 +51,39 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
     setSubmitStatus('idle');
 
     try {
-      // Validate required fields
-      const requiredFields = contactSettings?.form?.fields.filter(field => field.required) || [];
-      const missingFields = requiredFields.filter(field => !formData[field.name]);
-      
-      if (missingFields.length > 0) {
-        alert(lang === 'ar' ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields');
-        setSubmitting(false);
-        return;
-      }
-
       // Submit form data
       const { error } = await db.messages.send(formData.name || '', formData.phone || '');
       
       if (!error) {
         setSubmitStatus('success');
         setFormData({});
-        alert(lang === 'ar' ? 'شكراً لك! سيتم التواصل معك قريباً.' : 'Thank you! We will contact you shortly.');
       } else {
         setSubmitStatus('error');
-        alert(lang === 'ar' ? 'حدث خطأ. يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.');
       }
     } catch (error) {
       console.error('Contact form error:', error);
       setSubmitStatus('error');
-      alert(lang === 'ar' ? 'حدث خطأ. يرجى المحاولة مرة أخرى.' : 'An error occurred. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  const ringProgress = useMemo(() => {
+    if (submitStatus === 'success') return 1;
+    const base = 0.76;
+    const nameFilled = String(formData.name || '').trim().length > 0;
+    const phoneFilled = String(formData.phone || '').trim().length > 0;
+    if (phoneFilled) return 0.96;
+    if (nameFilled) return 0.88;
+    return base;
+  }, [formData.name, formData.phone, submitStatus]);
 
   if (!contactSettings) {
     return null; // Don't render if no settings available
   }
 
   return (
-    <div className={`py-24 bg-tivro-dark text-white ${contactSettings.cssClasses || ''}`}>
+    <div id="contact" className={`py-24 bg-tivro-dark text-white ${contactSettings.cssClasses || ''}`}>
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl md:text-5xl font-bold mb-6">
           {contactSettings.title?.[lang] || (lang === 'ar' ? 'تواصل معنا' : 'Contact Us')}
@@ -98,14 +96,18 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
           {contactSettings.cards?.map((card, cardIndex) => (
             <div key={cardIndex} className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
               <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
-                {card.iconType === 'svg' ? (
+                {cardIndex === 0 ? (
+                  <span id="cta-zeigarnik-ring-anchor" className="text-tivro-primary">
+                    <ZeigarnikRing progress={ringProgress} size={22} strokeWidth={2} />
+                  </span>
+                ) : (card.iconType === 'svg' ? (
                   <div 
                     dangerouslySetInnerHTML={{ __html: sanitizeHTML(card.iconSVG) }}
                     className="text-tivro-primary"
                   />
                 ) : (
                   <IconComponent name={card.iconSVG} className="text-tivro-primary" />
-                )}
+                ))}
                 {card.heading?.[lang] || (lang === 'ar' ? 'حجز استشارة' : 'Book Consultation')}
               </h4>
               

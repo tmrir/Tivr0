@@ -5,6 +5,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { SiteSettings, Service, Package } from '../types';
 import * as Icons from 'lucide-react';
+import { ZeigarnikRing } from './ZeigarnikRing';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [footerServices, setFooterServices] = useState<Service[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [navigationPages, setNavigationPages] = useState<any[]>([]);
+
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  const [mobileIndicatorProgress, setMobileIndicatorProgress] = useState(0.72);
+  const [mobileIndicatorVisible, setMobileIndicatorVisible] = useState(true);
+  const [mobileIndicatorStyle, setMobileIndicatorStyle] = useState<React.CSSProperties>({
+    left: '50%',
+    bottom: 18,
+    transform: 'translateX(-50%)',
+    opacity: 0.34
+  });
 
   const hasArabicChars = (value: string) => /[\u0600-\u06FF]/.test(value);
   const resolveNavLabel = (label: any, fallback: string) => {
@@ -194,6 +206,148 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     };
   }, [lang]);
 
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)');
+    let sectionObserver: IntersectionObserver | null = null;
+    let anchorObserver: IntersectionObserver | null = null;
+    let handoffTimeout: number | null = null;
+    let anchorRetryTimeout: number | null = null;
+    let destroyed = false;
+
+    const cleanup = () => {
+      if (sectionObserver) sectionObserver.disconnect();
+      if (anchorObserver) anchorObserver.disconnect();
+      if (handoffTimeout) window.clearTimeout(handoffTimeout);
+      if (anchorRetryTimeout) window.clearTimeout(anchorRetryTimeout);
+      sectionObserver = null;
+      anchorObserver = null;
+      handoffTimeout = null;
+      anchorRetryTimeout = null;
+    };
+
+    const resetIndicatorBase = () => {
+      setMobileIndicatorStyle({
+        left: '50%',
+        bottom: 18,
+        top: 'auto',
+        transform: 'translateX(-50%)',
+        opacity: 0.34,
+        transition: 'none'
+      });
+    };
+
+    const init = () => {
+      cleanup();
+      if (!mql.matches) {
+        setIsMobileViewport(false);
+        setMobileIndicatorVisible(false);
+        return;
+      }
+
+      setIsMobileViewport(true);
+
+      resetIndicatorBase();
+      setMobileIndicatorVisible(true);
+
+      const baseIds = ['services', 'packages', 'work', 'team', 'blog'];
+      const customIds = (navigationPages || [])
+        .filter((p: any) => !!p && !!p.slug)
+        .map((p: any) => `page-${p.slug}`);
+      const sectionIds = [...baseIds, ...customIds, 'contact'];
+
+      const observed: HTMLElement[] = sectionIds
+        .map((id) => document.getElementById(id))
+        .filter(Boolean) as HTMLElement[];
+
+      if (observed.length > 0) {
+        const total = observed.length;
+        const range = 0.22;
+
+        const setStep = (i: number) => {
+          const clamped = Math.max(0, Math.min(total - 1, i));
+          const pct = total <= 1 ? 0 : clamped / (total - 1);
+          setMobileIndicatorProgress(0.72 + pct * range);
+        };
+
+        sectionObserver = new IntersectionObserver(
+          (entries) => {
+            const visibleEntries = entries
+              .filter((e) => e.isIntersecting)
+              .sort((a, b) => (a.boundingClientRect.top || 0) - (b.boundingClientRect.top || 0));
+
+            if (visibleEntries.length === 0) return;
+
+            const topMost = visibleEntries[0].target as HTMLElement;
+            const idx = observed.findIndex((el) => el === topMost);
+            if (idx >= 0) setStep(idx);
+          },
+          { root: null, threshold: 0.35 }
+        );
+
+        observed.forEach((el) => sectionObserver?.observe(el));
+      }
+
+      const attachAnchorObserver = () => {
+        if (destroyed) return;
+        const anchor = document.getElementById('cta-zeigarnik-ring-anchor');
+        if (!anchor) {
+          anchorRetryTimeout = window.setTimeout(attachAnchorObserver, 400);
+          return;
+        }
+
+        anchorObserver = new IntersectionObserver(
+          (entries) => {
+            const hit = entries.some((e) => e.isIntersecting);
+            if (!hit) return;
+
+            const rect = anchor.getBoundingClientRect();
+            const size = 18;
+            const x = rect.left + rect.width / 2 - size / 2;
+            const y = rect.top + rect.height / 2 - size / 2;
+
+            setMobileIndicatorStyle({
+              left: x,
+              top: y,
+              bottom: 'auto',
+              transform: 'none',
+              opacity: 0,
+              transition: 'all 700ms cubic-bezier(0.4, 0, 0.2, 1)'
+            });
+
+            if (handoffTimeout) window.clearTimeout(handoffTimeout);
+            handoffTimeout = window.setTimeout(() => {
+              setMobileIndicatorVisible(false);
+            }, 750);
+          },
+          { root: null, threshold: 0.6 }
+        );
+
+        anchorObserver.observe(anchor);
+      };
+
+      attachAnchorObserver();
+    };
+
+    const onChange = () => init();
+    init();
+
+    try {
+      mql.addEventListener('change', onChange);
+    } catch {
+      mql.addListener(onChange);
+    }
+
+    return () => {
+      destroyed = true;
+      cleanup();
+      try {
+        mql.removeEventListener('change', onChange);
+      } catch {
+        mql.removeListener(onChange);
+      }
+    };
+  }, [navigationPages]);
+
   const toggleLang = () => setLang(lang === 'ar' ? 'en' : 'ar');
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -308,44 +462,115 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               <a href="#contact" className="bg-tivro-dark text-white px-6 py-2.5 rounded-full font-semibold hover:bg-slate-800 transition shadow-lg shadow-tivro-dark/20">{t('nav.contact')}</a>
             )}
           </div>
-
-          <button className="md:hidden text-slate-700 p-2 z-50" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
-             {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
         </div>
-
-        {/* Mobile Menu Dropdown - FIXED POSITION */}
-        {isMenuOpen && (
-            <div className="md:hidden fixed inset-0 top-0 bg-white z-[70] h-screen overflow-y-auto pt-24 px-6 pb-6 animate-fade-in">
-                <div className="flex flex-col space-y-2">
-                    {navigationState.find(item => item.key === 'services')?.visible && <NavLink href="#services" label={resolveNavLabel(navigationLabels.services, t('nav.services'))} />}
-                    {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && <NavLink href="#packages" label={resolveNavLabel(navigationLabels.packages, t('admin.tab.packages'))} />}
-                    {navigationState.find(item => item.key === 'work')?.visible && <NavLink href="#work" label={resolveNavLabel(navigationLabels.work, t('nav.work'))} />}
-                    {navigationState.find(item => item.key === 'team')?.visible && <NavLink href="#team" label={resolveNavLabel(navigationLabels.team, t('nav.team'))} />}
-                    {navigationState.find(item => item.key === 'blog')?.visible && <NavLink href="#blog" label={resolveNavLabel(navigationLabels.blog, t('nav.blog'))} />}
-                    {customNavItems.map((item) => (
-                      <NavLink key={item.href} href={item.href} label={item.label} />
-                    ))}
-                    
-                    <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
-                        <button onClick={() => { toggleLang(); setIsMenuOpen(false); }} className="flex items-center gap-2 text-slate-600 font-bold text-lg">
-                            <Globe size={20} /> <span>{lang === 'ar' ? 'English' : 'العربية'}</span>
-                        </button>
-                        
-                        {isAdmin ? (
-                             <a href="#admin" className="bg-slate-100 text-slate-800 text-center py-4 rounded-xl font-bold" onClick={() => setIsMenuOpen(false)}>
-                                 {t('admin.dashboard')}
-                             </a>
-                        ) : (
-                             <a href="#contact" className="bg-tivro-dark text-white text-center py-4 rounded-xl font-bold shadow-lg" onClick={() => setIsMenuOpen(false)}>
-                                 {t('nav.contact')}
-                             </a>
-                        )}
-                    </div>
-                </div>
-            </div>
-        )}
       </header>
+
+      {isMobileViewport && mobileIndicatorVisible && (
+        <div
+          className="md:hidden fixed z-[65] pointer-events-none"
+          style={mobileIndicatorStyle}
+        >
+          <div className="text-tivro-primary">
+            <ZeigarnikRing progress={mobileIndicatorProgress} size={18} strokeWidth={2} trackOpacity={0.10} />
+          </div>
+        </div>
+      )}
+
+      {isMobileViewport && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[66] bg-white/85 backdrop-blur-md border-t border-slate-200">
+          <div className="px-3 py-2 flex items-center justify-between gap-2 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
+            >
+              {lang === 'ar' ? 'أعلى' : 'Top'}
+            </button>
+
+            {navigationState.find(item => item.key === 'services')?.visible && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('services');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
+              >
+                {resolveNavLabel(navigationLabels.services, t('nav.services'))}
+              </button>
+            )}
+
+            {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('packages');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
+              >
+                {resolveNavLabel(navigationLabels.packages, t('admin.tab.packages'))}
+              </button>
+            )}
+
+            {navigationState.find(item => item.key === 'work')?.visible && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('work');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
+              >
+                {resolveNavLabel(navigationLabels.work, t('nav.work'))}
+              </button>
+            )}
+
+            {navigationState.find(item => item.key === 'team')?.visible && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('team');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
+              >
+                {resolveNavLabel(navigationLabels.team, t('nav.team'))}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('contact');
+                el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="shrink-0 px-3 py-2 rounded-xl bg-tivro-dark text-white font-bold text-sm"
+            >
+              {lang === 'ar' ? 'تواصل' : 'Contact'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleLang()}
+              className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
+            >
+              {lang === 'ar' ? 'EN' : 'AR'}
+            </button>
+
+            {isAdmin && (
+              <a
+                href="#admin"
+                className="shrink-0 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-sm"
+              >
+                {t('admin.dashboard')}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-grow">{children}</main>
