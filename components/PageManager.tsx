@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CustomPage, PageComponent, SectionTemplate, NavigationItem } from '../types';
 import { db } from '../services/db';
-import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer, ChevronUp, ChevronDown } from 'lucide-react';
 import { WordLikeEditor } from './WordLikeEditor';
 import { sanitizeHtml } from './PagesRenderer';
 
@@ -275,6 +275,42 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
     const updatedPages = pages.map(p => 
       p.id === pageId ? { ...p, isVisible: !p.isVisible } : p
     );
+    setPages(updatedPages);
+    persistPages(updatedPages);
+
+    window.dispatchEvent(new CustomEvent('customPagesUpdated'));
+    onUpdate?.();
+  };
+
+  const movePageUp = (pageId: string) => {
+    const index = pages.findIndex(p => p.id === pageId);
+    if (index <= 0) return;
+    
+    const updatedPages = [...pages];
+    [updatedPages[index - 1], updatedPages[index]] = [updatedPages[index], updatedPages[index - 1]];
+    
+    // Update navigationOrder for both pages
+    updatedPages[index - 1].navigationOrder = index - 1;
+    updatedPages[index].navigationOrder = index;
+    
+    setPages(updatedPages);
+    persistPages(updatedPages);
+
+    window.dispatchEvent(new CustomEvent('customPagesUpdated'));
+    onUpdate?.();
+  };
+
+  const movePageDown = (pageId: string) => {
+    const index = pages.findIndex(p => p.id === pageId);
+    if (index === -1 || index >= pages.length - 1) return;
+    
+    const updatedPages = [...pages];
+    [updatedPages[index], updatedPages[index + 1]] = [updatedPages[index + 1], updatedPages[index]];
+    
+    // Update navigationOrder for both pages
+    updatedPages[index].navigationOrder = index;
+    updatedPages[index + 1].navigationOrder = index + 1;
+    
     setPages(updatedPages);
     persistPages(updatedPages);
 
@@ -1392,7 +1428,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     {lang === 'ar' ? 'الاسم' : 'Name'}
                   </th>
                   <th className="text-left p-4 font-medium text-slate-700">
-                    {lang === 'ar' ? 'المسار' : 'URL'}
+                    {lang === 'ar' ? 'المسار' : 'Path'}
                   </th>
                   <th className="text-left p-4 font-medium text-slate-700">
                     {lang === 'ar' ? 'الحالة' : 'Status'}
@@ -1401,12 +1437,15 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     {lang === 'ar' ? 'المكونات' : 'Components'}
                   </th>
                   <th className="text-left p-4 font-medium text-slate-700">
+                    {lang === 'ar' ? 'الترتيب' : 'Order'}
+                  </th>
+                  <th className="text-left p-4 font-medium text-slate-700">
                     {lang === 'ar' ? 'إجراءات' : 'Actions'}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {pages.map((page) => (
+                {pages.sort((a, b) => (a.navigationOrder ?? 999) - (b.navigationOrder ?? 999)).map((page, index) => (
                   <tr key={page.id} className="border-b border-slate-100">
                     <td className="p-4">
                       <div>
@@ -1442,6 +1481,26 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                       <span className="text-sm text-slate-500">
                         {page.components.length} {lang === 'ar' ? 'مكون' : 'components'}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => movePageUp(page.id)}
+                          disabled={index === 0}
+                          className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={lang === 'ar' ? 'تحريك للأعلى' : 'Move Up'}
+                        >
+                          <ChevronUp size={16} />
+                        </button>
+                        <button
+                          onClick={() => movePageDown(page.id)}
+                          disabled={index === pages.length - 1}
+                          className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={lang === 'ar' ? 'تحريك للأسفل' : 'Move Down'}
+                        >
+                          <ChevronDown size={16} />
+                        </button>
+                      </div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
