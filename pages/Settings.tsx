@@ -12,6 +12,10 @@ const AutoTranslateButton = ({ text, onTranslate }: { text: string, onTranslate:
         <button
             type="button"
             onClick={async () => {
+                // Blur active element to ensure state is committed
+                if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur();
+                }
                 setTranslating(true);
                 try {
                     const translated = await translateText(text, 'ar', 'en');
@@ -20,44 +24,78 @@ const AutoTranslateButton = ({ text, onTranslate }: { text: string, onTranslate:
                     setTranslating(false);
                 }
             }}
-            className="flex items-center gap-1 text-tivro-primary hover:text-emerald-700 transition"
-            title="Auto-translate to English"
+            className="flex items-center gap-1.5 text-tivro-primary hover:text-emerald-700 transition px-2 py-0.5 rounded-md hover:bg-emerald-50"
+            title="ترجمة تلقائية للإنجليزية"
             disabled={translating}
         >
             {translating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-            <span className="text-[10px]">Translate</span>
+            <span className="text-[10px] font-bold">ترجمة فورية</span>
         </button>
     );
 };
 
 const LocalizedArea = ({ label, value, onChange }: { label: string, value: LocalizedString, onChange: (v: LocalizedString) => void }) => (
-    <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-bold text-slate-700">{label}</label>
-            <AutoTranslateButton text={value?.ar || ''} onTranslate={v => onChange({ ...value, en: v })} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div>
-                <span className="text-xs text-slate-400 block mb-1">Arabic</span>
-                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="rtl" value={value?.ar || ''} onChange={e => onChange({ ...value, ar: e.target.value })} />
+    <div className="mb-6">
+        <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+                <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">العربية</span>
+                    <AutoTranslateButton text={value?.ar || ''} onTranslate={v => onChange({ ...value, en: v })} />
+                </div>
+                <textarea
+                    className="w-full border border-slate-200 p-3 rounded-lg h-28 text-sm focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                    dir="rtl"
+                    placeholder="اكتب النص العربي هنا..."
+                    value={value?.ar || ''}
+                    onChange={e => onChange({ ...value, ar: e.target.value })}
+                />
             </div>
             <div>
-                <span className="text-xs text-slate-400 block mb-1">English</span>
-                <textarea className="w-full border p-2 rounded h-24 text-sm" dir="ltr" value={value?.en || ''} onChange={e => onChange({ ...value, en: e.target.value })} />
+                <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">English (Translated)</span>
+                </div>
+                <textarea
+                    className="w-full border border-slate-200 p-3 rounded-lg h-28 text-sm focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition bg-slate-50/30"
+                    dir="ltr"
+                    placeholder="English translation will appear here..."
+                    value={value?.en || ''}
+                    onChange={e => onChange({ ...value, en: e.target.value })}
+                />
             </div>
         </div>
     </div>
 );
 
 const LocalizedInput = ({ label, value, onChange }: { label: string, value: LocalizedString, onChange: (v: LocalizedString) => void }) => (
-    <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-bold text-slate-700">{label}</label>
-            <AutoTranslateButton text={value?.ar || ''} onTranslate={v => onChange({ ...value, en: v })} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <input className="w-full border p-2 rounded" placeholder="Ar" dir="rtl" value={value?.ar || ''} onChange={e => onChange({ ...value, ar: e.target.value })} />
-            <input className="w-full border p-2 rounded" placeholder="En" dir="ltr" value={value?.en || ''} onChange={e => onChange({ ...value, en: e.target.value })} />
+    <div className="mb-5">
+        <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+                <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">العربية</span>
+                    <AutoTranslateButton text={value?.ar || ''} onTranslate={v => onChange({ ...value, en: v })} />
+                </div>
+                <input
+                    className="w-full border border-slate-200 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                    dir="rtl"
+                    placeholder="نص عربي..."
+                    value={value?.ar || ''}
+                    onChange={e => onChange({ ...value, ar: e.target.value })}
+                />
+            </div>
+            <div>
+                <div className="mb-1">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">English</span>
+                </div>
+                <input
+                    className="w-full border border-slate-200 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition bg-slate-50/30"
+                    dir="ltr"
+                    placeholder="English..."
+                    value={value?.en || ''}
+                    onChange={e => onChange({ ...value, en: e.target.value })}
+                />
+            </div>
         </div>
     </div>
 );
