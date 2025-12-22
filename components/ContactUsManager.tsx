@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { db } from '../services/db';
 import { ContactUsSettings, ContactFormField, ContactCard, ContactSocialLink } from '../types';
-import { Plus, Trash2, Save, RotateCcw, Eye, EyeOff, Edit2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Save, RotateCcw, Eye, EyeOff, Edit2, CheckCircle, AlertCircle, Wand2, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
+import { translateText } from '../services/translationService';
 
 interface ContactUsManagerProps {
   onUpdate?: () => void;
@@ -14,13 +15,41 @@ const IconComponent = ({ name, className }: { name: string, className?: string }
   return <Icon className={className} />;
 };
 
+const AutoTranslateButton = ({ text, onTranslate }: { text: string, onTranslate: (v: string) => void }) => {
+  const [translating, setTranslating] = React.useState(false);
+  if (!text) return null;
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        setTranslating(true);
+        try {
+          const translated = await translateText(text, 'ar', 'en');
+          if (translated) onTranslate(translated);
+        } finally {
+          setTranslating(false);
+        }
+      }}
+      className="flex items-center gap-1.5 text-tivro-primary hover:text-emerald-700 transition px-2 py-0.5 rounded-md hover:bg-emerald-50"
+      title="ترجمة فورية للإنجليزية"
+      disabled={translating}
+    >
+      {translating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+      <span className="text-[10px] font-bold">ترجمة فورية</span>
+    </button>
+  );
+};
+
 const sanitizeHTML = (html: string): string => {
   const allowedTags = ['div', 'p', 'span', 'strong', 'em', 'br', 'ul', 'ol', 'li'];
   return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/<[^>]*>/g, (match) => {
-              const tagName = match.replace(/[<>]/g, '').split(' ')[0];
-              return allowedTags.includes(tagName) ? match : '';
-            });
+    .replace(/<[^>]*>/g, (match) => {
+      const tagName = match.replace(/[<>]/g, '').split(' ')[0];
+      return allowedTags.includes(tagName) ? match : '';
+    });
 };
 
 const validateURL = (url: string): boolean => {
@@ -34,52 +63,52 @@ const validateURL = (url: string): boolean => {
 
 const validateField = (field: ContactFormField): string[] => {
   const errors: string[] = [];
-  
+
   if (!field.name || field.name.trim().length === 0) {
     errors.push('Field name is required');
   }
-  
+
   if (!field.label.ar || field.label.ar.trim().length === 0) {
     errors.push('Arabic label is required');
   }
-  
+
   if (!field.label.en || field.label.en.trim().length === 0) {
     errors.push('English label is required');
   }
-  
+
   if (!field.placeholder.ar || field.placeholder.ar.trim().length === 0) {
     errors.push('Arabic placeholder is required');
   }
-  
+
   if (!field.placeholder.en || field.placeholder.en.trim().length === 0) {
     errors.push('English placeholder is required');
   }
-  
+
   if (field.label.ar.length > 200) errors.push('Arabic label too long (max 200 chars)');
   if (field.label.en.length > 200) errors.push('English label too long (max 200 chars)');
   if (field.placeholder.ar.length > 200) errors.push('Arabic placeholder too long (max 200 chars)');
   if (field.placeholder.en.length > 200) errors.push('English placeholder too long (max 200 chars)');
-  
+
   return errors;
 };
 
 const validateSocialLink = (link: ContactSocialLink): string[] => {
   const errors: string[] = [];
-  
+
   if (!link.name || link.name.trim().length === 0) {
     errors.push('Social link name is required');
   }
-  
+
   if (!link.url || link.url.trim().length === 0) {
     errors.push('URL is required');
   } else if (!validateURL(link.url)) {
     errors.push('Invalid URL format');
   }
-  
+
   if (!link.iconSVG_or_name || link.iconSVG_or_name.trim().length === 0) {
     errors.push('Icon name is required');
   }
-  
+
   return errors;
 };
 
@@ -110,10 +139,10 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
 
   const saveSettings = async () => {
     if (!settings) return;
-    
+
     // Validate settings
     const validationErrors: string[] = [];
-    
+
     // Validate title and subtitle
     if (!settings.title.ar || settings.title.ar.trim().length === 0) {
       validationErrors.push('Arabic title is required');
@@ -124,7 +153,7 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
     if (settings.title.ar.length > 200 || settings.title.en.length > 200) {
       validationErrors.push('Title too long (max 200 chars)');
     }
-    
+
     // Validate subtitle
     if (!settings.subtitle.ar || settings.subtitle.ar.trim().length === 0) {
       validationErrors.push('Arabic subtitle is required');
@@ -135,27 +164,27 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
     if (settings.subtitle.ar.length > 1000 || settings.subtitle.en.length > 1000) {
       validationErrors.push('Subtitle too long (max 1000 chars)');
     }
-    
+
     // Validate form fields
     settings.form.fields.forEach((field, index) => {
       const fieldErrors = validateField(field);
       fieldErrors.forEach(error => validationErrors.push(`Field ${index + 1}: ${error}`));
     });
-    
+
     // Validate social links
     settings.socialLinks.forEach((link, index) => {
       const linkErrors = validateSocialLink(link);
       linkErrors.forEach(error => validationErrors.push(`Social Link ${index + 1}: ${error}`));
     });
-    
+
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
     }
-    
+
     setErrors([]);
     setSaving(true);
-    
+
     try {
       const currentSettings = await db.settings.get();
       if (currentSettings) {
@@ -163,9 +192,9 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
           ...currentSettings,
           contactUs: settings
         });
-        
+
         if (onUpdate) onUpdate();
-        
+
         alert(lang === 'ar' ? 'تم حفظ الإعدادات بنجاح' : 'Settings saved successfully');
       }
     } catch (error) {
@@ -195,7 +224,7 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
 
   const addFormField = () => {
     if (!settings) return;
-    
+
     const newField: ContactFormField = {
       name: `field_${Date.now()}`,
       label: { ar: 'حقل جديد', en: 'New Field' },
@@ -203,7 +232,7 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
       type: 'text',
       required: true
     };
-    
+
     updateSettings({
       form: {
         ...settings.form,
@@ -214,10 +243,10 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
 
   const updateFormField = (index: number, field: ContactFormField) => {
     if (!settings) return;
-    
+
     const updatedFields = [...settings.form.fields];
     updatedFields[index] = field;
-    
+
     updateSettings({
       form: {
         ...settings.form,
@@ -228,7 +257,7 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
 
   const removeFormField = (index: number) => {
     if (!settings) return;
-    
+
     const updatedFields = settings.form.fields.filter((_, i) => i !== index);
     updateSettings({
       form: {
@@ -240,13 +269,13 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
 
   const addSocialLink = () => {
     if (!settings) return;
-    
+
     const newLink: ContactSocialLink = {
       name: 'New Platform',
       url: 'https://',
       iconSVG_or_name: 'Globe'
     };
-    
+
     updateSettings({
       socialLinks: [...settings.socialLinks, newLink]
     });
@@ -254,10 +283,10 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
 
   const updateSocialLink = (index: number, link: ContactSocialLink) => {
     if (!settings) return;
-    
+
     const updatedLinks = [...settings.socialLinks];
     updatedLinks[index] = link;
-    
+
     updateSettings({
       socialLinks: updatedLinks
     });
@@ -265,7 +294,7 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
 
   const removeSocialLink = (index: number) => {
     if (!settings) return;
-    
+
     const updatedLinks = settings.socialLinks.filter((_, i) => i !== index);
     updateSettings({
       socialLinks: updatedLinks
@@ -346,7 +375,7 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
 
       {/* Main Content */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-8">
-        
+
         {/* Title and Subtitle */}
         <div>
           <h3 className="font-bold text-lg mb-4 text-slate-700">
@@ -354,8 +383,12 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                {lang === 'ar' ? 'العنوان (عربي)' : 'Title (Arabic)'}
+              <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                <span>{lang === 'ar' ? 'العنوان (عربي)' : 'Title (Arabic)'}</span>
+                <AutoTranslateButton
+                  text={settings.title.ar}
+                  onTranslate={v => updateSettings({ title: { ...settings.title, en: v } })}
+                />
               </label>
               <input
                 type="text"
@@ -363,12 +396,14 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                 onChange={(e) => updateSettings({
                   title: { ...settings.title, ar: e.target.value }
                 })}
-                className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                dir="rtl"
+                placeholder="تواصل معنا..."
                 maxLength={200}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
+              <label className="block text-sm font-bold text-slate-700 mb-1">
                 {lang === 'ar' ? 'العنوان (إنجليزي)' : 'Title (English)'}
               </label>
               <input
@@ -377,29 +412,37 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                 onChange={(e) => updateSettings({
                   title: { ...settings.title, en: e.target.value }
                 })}
-                className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                className="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition"
+                dir="ltr"
+                placeholder="Contact Us..."
                 maxLength={200}
               />
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                {lang === 'ar' ? 'الوصف (عربي)' : 'Subtitle (Arabic)'}
+              <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                <span>{lang === 'ar' ? 'الوصف (عربي)' : 'Subtitle (Arabic)'}</span>
+                <AutoTranslateButton
+                  text={settings.subtitle.ar}
+                  onTranslate={v => updateSettings({ subtitle: { ...settings.subtitle, en: v } })}
+                />
               </label>
               <textarea
                 value={settings.subtitle.ar}
                 onChange={(e) => updateSettings({
                   subtitle: { ...settings.subtitle, ar: e.target.value }
                 })}
-                className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition h-24"
                 rows={3}
+                dir="rtl"
+                placeholder="لنكمل الصورة معاً..."
                 maxLength={1000}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
+              <label className="block text-sm font-bold text-slate-700 mb-1">
                 {lang === 'ar' ? 'الوصف (إنجليزي)' : 'Subtitle (English)'}
               </label>
               <textarea
@@ -407,8 +450,10 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                 onChange={(e) => updateSettings({
                   subtitle: { ...settings.subtitle, en: e.target.value }
                 })}
-                className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                className="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition h-24"
                 rows={3}
+                dir="ltr"
+                placeholder="Ready to take your business..."
                 maxLength={1000}
               />
             </div>
@@ -424,8 +469,16 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
             <div key={index} className="border border-slate-200 rounded-lg p-4 mb-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">
-                    {lang === 'ar' ? 'العنوان (عربي)' : 'Heading (Arabic)'}
+                  <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                    <span>{lang === 'ar' ? 'العنوان (عربي)' : 'Heading (Arabic)'}</span>
+                    <AutoTranslateButton
+                      text={card.heading.ar}
+                      onTranslate={v => {
+                        const updatedCards = [...settings.cards];
+                        updatedCards[index] = { ...card, heading: { ...card.heading, en: v } };
+                        updateSettings({ cards: updatedCards });
+                      }}
+                    />
                   </label>
                   <input
                     type="text"
@@ -438,11 +491,12 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                       };
                       updateSettings({ cards: updatedCards });
                     }}
-                    className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                    dir="rtl"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
                     {lang === 'ar' ? 'العنوان (إنجليزي)' : 'Heading (English)'}
                   </label>
                   <input
@@ -456,11 +510,12 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                       };
                       updateSettings({ cards: updatedCards });
                     }}
-                    className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition"
+                    dir="ltr"
                   />
                 </div>
               </div>
-              
+
               <div className="mt-4">
                 <label className="block text-sm font-medium text-slate-600 mb-1">
                   {lang === 'ar' ? 'المحتوى (HTML)' : 'Content (HTML)'}
@@ -494,7 +549,7 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
               {lang === 'ar' ? 'إضافة رابط' : 'Add Link'}
             </button>
           </div>
-          
+
           {settings.socialLinks.map((link, index) => (
             <div key={index} className="border border-slate-200 rounded-lg p-4 mb-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -558,7 +613,7 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
               {lang === 'ar' ? 'إضافة حقل' : 'Add Field'}
             </button>
           </div>
-          
+
           {settings.form.fields.map((field, index) => (
             <div key={index} className="border border-slate-200 rounded-lg p-4 mb-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -613,11 +668,15 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                   </button>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">
-                    {lang === 'ar' ? 'التسمية (عربي)' : 'Label (Arabic)'}
+                  <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                    <span>{lang === 'ar' ? 'التسمية (عربي)' : 'Label (Arabic)'}</span>
+                    <AutoTranslateButton
+                      text={field.label.ar}
+                      onTranslate={v => updateFormField(index, { ...field, label: { ...field.label, en: v } })}
+                    />
                   </label>
                   <input
                     type="text"
@@ -626,12 +685,13 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                       ...field,
                       label: { ...field.label, ar: e.target.value }
                     })}
-                    className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                    dir="rtl"
                     maxLength={200}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
                     {lang === 'ar' ? 'التسمية (إنجليزي)' : 'Label (English)'}
                   </label>
                   <input
@@ -641,16 +701,21 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                       ...field,
                       label: { ...field.label, en: e.target.value }
                     })}
-                    className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition"
+                    dir="ltr"
                     maxLength={200}
                   />
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">
-                    {lang === 'ar' ? 'النص التوضيحي (عربي)' : 'Placeholder (Arabic)'}
+                  <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                    <span>{lang === 'ar' ? 'النص التوضيحي (عربي)' : 'Placeholder (Arabic)'}</span>
+                    <AutoTranslateButton
+                      text={field.placeholder.ar}
+                      onTranslate={v => updateFormField(index, { ...field, placeholder: { ...field.placeholder, en: v } })}
+                    />
                   </label>
                   <input
                     type="text"
@@ -659,12 +724,13 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                       ...field,
                       placeholder: { ...field.placeholder, ar: e.target.value }
                     })}
-                    className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                    dir="rtl"
                     maxLength={200}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
                     {lang === 'ar' ? 'النص التوضيحي (إنجليزي)' : 'Placeholder (English)'}
                   </label>
                   <input
@@ -674,7 +740,8 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                       ...field,
                       placeholder: { ...field.placeholder, en: e.target.value }
                     })}
-                    className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition"
+                    dir="ltr"
                     maxLength={200}
                   />
                 </div>
@@ -690,8 +757,14 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                {lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}
+              <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                <span>{lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}</span>
+                <AutoTranslateButton
+                  text={settings.form.submitText.ar}
+                  onTranslate={v => updateSettings({
+                    form: { ...settings.form, submitText: { ...settings.form.submitText, en: v } }
+                  })}
+                />
               </label>
               <input
                 type="text"
@@ -702,11 +775,12 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                     submitText: { ...settings.form.submitText, ar: e.target.value }
                   }
                 })}
-                className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                dir="rtl"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
+              <label className="block text-sm font-bold text-slate-700 mb-1">
                 {lang === 'ar' ? 'النص (إنجليزي)' : 'Text (English)'}
               </label>
               <input
@@ -718,11 +792,12 @@ const ContactUsManager: React.FC<ContactUsManagerProps> = ({ onUpdate }) => {
                     submitText: { ...settings.form.submitText, en: e.target.value }
                   }
                 })}
-                className="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-tivro-primary focus:border-tivro-primary outline-none"
+                className="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition"
+                dir="ltr"
               />
             </div>
           </div>
-          
+
           <div className="mt-4">
             <label className="block text-sm font-medium text-slate-600 mb-1">
               {lang === 'ar' ? 'نقطة النهاية (اختياري)' : 'Endpoint (Optional)'}
