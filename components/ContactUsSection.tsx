@@ -17,14 +17,56 @@ const IconComponent = ({ name, className }: { name: string, className?: string }
 };
 
 const sanitizeHTML = (html: string): string => {
+  if (typeof window === 'undefined') return html;
   // Basic HTML sanitization - allow only safe tags
   const allowedTags = ['div', 'p', 'span', 'strong', 'em', 'br', 'ul', 'ol', 'li'];
-  const cleanHTML = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<[^>]*>/g, (match) => {
-      const tagName = match.replace(/[<>]/g, '').split(' ')[0];
-      return allowedTags.includes(tagName) ? match : '';
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html || '', 'text/html');
+
+  // Remove dangerous tags entirely
+  ['script', 'iframe', 'object', 'embed', 'link', 'style'].forEach((tag) => {
+    doc.querySelectorAll(tag).forEach((el) => el.remove());
+  });
+
+  const isDangerousUrl = (value: string) => {
+    const v = String(value || '').trim().toLowerCase();
+    return v.startsWith('javascript:') || v.startsWith('data:') || v.startsWith('vbscript:');
+  };
+
+  // Only sanitize inside <body> to avoid invalid DOM operations on document-level nodes.
+  Array.from(doc.body.querySelectorAll('*')).forEach((el) => {
+    const tag = el.tagName.toLowerCase();
+    if (!allowedTags.includes(tag)) {
+      // Replace the node with its text content (safe) but only if it has a non-document parent.
+      const parent = el.parentNode;
+      if (parent && parent.nodeType !== Node.DOCUMENT_NODE) {
+        const text = doc.createTextNode(el.textContent || '');
+        el.replaceWith(text);
+      } else {
+        el.remove();
+      }
+      return;
+    }
+
+    // Strip dangerous attributes
+    Array.from(el.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const value = attr.value;
+
+      if (name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+        return;
+      }
+
+      if ((name === 'href' || name === 'src' || name === 'xlink:href') && isDangerousUrl(value)) {
+        el.removeAttribute(attr.name);
+        return;
+      }
     });
-  return cleanHTML;
+  });
+
+  return doc.body.innerHTML;
 };
 
 export const ContactUsSection: React.FC<ContactUsSectionProps> = ({

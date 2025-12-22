@@ -9,10 +9,17 @@ const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || FALLBACK_URL;
 const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || FALLBACK_KEY;
 
-console.log('🔌 Initializing Supabase Client...');
-console.log('   URL:', supabaseUrl);
-// Don't log the full key for security, just check existence
-console.log('   Key Present:', !!supabaseAnonKey);
+try {
+  const isDev = !!(import.meta as any).env?.DEV;
+  if (isDev) {
+    console.log('🔌 Initializing Supabase Client...');
+    console.log('   URL:', supabaseUrl);
+    // Don't log the full key for security, just check existence
+    console.log('   Key Present:', !!supabaseAnonKey);
+  }
+} catch {
+  // ignore
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

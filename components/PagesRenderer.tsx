@@ -150,7 +150,10 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
 
     // Whitelist approach: remove dangerous tags and attributes
     const dangerousTags = ['script', 'iframe', 'object', 'embed', 'link', 'style'];
-    const dangerousAttributes = ['on', 'javascript:', 'data:', 'vbscript:'];
+    const isDangerousUrl = (value: string) => {
+      const v = String(value || '').trim().toLowerCase();
+      return v.startsWith('javascript:') || v.startsWith('data:') || v.startsWith('vbscript:');
+    };
 
     dangerousTags.forEach(tag => {
       const elements = doc.querySelectorAll(tag);
@@ -161,8 +164,19 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
     all.forEach(el => {
       const attrs = Array.from(el.attributes);
       attrs.forEach(attr => {
-        if (dangerousAttributes.some(da => attr.name.toLowerCase().startsWith(da) || attr.value.toLowerCase().startsWith('javascript:'))) {
+        const name = attr.name.toLowerCase();
+        const value = attr.value;
+
+        // Strip inline event handlers (onclick, onload, ...)
+        if (name.startsWith('on')) {
           el.removeAttribute(attr.name);
+          return;
+        }
+
+        // Strip dangerous URL schemes in common URL-bearing attributes
+        if ((name === 'href' || name === 'src' || name === 'xlink:href' || name === 'action' || name === 'formaction') && isDangerousUrl(value)) {
+          el.removeAttribute(attr.name);
+          return;
         }
       });
     });
@@ -379,7 +393,7 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       case 'html': {
         const html = (component as any).content?.html;
         if (!html) return null;
-        return <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: html }} />;
+        return <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />;
       }
 
       default:

@@ -210,6 +210,17 @@ let seedUnavailable = false;
 const triggerServerSeed = async () => {
   if (seedUnavailable) return false;
   try {
+    // In local/preview environments (vite preview), serverless functions may not exist.
+    // Avoid calling the endpoint to prevent console noise and unnecessary retries.
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+      seedUnavailable = true;
+      return false;
+    }
+  } catch {
+    // ignore
+  }
+  try {
     const res = await fetch('/api/seed', { method: 'POST' });
     if (!res.ok) {
       // If endpoint is missing/disabled in this environment, stop retrying.
