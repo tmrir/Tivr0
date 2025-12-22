@@ -42,11 +42,11 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
         type="button"
         onClick={() => handleTranslate(text, fieldId, onTranslate)}
         disabled={isTranslating}
-        className="flex items-center gap-1 text-tivro-primary hover:text-emerald-700 transition ml-2"
-        title="ترجمة تلقائية للإنجليزية"
+        className="flex items-center gap-1.5 text-tivro-primary hover:text-emerald-700 transition px-2 py-0.5 rounded-md hover:bg-emerald-50"
+        title="ترجمة فورية للإنجليزية"
       >
         {isTranslating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-        <span className="text-[10px]">ترجمة تلقائية</span>
+        <span className="text-[10px] font-bold">ترجمة فورية</span>
       </button>
     );
   };
@@ -566,14 +566,19 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
           {/* Page Settings */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                {lang === 'ar' ? 'اسم الصفحة' : 'Page Name'}
+              <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                <span>{lang === 'ar' ? 'اسم الصفحة' : 'Page Name'}</span>
+                <TranslateButton
+                  text={editingPage.name}
+                  fieldId="page-name-translate"
+                  onTranslate={(val) => setEditingPage({ ...editingPage, title: { ...(editingPage.title || { ar: editingPage.name, en: '' }), en: val } })}
+                />
               </label>
               <input
                 type="text"
                 value={editingPage.name}
                 onChange={(e) => setEditingPage({ ...editingPage, name: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg p-2"
+                className="w-full border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
                 placeholder={lang === 'ar' ? 'أدخل اسم الصفحة' : 'Enter page name'}
               />
             </div>
@@ -592,7 +597,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
             </div>
 
             <div>
-              <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+              <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
                 <span>{lang === 'ar' ? 'العنوان (عربي)' : 'Title (Arabic)'}</span>
                 <TranslateButton
                   text={editingPage.title?.ar || ''}
@@ -607,12 +612,14 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                   ...editingPage,
                   title: { ...(editingPage.title || { ar: '', en: '' }), ar: e.target.value }
                 })}
-                className="w-full border border-slate-200 rounded-lg p-2"
+                className="w-full border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                dir="rtl"
+                placeholder={lang === 'ar' ? 'أدخل العنوان بالعربي' : 'Enter title in Arabic'}
               />
             </div>
 
             <div>
-              <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+              <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
                 <span>{lang === 'ar' ? 'الوصف (عربي)' : 'Description (Arabic)'}</span>
                 <TranslateButton
                   text={editingPage.description?.ar || ''}
@@ -626,13 +633,15 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                   ...editingPage,
                   description: { ...(editingPage.description || { ar: '', en: '' }), ar: e.target.value }
                 })}
-                className="w-full border border-slate-200 rounded-lg p-2"
+                className="w-full border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition h-24"
                 rows={3}
+                dir="rtl"
+                placeholder={lang === 'ar' ? 'أدخل الوصف بالعربي' : 'Enter description in Arabic'}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-bold text-slate-700 mb-1">
                 {lang === 'ar' ? 'العنوان (إنجليزي)' : 'Title (English)'}
               </label>
               <input
@@ -642,12 +651,14 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                   ...editingPage,
                   title: { ...(editingPage.title || { ar: '', en: '' }), en: e.target.value }
                 })}
-                className="w-full border border-slate-200 rounded-lg p-2"
+                className="w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition"
+                dir="ltr"
+                placeholder="English title..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-bold text-slate-700 mb-1">
                 {lang === 'ar' ? 'الوصف (إنجليزي)' : 'Description (English)'}
               </label>
               <textarea
@@ -656,8 +667,10 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                   ...editingPage,
                   description: { ...(editingPage.description || { ar: '', en: '' }), en: e.target.value }
                 })}
-                className="w-full border border-slate-200 rounded-lg p-2"
+                className="w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition h-24"
                 rows={3}
+                dir="ltr"
+                placeholder="English description..."
               />
             </div>
 
@@ -719,7 +732,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
             {editingPage.underConstruction && (
               <div className="space-y-2 p-3 border border-slate-200 rounded-lg bg-slate-50">
                 <div>
-                  <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                  <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
                     <span>{lang === 'ar' ? 'نص الزر (عربي)' : 'Button Label (Arabic)'}</span>
                     <TranslateButton
                       text={editingPage.underConstructionButton?.label?.ar || ''}
@@ -751,11 +764,12 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                         }
                       })
                     }
-                    className="w-full border border-slate-200 rounded-lg p-2"
+                    className="w-full border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-tivro-primary/20 focus:border-tivro-primary outline-none transition"
+                    dir="rtl"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
                     {lang === 'ar' ? 'نص الزر (إنجليزي)' : 'Button Label (English)'}
                   </label>
                   <input
@@ -773,7 +787,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                         }
                       })
                     }
-                    className="w-full border border-slate-200 rounded-lg p-2"
+                    className="w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 outline-none transition"
+                    dir="ltr"
                   />
                 </div>
                 <div>
@@ -1086,7 +1101,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                 {selectedComponent.type === 'text' && (
                   <div className="space-y-3">
                     <div>
-                      <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                      <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
                         <span>{lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}</span>
                         <TranslateButton
                           text={selectedComponent.content.text?.ar || ''}
@@ -1128,7 +1143,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
                         {lang === 'ar' ? 'النص (إنجليزي)' : 'Text (English)'}
                       </label>
                       <WordLikeEditor
@@ -1158,7 +1173,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                 {selectedComponent.type === 'button' && (
                   <div className="space-y-3">
                     <div>
-                      <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                      <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
                         <span>{lang === 'ar' ? 'نص الزر (عربي)' : 'Button Text (Arabic)'}</span>
                         <TranslateButton
                           text={selectedComponent.content.text?.ar || ''}
@@ -1200,7 +1215,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
                         {lang === 'ar' ? 'نص الزر (إنجليزي)' : 'Button Text (English)'}
                       </label>
                       <input
@@ -1405,7 +1420,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     </div>
 
                     <div>
-                      <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                      <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
                         <span>{lang === 'ar' ? 'النص البديل (عربي)' : 'Alt Text (Arabic)'}</span>
                         <TranslateButton
                           text={selectedComponent.content.alt?.ar || ''}
@@ -1447,7 +1462,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
                         {lang === 'ar' ? 'النص البديل (إنجليزي)' : 'Alt Text (English)'}
                       </label>
                       <input
