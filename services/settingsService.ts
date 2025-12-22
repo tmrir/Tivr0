@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../utils/supabase-admin';
+
 import { supabase } from '../services/supabase';
 import { SiteSettings, FontSizeSettings } from '../types';
 import { defaultSettings, mergeWithDefaults, validateSettings } from '../defaultSettings';
@@ -74,15 +74,15 @@ export class SettingsService {
           try {
             const parsed = JSON.parse(cachedRaw as string);
             const validated = validateSettings(parsed);
-            console.log('✅ [SettingsService] Using cached settings (<24h)');
+            // console.log('✅ [SettingsService] Using cached settings (<24h)');
             return validated;
           } catch {
             // ignore invalid cache and continue to Supabase
           }
         }
 
-        console.log('🔧 [SettingsService] Fetching settings with unified structure...');
-        
+        // console.log('🔧 [SettingsService] Fetching settings with unified structure...');
+
         // أولاً، جلب من Supabase مع دمج مع الإعدادات الافتراضية
         const { data, error } = await supabase
           .from('site_settings')
@@ -92,7 +92,7 @@ export class SettingsService {
 
         if (error) {
           console.error('❌ [SettingsService] Supabase fetch error:', error);
-          console.log('🔄 [SettingsService] Falling back to localStorage/default settings');
+          // console.log('🔄 [SettingsService] Falling back to localStorage/default settings');
 
           // محاولة التحميل من localStorage كخيار احتياطي
           const localSettings = localStorage.getItem(SettingsService.SETTINGS_CACHE_KEY);
@@ -100,7 +100,7 @@ export class SettingsService {
             try {
               const parsed = JSON.parse(localSettings);
               const validated = validateSettings(parsed);
-              console.log('✅ [SettingsService] Loaded and validated from localStorage (fallback)');
+              // console.log('✅ [SettingsService] Loaded and validated from localStorage (fallback)');
               return validated;
             } catch (parseError) {
               console.error('❌ [SettingsService] LocalStorage parse error in fallback:', parseError);
@@ -111,21 +111,21 @@ export class SettingsService {
           return defaultSettings;
         }
 
-        console.log('✅ [SettingsService] Settings fetched from Supabase');
-        
+        // console.log('✅ [SettingsService] Settings fetched from Supabase');
+
         // تحويل بيانات Supabase (snake_case) إلى SiteSettings (camelCase) ثم دمجها مع الافتراضيات والتحقق منها
         const mappedFromDB = this.mapFromDB(data);
         const validated = validateSettings(mappedFromDB);
-        
+
         // حفظ البيانات المدمجة في localStorage (cache only)
         localStorage.setItem(SettingsService.SETTINGS_CACHE_KEY, JSON.stringify(validated));
         localStorage.setItem(SettingsService.SETTINGS_CACHE_TS_KEY, Date.now().toString());
-        
-        console.log('🔗 [SettingsService] Merged Supabase data with defaults');
+
+        // console.log('🔗 [SettingsService] Merged Supabase data with defaults');
         return validated;
       } catch (error) {
         console.error('❌ [SettingsService] Critical error:', error);
-        console.log('🔄 [SettingsService] Using default settings as final fallback');
+        // console.log('🔄 [SettingsService] Using default settings as final fallback');
         return defaultSettings;
       } finally {
         this.inFlightGet = null;
@@ -138,16 +138,16 @@ export class SettingsService {
   // حفظ الإعدادات مع التوحيد الكامل
   async saveSettings(settings: SiteSettings): Promise<boolean> {
     try {
-      console.log('💾 [SettingsService] Saving unified settings...');
-      
+      // console.log('💾 [SettingsService] Saving unified settings...');
+
       // التحقق من صحة الإعدادات ودمجها مع الافتراضيات
       const validated = validateSettings(settings);
-      console.log('📦 [SettingsService] Validated settings:', validated);
+      // console.log('📦 [SettingsService] Validated settings:', validated);
 
       // أولاً، احفظ في localStorage دائماً
       localStorage.setItem(SettingsService.SETTINGS_CACHE_KEY, JSON.stringify(validated));
       localStorage.setItem(SettingsService.SETTINGS_CACHE_TS_KEY, Date.now().toString());
-      console.log('✅ [SettingsService] Saved to localStorage immediately');
+      // console.log('✅ [SettingsService] Saved to localStorage immediately');
 
       // Ensure subsequent getSettings() calls will serve this latest value immediately
       this.inFlightGet = null;
@@ -185,12 +185,12 @@ export class SettingsService {
 
       if (error) {
         console.error('❌ [SettingsService] Supabase save error:', error);
-        console.log('⚠️ [SettingsService] Data saved to localStorage only (Supabase failed)');
+        // console.log('⚠️ [SettingsService] Data saved to localStorage only (Supabase failed)');
         // نُرجع فشل لأن البيانات لم تُحفظ بشكل عام (DB)
         return false;
       }
 
-      console.log('✅ [SettingsService] Settings saved to Supabase successfully:', data);
+      // console.log('✅ [SettingsService] Settings saved to Supabase successfully:', data);
 
       // Verify persistence: refetch and ensure key fields match what we attempted to save
       try {
@@ -222,11 +222,13 @@ export class SettingsService {
 
         if (!sameAdminNav || !sameCustomPages) {
           console.error('❌ [SettingsService] Save verification failed: DB does not reflect saved values.');
+          /*
           console.log('   expected.adminNavigation.length:', expectedAdminNav.length);
           console.log('   db.__tivro_admin_navigation.length:', dbAdminNav.length);
           console.log('   expected.customPages.length:', expectedCustomPages.length);
           console.log('   db.__tivro_custom_pages.length:', dbCustomPages.length);
           console.log('   db.updated_at:', (verifyRow as any)?.updated_at);
+          */
           return false;
         }
       } catch (e) {
@@ -234,17 +236,17 @@ export class SettingsService {
         return false;
       }
 
-      console.log('🔗 [SettingsService] Data synchronized between localStorage and Supabase');
+      // console.log('🔗 [SettingsService] Data synchronized between localStorage and Supabase');
       return true;
     } catch (error) {
       console.error('❌ [SettingsService] Critical save error:', error);
-      console.log('🔄 [SettingsService] Falling back to localStorage...');
-      
+      // console.log('🔄 [SettingsService] Falling back to localStorage...');
+
       // الحل النهائي: localStorage مع التحقق
       const validated = validateSettings(settings);
       localStorage.setItem('tivro_settings', JSON.stringify(validated));
       localStorage.setItem('tivro_settings_timestamp', Date.now().toString());
-      console.log('✅ [SettingsService] Saved to localStorage as fallback');
+      // console.log('✅ [SettingsService] Saved to localStorage as fallback');
       return false;
     }
   }
@@ -260,10 +262,12 @@ export class SettingsService {
       siteName: row.site_name || { ar: 'تيفرو', en: 'Tivro' },
       contactEmail: row.contact_email || 'info@tivro.sa',
       contactPhone: row.contact_phone || '+966 50 000 0000',
-      address: typeof row.address === 'string' 
-        ? { ar: row.address, en: row.address } 
+      address: typeof row.address === 'string'
+        ? { ar: row.address, en: row.address }
         : (row.address || { ar: 'الرياض', en: 'Riyadh' }),
       socialLinks: Array.isArray(row.social_links) ? row.social_links : [],
+      enableEnglish: row.enable_english ?? true,
+      tabTitle: row.tab_title || { ar: 'تيفرو - وكالة تسويق رقمي', en: 'Tivro - Digital Marketing Agency' },
       logoUrl: row.logo_url || '',
       iconUrl: row.icon_url || '',
       footerLogoUrl: row.footer_logo_url || '',
@@ -320,6 +324,8 @@ export class SettingsService {
       contact_phone: settings.contactPhone,
       address: settings.address,
       social_links: settings.socialLinks,
+      enable_english: settings.enableEnglish,
+      tab_title: settings.tabTitle,
       logo_url: settings.logoUrl,
       icon_url: settings.iconUrl || '', // تأمين القيمة
       footer_logo_url: settings.footerLogoUrl || '', // تأمين القيمة
@@ -367,6 +373,8 @@ export class SettingsService {
         { platform: 'Linkedin', url: '#' },
         { platform: 'Instagram', url: '#' }
       ],
+      enableEnglish: true,
+      tabTitle: { ar: 'تيفرو - وكالة تسويق رقمي', en: 'Tivro - Digital Marketing Agency' },
       logoUrl: '',
       iconUrl: '',
       footerLogoUrl: '',
@@ -425,7 +433,7 @@ export class SettingsService {
       const { data, error } = await supabase
         .from('site_settings')
         .select('count', { count: 'exact', head: true });
-      
+
       return !error;
     } catch (error) {
       console.error('❌ [SettingsService] Connection test failed:', error);

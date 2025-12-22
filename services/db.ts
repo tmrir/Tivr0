@@ -61,15 +61,15 @@ const mapCaseFromDB = (row: any): CaseStudy => {
     orderIndex: row.order_index,
   };
 };
-const mapCaseToDB = (item: CaseStudy) => ({ 
-  client: item.client, 
-  title: item.title, 
-  category: item.category, 
-  result: item.result, 
-  image: item.image, 
-  url: item.url || '', 
+const mapCaseToDB = (item: CaseStudy) => ({
+  client: item.client,
+  title: item.title,
+  category: item.category,
+  result: item.result,
+  image: item.image,
+  url: item.url || '',
   stats: item.stats || [],
-  order_index: item.orderIndex || 0 
+  order_index: item.orderIndex || 0
 });
 
 const mapBlogFromDB = (row: any): BlogPost => ({
@@ -115,11 +115,11 @@ const mapMessageFromDB = (row: any): ContactMessage => ({
 const mapSettingsFromDB = (row: any): SiteSettings => {
   let socialLinks: SocialLink[] = [];
   if (Array.isArray(row.social_links)) {
-      socialLinks = row.social_links;
+    socialLinks = row.social_links;
   } else if (typeof row.social_links === 'object' && row.social_links !== null) {
-      Object.keys(row.social_links).forEach(key => {
-          socialLinks.push({ platform: key, url: row.social_links[key] });
-      });
+    Object.keys(row.social_links).forEach(key => {
+      socialLinks.push({ platform: key, url: row.social_links[key] });
+    });
   }
 
   return {
@@ -128,27 +128,29 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
     contactPhone: row.contact_phone || '',
     address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
     socialLinks: socialLinks,
-    
+    enableEnglish: row.enable_english ?? true,
+    tabTitle: row.tab_title || { ar: 'تيفرو - وكالة تسويق رقمي', en: 'Tivro - Digital Marketing Agency' },
+
     logoUrl: row.logo_url || '',
     iconUrl: row.icon_url || '',
     footerLogoUrl: row.footer_logo_url || row.logo_url || '',
     faviconUrl: row.favicon_url || '',
 
-    topBanner: row.top_banner || { enabled: false, title: {ar:'',en:''} },
-    bottomBanner: row.bottom_banner || { enabled: false, title: {ar:'',en:''} },
+    topBanner: row.top_banner || { enabled: false, title: { ar: '', en: '' } },
+    bottomBanner: row.bottom_banner || { enabled: false, title: { ar: '', en: '' } },
 
-    sectionTexts: row.section_texts || { 
-      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' }, 
+    sectionTexts: row.section_texts || {
+      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
       workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' },
       privacyLink: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
       termsLink: { ar: 'شروط الاستخدام', en: 'Terms of Service' }
     },
     homeSections: row.home_sections || {
-        heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
-        servicesTitle: { ar: '', en: '' }, servicesSubtitle: { ar: '', en: '' },
-        teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
-        packagesTitle: { ar: '', en: '' },
-        contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
+      heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
+      servicesTitle: { ar: '', en: '' }, servicesSubtitle: { ar: '', en: '' },
+      teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
+      packagesTitle: { ar: '', en: '' },
+      contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
     },
 
     fontSizes: row.font_sizes || {
@@ -172,7 +174,7 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
 
     footerDescription: (row.section_texts && row.section_texts.footerDescription) || { ar: 'وكالة تسويق رقمي سعودية متكاملة.', en: 'A full-service Saudi digital marketing agency.' },
     copyrightText: (row.section_texts && row.section_texts.copyrightText) || { ar: 'جميع الحقوق محفوظة', en: 'All rights reserved' },
-    footerLinks: (row.section_texts && row.section_texts.footerLinks) || { 
+    footerLinks: (row.section_texts && row.section_texts.footerLinks) || {
       privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
       terms: { ar: 'شروط الاستخدام', en: 'Terms of Service' }
     },
@@ -182,12 +184,14 @@ const mapSettingsFromDB = (row: any): SiteSettings => {
   };
 };
 
-const mapSettingsToDB = (item: SiteSettings) => ({ 
-  site_name: item.siteName, 
-  contact_email: item.contactEmail, 
-  contact_phone: item.contactPhone, 
-  address: item.address, 
+const mapSettingsToDB = (item: SiteSettings) => ({
+  site_name: item.siteName,
+  contact_email: item.contactEmail,
+  contact_phone: item.contactPhone,
+  address: item.address,
   social_links: item.socialLinks,
+  enable_english: item.enableEnglish,
+  tab_title: item.tabTitle,
   logo_url: item.logoUrl,
   icon_url: item.iconUrl,
   footer_logo_url: item.footerLogoUrl,
@@ -221,24 +225,24 @@ const triggerServerSeed = async () => {
 
 /* --- SAFE FETCH HELPER WITH FALLBACK --- */
 const fetchWithOrder = async (table: string, mapper: Function) => {
-    let { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .order('order_index', { ascending: true });
+  let { data, error } = await supabase
+    .from(table)
+    .select('*')
+    .order('order_index', { ascending: true });
 
-    if (error || !data) {
-        const res = await supabase.from(table).select('*').order('created_at', { ascending: true });
-        data = res.data;
-        error = res.error;
-    }
+  if (error || !data) {
+    const res = await supabase.from(table).select('*').order('created_at', { ascending: true });
+    data = res.data;
+    error = res.error;
+  }
 
-    if (!error && (!data || data.length === 0)) {
-        await triggerServerSeed();
-        const { data: retry } = await supabase.from(table).select('*').order('created_at', { ascending: true });
-        return retry?.map(row => mapper(row)) || [];
-    }
+  if (!error && (!data || data.length === 0)) {
+    await triggerServerSeed();
+    const { data: retry } = await supabase.from(table).select('*').order('created_at', { ascending: true });
+    return retry?.map(row => mapper(row)) || [];
+  }
 
-    return data?.map(row => mapper(row)) || [];
+  return data?.map(row => mapper(row)) || [];
 }
 
 /* --- DB SERVICE EXPORT --- */
@@ -305,13 +309,13 @@ export const db = {
 
   blog: {
     getAll: async () => {
-        const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
-        if (!error && (!data || data.length === 0)) {
-            await triggerServerSeed();
-            const { data: retry } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
-            return retry?.map(mapBlogFromDB) || [];
-        }
-        return data?.map(mapBlogFromDB) || [];
+      const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+      if (!error && (!data || data.length === 0)) {
+        await triggerServerSeed();
+        const { data: retry } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+        return retry?.map(mapBlogFromDB) || [];
+      }
+      return data?.map(mapBlogFromDB) || [];
     },
     save: async (item: BlogPost) => {
       const payload = mapBlogToDB(item);
@@ -323,23 +327,23 @@ export const db = {
 
   messages: {
     getAll: async (): Promise<ContactMessage[]> => {
-        const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
-        return data?.map(mapMessageFromDB) || [];
+      const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+      return data?.map(mapMessageFromDB) || [];
     },
     send: async (name: string, phone: string) => {
-        return await supabase.from('contact_messages').insert([{ name, phone }]);
+      return await supabase.from('contact_messages').insert([{ name, phone }]);
     },
     delete: async (id: string) => await supabase.from('contact_messages').delete().eq('id', id)
   },
 
   settings: {
     get: async (): Promise<SiteSettings> => {
-      console.log('🔧 [db.settings] Getting unified settings from settingsService...');
+      // console.log('🔧 [db.settings] Getting unified settings from settingsService...');
       // استخدام نفس المصدر الموحد الذي تستخدمه لوحة التحكم
       return await settingsService.getSettings();
     },
     save: async (newSettings: SiteSettings) => {
-      console.log('🔧 [db.settings] Saving through settingsService...');
+      // console.log('🔧 [db.settings] Saving through settingsService...');
       // استخدام نفس الحفظ الموحد
       return await settingsService.saveSettings(newSettings);
     }
@@ -347,30 +351,30 @@ export const db = {
 
   pages: {
     get: async (slug: string): Promise<Page | null> => {
-        try {
-            const res = await fetch(`/api/pages/${slug}`);
-            if (!res.ok) return null;
-            return await res.json();
-        } catch {
-            return null;
-        }
+      try {
+        const res = await fetch(`/api/pages/${slug}`);
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
+      }
     },
     getAll: async (): Promise<Page[]> => {
-        try {
-            const res = await fetch('/api/pages/list');
-            if (!res.ok) return [];
-            return await res.json();
-        } catch {
-            return [];
-        }
+      try {
+        const res = await fetch('/api/pages/list');
+        if (!res.ok) return [];
+        return await res.json();
+      } catch {
+        return [];
+      }
     },
     save: async (slug: string, title: string, content: string) => {
-        const res = await fetch('/api/pages/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slug, title, content })
-        });
-        return res.ok;
+      const res = await fetch('/api/pages/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, title, content })
+      });
+      return res.ok;
     }
   },
 
@@ -380,37 +384,37 @@ export const db = {
         .from('package_requests')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       return data.map(mapPackageRequestFromDB);
     },
-    
+
     create: async (request: Omit<PackageRequest, 'id' | 'createdAt'>): Promise<PackageRequest> => {
       const { data, error } = await supabase
         .from('package_requests')
         .insert(mapPackageRequestToDB(request))
         .select()
         .single();
-      
+
       if (error) throw error;
       return mapPackageRequestFromDB(data);
     },
-    
+
     updateStatus: async (id: string, status: PackageRequest['status']): Promise<void> => {
       const { error } = await supabase
         .from('package_requests')
         .update({ status })
         .eq('id', id);
-      
+
       if (error) throw error;
     },
-    
+
     delete: async (id: string): Promise<void> => {
       const { error } = await supabase
         .from('package_requests')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
     }
   }

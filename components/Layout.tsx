@@ -13,10 +13,10 @@ interface LayoutProps {
 }
 
 const DEFAULT_SETTINGS: Partial<SiteSettings> = {
-    siteName: { ar: 'Tivro', en: 'Tivro' },
-    contactEmail: '',
-    contactPhone: '',
-    socialLinks: []
+  siteName: { ar: 'Tivro', en: 'Tivro' },
+  contactEmail: '',
+  contactPhone: '',
+  socialLinks: []
 };
 
 export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) => {
@@ -51,7 +51,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     }
     return fallback;
   };
-  
+
   // State for navigation visibility and labels from admin panel
   const [navigationState, setNavigationState] = useState<any[]>([
     { key: 'services', visible: true },
@@ -60,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     { key: 'work', visible: true },
     { key: 'blog', visible: true }
   ]);
-  
+
   const [navigationLabels, setNavigationLabels] = useState<any>({
     services: t('nav.services'),
     team: t('nav.team'),
@@ -71,12 +71,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
   useEffect(() => {
     const fetchData = async () => {
-        try {
-            const services = await db.services.getAll();
-            setFooterServices(services.slice(0, 4));
-            const packagesData = await db.packages.getAll();
-            setPackages(packagesData);
-        } catch(e) { console.error(e); }
+      try {
+        const services = await db.services.getAll();
+        setFooterServices(services.slice(0, 4));
+        const packagesData = await db.packages.getAll();
+        setPackages(packagesData);
+      } catch (e) { console.error(e); }
     };
 
     const applyAdminNavigation = (items: any[]) => {
@@ -109,19 +109,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
         // ignore and fallback
       }
     };
-    
+
     // Listen for admin navigation updates
     const handleAdminNavigationUpdate = (event: any) => {
       console.log(' [Layout] Admin navigation update detected:', event.detail);
       const { navigationItems } = event.detail;
-      
+
       // Update visibility state
       const visibilityState = navigationItems.map((item: any) => ({
         key: item.key,
         visible: item.visible
       }));
       setNavigationState(visibilityState);
-      
+
       // Update labels state
       const labelsState: any = {};
       navigationItems.forEach((item: any) => {
@@ -196,9 +196,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
     loadSettingsAndNav();
     window.addEventListener('customPagesUpdated', handleCustomPagesUpdated as EventListener);
-    
+
     fetchData();
-    
+
     return () => {
       window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
       window.removeEventListener('storage', handleStorageNavigationUpdate);
@@ -348,7 +348,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     };
   }, [navigationPages]);
 
-  const toggleLang = () => setLang('ar');
+  const toggleLang = () => setLang(lang === 'ar' ? 'en' : 'ar');
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.hash = '#';
@@ -398,17 +398,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
   return (
     <div className={`min-h-screen flex flex-col bg-white ${lang === 'ar' ? 'font-sans' : ''}`}>
-      
+
       {/* Top Banner */}
       {settings?.topBanner?.enabled && (
-          <div className="bg-tivro-dark text-white text-sm py-2 px-4 text-center relative z-[60]">
-              <span className="font-medium">{settings.topBanner.title?.[lang]}</span>
-              {settings.topBanner.link && (
-                  <a href={settings.topBanner.link} className="ml-2 underline hover:text-tivro-primary">
-                      {settings.topBanner.buttonText?.[lang] || (lang === 'ar' ? 'اضغط هنا' : 'Click here')}
-                  </a>
-              )}
-          </div>
+        <div className="bg-tivro-dark text-white text-sm py-2 px-4 text-center relative z-[60]">
+          <span className="font-medium">{settings.topBanner.title?.[lang]}</span>
+          {settings.topBanner.link && (
+            <a href={settings.topBanner.link} className="ml-2 underline hover:text-tivro-primary">
+              {settings.topBanner.buttonText?.[lang] || (lang === 'ar' ? 'اضغط هنا' : 'Click here')}
+            </a>
+          )}
+        </div>
       )}
 
       {/* Header */}
@@ -416,11 +416,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
         <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2">
             {settingsReady && settings?.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="h-10 object-contain" onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.nextElementSibling?.classList.remove('hidden');
-                }} />
+              <img src={settings.logoUrl} alt="Logo" className="h-10 object-contain" onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }} />
             ) : null}
             {!settingsReady ? (
               <div className="w-10 h-10 rounded-lg bg-slate-200 animate-pulse" />
@@ -586,11 +586,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               <div className="col-span-1 md:col-span-2">
                 <div className="flex items-center gap-2 mb-6">
                   {settingsReady && settings?.footerLogoUrl ? (
-                      <img src={settings.footerLogoUrl} alt="Logo" className="h-12 object-contain" onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
-                      }} />
+                    <img src={settings.footerLogoUrl} alt="Logo" className="h-12 object-contain" onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }} />
                   ) : null}
                   {!settingsReady ? (
                     <div className="w-8 h-8 rounded bg-slate-200 animate-pulse" />
@@ -608,13 +608,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                 </p>
                 <div className="flex gap-4">
                   {settings?.socialLinks?.map((link: any, i: number) => (
-                      <a key={i} href={link.url} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition">
-                          <IconComponent name={link.platform} />
-                      </a>
+                    <a key={i} href={link.url} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition">
+                      <IconComponent name={link.platform} />
+                    </a>
                   ))}
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-bold text-lg mb-6 text-tivro-primary">{t('nav.services')}</h4>
                 <ul className="space-y-3 text-slate-400">
@@ -631,7 +631,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                 </ul>
               </div>
             </div>
-            
+
             <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
               <p>{settings?.copyrightText?.[lang] || t('footer.rights')}</p>
               <div className="flex gap-6 mt-4 md:mt-0">
@@ -657,13 +657,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
       {/* Bottom Banner */}
       {settings?.bottomBanner?.enabled && (
-          <div className="fixed bottom-0 w-full bg-tivro-primary text-white py-3 px-6 z-[60] shadow-lg flex justify-between items-center animate-fade-in-up" style={settings.bottomBanner.bgImage ? {backgroundImage: `url(${settings.bottomBanner.bgImage})`, backgroundSize: 'cover'} : {}}>
-              <div>
-                  <h4 className="font-bold">{settings.bottomBanner.title?.[lang]}</h4>
-                  <p className="text-sm opacity-90">{settings.bottomBanner.subtitle?.[lang]}</p>
-              </div>
-              <button onClick={(e) => e.currentTarget.parentElement?.remove()} className="bg-white/20 hover:bg-white/30 p-1 rounded-full"><X size={16}/></button>
+        <div className="fixed bottom-0 w-full bg-tivro-primary text-white py-3 px-6 z-[60] shadow-lg flex justify-between items-center animate-fade-in-up" style={settings.bottomBanner.bgImage ? { backgroundImage: `url(${settings.bottomBanner.bgImage})`, backgroundSize: 'cover' } : {}}>
+          <div>
+            <h4 className="font-bold">{settings.bottomBanner.title?.[lang]}</h4>
+            <p className="text-sm opacity-90">{settings.bottomBanner.subtitle?.[lang]}</p>
           </div>
+          <button onClick={(e) => e.currentTarget.parentElement?.remove()} className="bg-white/20 hover:bg-white/30 p-1 rounded-full"><X size={16} /></button>
+        </div>
       )}
     </div>
   );

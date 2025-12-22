@@ -20,16 +20,16 @@ const sanitizeHTML = (html: string): string => {
   // Basic HTML sanitization - allow only safe tags
   const allowedTags = ['div', 'p', 'span', 'strong', 'em', 'br', 'ul', 'ol', 'li'];
   const cleanHTML = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-                        .replace(/<[^>]*>/g, (match) => {
-                          const tagName = match.replace(/[<>]/g, '').split(' ')[0];
-                          return allowedTags.includes(tagName) ? match : '';
-                        });
+    .replace(/<[^>]*>/g, (match) => {
+      const tagName = match.replace(/[<>]/g, '').split(' ')[0];
+      return allowedTags.includes(tagName) ? match : '';
+    });
   return cleanHTML;
 };
 
-export const ContactUsSection: React.FC<ContactUsSectionProps> = ({ 
-  settings, 
-  fallbackSettings 
+export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
+  settings,
+  fallbackSettings
 }) => {
   const { t, lang } = useApp();
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -53,7 +53,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
     try {
       // Submit form data
       const { error } = await db.messages.send(formData.name || '', formData.phone || '');
-      
+
       if (!error) {
         setSubmitStatus('success');
         setFormData({});
@@ -91,7 +91,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
         <p className="text-slate-300 mb-10 max-w-2xl mx-auto text-lg">
           {contactSettings.subtitle?.[lang] || (lang === 'ar' ? 'جاهز لنقل مشروعك للمستوى التالي؟' : 'Ready to take your business to the next level?')}
         </p>
-        
+
         <div className="flex flex-col md:flex-row justify-center gap-6">
           {contactSettings.cards?.map((card, cardIndex) => (
             <div key={cardIndex} className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
@@ -101,7 +101,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
                     <ZeigarnikRing progress={ringProgress} size={22} strokeWidth={2} />
                   </span>
                 ) : (card.iconType === 'svg' ? (
-                  <div 
+                  <div
                     dangerouslySetInnerHTML={{ __html: sanitizeHTML(card.iconSVG) }}
                     className="text-tivro-primary"
                   />
@@ -110,24 +110,24 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
                 ))}
                 {card.heading?.[lang] || (lang === 'ar' ? 'حجز استشارة' : 'Book Consultation')}
               </h4>
-              
+
               <div className="flex gap-4 mt-4 mb-6">
                 {contactSettings.socialLinks?.map((link, linkIndex) => (
-                  <a 
+                  <a
                     key={linkIndex}
-                    href={link.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-8 h-8 rounded bg-slate-800 hover:bg-tivro-primary flex items-center justify-center transition text-white"
                   >
                     <IconComponent name={link.iconSVG_or_name} className="w-4 h-4" />
                   </a>
                 ))}
               </div>
-              
-              <div 
+
+              <div
                 className="mb-6 text-slate-300"
-                dangerouslySetInnerHTML={{ 
+                dangerouslySetInnerHTML={{
                   __html: sanitizeHTML(
                     lang === 'en' && hasArabicChars(card.contentHTML || '')
                       ? "<p>Let's discuss your goals and craft a strategy tailored to your success.</p>"
@@ -135,7 +135,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
                   )
                 }}
               />
-              
+
               <form onSubmit={handleSubmit} className="space-y-4 w-full md:w-80">
                 {contactSettings.form?.fields?.map((field: ContactFormField, fieldIndex: number) => (
                   <input
@@ -149,8 +149,8 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
                     onChange={(e) => handleInputChange(field.name, e.target.value)}
                   />
                 ))}
-                
-                <button 
+
+                <button
                   type="submit"
                   disabled={submitting}
                   className="w-full bg-tivro-primary hover:bg-emerald-500 py-3 rounded-lg font-bold transition flex items-center justify-center gap-2 text-white disabled:opacity-50 disabled:cursor-not-allowed"

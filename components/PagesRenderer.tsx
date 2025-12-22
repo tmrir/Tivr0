@@ -144,11 +144,30 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
   }, [pages, placement]);
 
   const sanitizeHtml = (input: string) => {
-    return input
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
-      .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
-      .replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
+    if (typeof window === 'undefined') return input;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(input, 'text/html');
+
+    // Whitelist approach: remove dangerous tags and attributes
+    const dangerousTags = ['script', 'iframe', 'object', 'embed', 'link', 'style'];
+    const dangerousAttributes = ['on', 'javascript:', 'data:', 'vbscript:'];
+
+    dangerousTags.forEach(tag => {
+      const elements = doc.querySelectorAll(tag);
+      elements.forEach(el => el.remove());
+    });
+
+    const all = doc.querySelectorAll('*');
+    all.forEach(el => {
+      const attrs = Array.from(el.attributes);
+      attrs.forEach(attr => {
+        if (dangerousAttributes.some(da => attr.name.toLowerCase().startsWith(da) || attr.value.toLowerCase().startsWith('javascript:'))) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+
+    return doc.body.innerHTML;
   };
 
   const scrollToHash = (hash: string) => {
