@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CustomPage, PageComponent, SectionTemplate, NavigationItem } from '../types';
 import { db } from '../services/db';
-import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, GripVertical, Save, X, ArrowUp, ArrowDown, Copy, Settings, Layout, Type, Image, Video, Link, Square, Code, Sliders, MousePointer, ChevronUp, ChevronDown, Wand2, Loader2 } from 'lucide-react';
 import { WordLikeEditor } from './WordLikeEditor';
+import { translateText } from '../services/translationService';
 
 interface PageManagerProps {
   onUpdate?: () => void;
@@ -11,6 +12,45 @@ interface PageManagerProps {
 
 export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const { t, lang } = useApp();
+
+  const [translatingFields, setTranslatingFields] = useState<Record<string, boolean>>({});
+
+  const handleTranslate = async (text: string, fieldId: string, onTranslate: (translated: string) => void) => {
+    if (!text) return;
+
+    // Explicitly blur the active element to ensure any onBlur handlers have finished
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    setTranslatingFields(prev => ({ ...prev, [fieldId]: true }));
+    try {
+      const translated = await translateText(text, 'ar', 'en');
+      if (translated) {
+        onTranslate(translated);
+      }
+    } finally {
+      setTranslatingFields(prev => ({ ...prev, [fieldId]: false }));
+    }
+  };
+
+  const TranslateButton = ({ text, fieldId, onTranslate }: { text: string, fieldId: string, onTranslate: (v: string) => void }) => {
+    const isTranslating = translatingFields[fieldId];
+    if (!text) return null;
+    return (
+      <button
+        type="button"
+        onClick={() => handleTranslate(text, fieldId, onTranslate)}
+        disabled={isTranslating}
+        className="flex items-center gap-1 text-tivro-primary hover:text-emerald-700 transition ml-2"
+        title="ترجمة تلقائية للإنجليزية"
+      >
+        {isTranslating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+        <span className="text-[10px]">ترجمة تلقائية</span>
+      </button>
+    );
+  };
+
   const [pages, setPages] = useState<CustomPage[]>([]);
   const [templates, setTemplates] = useState<SectionTemplate[]>([]);
   const [editingPage, setEditingPage] = useState<CustomPage | null>(null);
@@ -142,7 +182,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
           {
             id: 'hero-cta',
             type: 'button',
-            content: { 
+            content: {
               text: { ar: 'ابدأ الآن', en: 'Get Started' },
               href: '#contact',
               style: 'primary'
@@ -226,30 +266,30 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
 
   const savePage = async () => {
     if (!editingPage) return;
-    
+
     setSaving(true);
     try {
       // Generate slug from name if empty
       if (!editingPage.slug && editingPage.name) {
         editingPage.slug = editingPage.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       }
-      
+
       const existingIndex = pages.findIndex(p => p.id === editingPage.id);
       let updatedPages;
-      
+
       if (existingIndex >= 0) {
         updatedPages = [...pages];
         updatedPages[existingIndex] = { ...editingPage, updatedAt: new Date().toISOString() };
       } else {
         updatedPages = [...pages, editingPage];
       }
-      
+
       setPages(updatedPages);
 
       await persistPages(updatedPages);
 
       window.dispatchEvent(new CustomEvent('customPagesUpdated'));
-      
+
       setEditingPage(null);
       onUpdate?.();
     } catch (error) {
@@ -271,7 +311,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   };
 
   const togglePageVisibility = (pageId: string) => {
-    const updatedPages = pages.map(p => 
+    const updatedPages = pages.map(p =>
       p.id === pageId ? { ...p, isVisible: !p.isVisible } : p
     );
     setPages(updatedPages);
@@ -284,14 +324,14 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const movePageUp = (pageId: string) => {
     const index = pages.findIndex(p => p.id === pageId);
     if (index <= 0) return;
-    
+
     const updatedPages = [...pages];
     [updatedPages[index - 1], updatedPages[index]] = [updatedPages[index], updatedPages[index - 1]];
-    
+
     // Update navigationOrder for both pages
     updatedPages[index - 1].navigationOrder = index - 1;
     updatedPages[index].navigationOrder = index;
-    
+
     setPages(updatedPages);
     persistPages(updatedPages);
 
@@ -302,14 +342,14 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const movePageDown = (pageId: string) => {
     const index = pages.findIndex(p => p.id === pageId);
     if (index === -1 || index >= pages.length - 1) return;
-    
+
     const updatedPages = [...pages];
     [updatedPages[index], updatedPages[index + 1]] = [updatedPages[index + 1], updatedPages[index]];
-    
+
     // Update navigationOrder for both pages
     updatedPages[index].navigationOrder = index;
     updatedPages[index + 1].navigationOrder = index + 1;
-    
+
     setPages(updatedPages);
     persistPages(updatedPages);
 
@@ -319,15 +359,15 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
 
   const addComponentToPage = (templateId: string) => {
     if (!editingPage) return;
-    
+
     const template = templates.find(t => t.id === templateId);
     if (!template) return;
-    
+
     const newComponents = template.defaultComponents.map(comp => ({
       ...comp,
       id: `${comp.id}-${Date.now()}`
     }));
-    
+
     setEditingPage({
       ...editingPage,
       components: [...editingPage.components, ...newComponents]
@@ -336,7 +376,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
 
   const addCustomComponent = (type: PageComponent['type']) => {
     if (!editingPage) return;
-    
+
     const newComponent: PageComponent = {
       id: `component-${Date.now()}`,
       type,
@@ -346,7 +386,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       orderIndex: editingPage.components.length,
       isVisible: true
     };
-    
+
     setEditingPage({
       ...editingPage,
       components: [...editingPage.components, newComponent]
@@ -380,14 +420,14 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
 
   const moveComponent = (index: number, direction: 'up' | 'down') => {
     if (!editingPage) return;
-    
+
     const components = [...editingPage.components];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    
+
     if (newIndex >= 0 && newIndex < components.length) {
       [components[index], components[newIndex]] = [components[newIndex], components[index]];
       components.forEach((comp, i) => comp.orderIndex = i);
-      
+
       setEditingPage({
         ...editingPage,
         components
@@ -397,7 +437,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
 
   const deleteComponent = (componentId: string) => {
     if (!editingPage) return;
-    
+
     setEditingPage({
       ...editingPage,
       components: editingPage.components.filter(c => c.id !== componentId)
@@ -406,10 +446,10 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
 
   const updateComponentInPage = (updatedComponent: PageComponent) => {
     if (!editingPage) return;
-    
+
     setEditingPage({
       ...editingPage,
-      components: editingPage.components.map(c => 
+      components: editingPage.components.map(c =>
         c.id === updatedComponent.id ? updatedComponent : c
       )
     });
@@ -552,17 +592,42 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                {lang === 'ar' ? 'العنوان (عربي)' : 'Title (Arabic)'}
+              <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                <span>{lang === 'ar' ? 'العنوان (عربي)' : 'Title (Arabic)'}</span>
+                <TranslateButton
+                  text={editingPage.title?.ar || ''}
+                  fieldId="page-title"
+                  onTranslate={(val) => setEditingPage({ ...editingPage, title: { ...(editingPage.title || { ar: '', en: '' }), en: val } })}
+                />
               </label>
               <input
                 type="text"
-                value={editingPage.title.ar}
-                onChange={(e) => setEditingPage({ 
-                  ...editingPage, 
-                  title: { ...editingPage.title, ar: e.target.value } 
+                value={editingPage.title?.ar || ''}
+                onChange={(e) => setEditingPage({
+                  ...editingPage,
+                  title: { ...(editingPage.title || { ar: '', en: '' }), ar: e.target.value }
                 })}
                 className="w-full border border-slate-200 rounded-lg p-2"
+              />
+            </div>
+
+            <div>
+              <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                <span>{lang === 'ar' ? 'الوصف (عربي)' : 'Description (Arabic)'}</span>
+                <TranslateButton
+                  text={editingPage.description?.ar || ''}
+                  fieldId="page-desc"
+                  onTranslate={(val) => setEditingPage({ ...editingPage, description: { ...(editingPage.description || { ar: '', en: '' }), en: val } })}
+                />
+              </label>
+              <textarea
+                value={editingPage.description?.ar || ''}
+                onChange={(e) => setEditingPage({
+                  ...editingPage,
+                  description: { ...(editingPage.description || { ar: '', en: '' }), ar: e.target.value }
+                })}
+                className="w-full border border-slate-200 rounded-lg p-2"
+                rows={3}
               />
             </div>
 
@@ -572,12 +637,27 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
               </label>
               <input
                 type="text"
-                value={editingPage.title.en}
-                onChange={(e) => setEditingPage({ 
-                  ...editingPage, 
-                  title: { ...editingPage.title, en: e.target.value } 
+                value={editingPage.title?.en || ''}
+                onChange={(e) => setEditingPage({
+                  ...editingPage,
+                  title: { ...(editingPage.title || { ar: '', en: '' }), en: e.target.value }
                 })}
                 className="w-full border border-slate-200 rounded-lg p-2"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                {lang === 'ar' ? 'الوصف (إنجليزي)' : 'Description (English)'}
+              </label>
+              <textarea
+                value={editingPage.description?.en || ''}
+                onChange={(e) => setEditingPage({
+                  ...editingPage,
+                  description: { ...(editingPage.description || { ar: '', en: '' }), en: e.target.value }
+                })}
+                className="w-full border border-slate-200 rounded-lg p-2"
+                rows={3}
               />
             </div>
 
@@ -639,8 +719,22 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
             {editingPage.underConstruction && (
               <div className="space-y-2 p-3 border border-slate-200 rounded-lg bg-slate-50">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    {lang === 'ar' ? 'نص الزر (عربي)' : 'Button Label (Arabic)'}
+                  <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                    <span>{lang === 'ar' ? 'نص الزر (عربي)' : 'Button Label (Arabic)'}</span>
+                    <TranslateButton
+                      text={editingPage.underConstructionButton?.label?.ar || ''}
+                      fieldId="uc-btn"
+                      onTranslate={(val) => setEditingPage({
+                        ...editingPage,
+                        underConstructionButton: {
+                          ...editingPage.underConstructionButton,
+                          label: {
+                            ...(editingPage.underConstructionButton?.label || { ar: '', en: '' }),
+                            en: val
+                          }
+                        }
+                      })}
+                    />
                   </label>
                   <input
                     type="text"
@@ -849,7 +943,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                   const status = (r: number) => {
                     if (r >= 7) return { label: lang === 'ar' ? 'AAA' : 'AAA', cls: 'text-emerald-700' };
                     if (r >= 4.5) return { label: lang === 'ar' ? 'AA' : 'AA', cls: 'text-emerald-700' };
-                    if (r >= 3) return { label: lang === 'ar' ? 'AA (نص كبير)' : 'AA (Large)' , cls: 'text-amber-700' };
+                    if (r >= 3) return { label: lang === 'ar' ? 'AA (نص كبير)' : 'AA (Large)', cls: 'text-amber-700' };
                     return { label: lang === 'ar' ? 'ضعيف' : 'Low', cls: 'text-red-700' };
                   };
                   const s1 = status(sectionRatio);
@@ -987,13 +1081,31 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     <X size={16} />
                   </button>
                 </div>
-                
+
                 {/* Text Component Editor */}
                 {selectedComponent.type === 'text' && (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        {lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}
+                      <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                        <span>{lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}</span>
+                        <TranslateButton
+                          text={selectedComponent.content.text?.ar || ''}
+                          fieldId="comp-text"
+                          onTranslate={(val) => {
+                            const updatedComponent = {
+                              ...selectedComponent,
+                              content: {
+                                ...selectedComponent.content,
+                                text: {
+                                  ...(selectedComponent.content.text || { ar: '', en: '' }),
+                                  en: val
+                                }
+                              }
+                            };
+                            setSelectedComponent(updatedComponent);
+                            updateComponentInPage(updatedComponent);
+                          }}
+                        />
                       </label>
                       <WordLikeEditor
                         dir="rtl"
@@ -1005,7 +1117,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                             content: {
                               ...selectedComponent.content,
                               text: {
-                                ...selectedComponent.content.text,
+                                ...(selectedComponent.content.text || { ar: '', en: '' }),
                                 ar: html
                               }
                             }
@@ -1046,8 +1158,26 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                 {selectedComponent.type === 'button' && (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        {lang === 'ar' ? 'نص الزر (عربي)' : 'Button Text (Arabic)'}
+                      <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                        <span>{lang === 'ar' ? 'نص الزر (عربي)' : 'Button Text (Arabic)'}</span>
+                        <TranslateButton
+                          text={selectedComponent.content.text?.ar || ''}
+                          fieldId="comp-btn-text"
+                          onTranslate={(val) => {
+                            const updatedComponent = {
+                              ...selectedComponent,
+                              content: {
+                                ...selectedComponent.content,
+                                text: {
+                                  ...(selectedComponent.content.text || { ar: '', en: '' }),
+                                  en: val
+                                }
+                              }
+                            };
+                            setSelectedComponent(updatedComponent);
+                            updateComponentInPage(updatedComponent);
+                          }}
+                        />
                       </label>
                       <input
                         type="text"
@@ -1275,8 +1405,26 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        {lang === 'ar' ? 'النص البديل (عربي)' : 'Alt Text (Arabic)'}
+                      <label className="flex justify-between items-center text-sm font-medium text-slate-700 mb-1">
+                        <span>{lang === 'ar' ? 'النص البديل (عربي)' : 'Alt Text (Arabic)'}</span>
+                        <TranslateButton
+                          text={selectedComponent.content.alt?.ar || ''}
+                          fieldId="comp-img-alt"
+                          onTranslate={(val) => {
+                            const updatedComponent = {
+                              ...selectedComponent,
+                              content: {
+                                ...selectedComponent.content,
+                                alt: {
+                                  ...(selectedComponent.content.alt || { ar: '', en: '' }),
+                                  en: val
+                                }
+                              }
+                            };
+                            setSelectedComponent(updatedComponent);
+                            updateComponentInPage(updatedComponent);
+                          }}
+                        />
                       </label>
                       <input
                         type="text"
@@ -1370,7 +1518,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Component Preview */}
                   <div className="text-sm text-slate-600">
                     {component.type === 'text' && component.content.text?.[lang]}
@@ -1382,7 +1530,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
             </div>
           </div>
         </div>
-      </div>
+      </div >
     );
   }
 
@@ -1406,31 +1554,28 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
         <nav className="flex space-x-8">
           <button
             onClick={() => setActiveTab('pages')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'pages'
-                ? 'border-tivro-primary text-tivro-primary'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'pages'
+              ? 'border-tivro-primary text-tivro-primary'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
           >
             {lang === 'ar' ? 'الصفحات' : 'Pages'}
           </button>
           <button
             onClick={() => setActiveTab('templates')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'templates'
-                ? 'border-tivro-primary text-tivro-primary'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'templates'
+              ? 'border-tivro-primary text-tivro-primary'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
           >
             {lang === 'ar' ? 'القوالب' : 'Templates'}
           </button>
           <button
             onClick={() => setActiveTab('navigation')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'navigation'
-                ? 'border-tivro-primary text-tivro-primary'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'navigation'
+              ? 'border-tivro-primary text-tivro-primary'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
           >
             {lang === 'ar' ? 'القائمة' : 'Navigation'}
           </button>
@@ -1480,12 +1625,11 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          page.isVisible 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {page.isVisible 
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${page.isVisible
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                          }`}>
+                          {page.isVisible
                             ? (lang === 'ar' ? 'مرئي' : 'Visible')
                             : (lang === 'ar' ? 'مخفي' : 'Hidden')
                           }
@@ -1594,8 +1738,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
             {lang === 'ar' ? 'إدارة القائمة' : 'Navigation Management'}
           </h3>
           <p className="text-slate-600">
-            {lang === 'ar' 
-              ? 'سيتم إضافة إدارة القائمة في التحديث القادم' 
+            {lang === 'ar'
+              ? 'سيتم إضافة إدارة القائمة في التحديث القادم'
               : 'Navigation management will be added in the next update'
             }
           </p>
