@@ -64,7 +64,7 @@ const LocalizedInput = ({ label, value, onChange }: { label: string, value: Loca
 
 export const SettingsPage: React.FC = () => {
     const { t } = useApp();
-    const { settings, setSettings, loading, saving, error, saveSettings, restoreDefaultSettings } = useSettings();
+    const { settings, setSettings, loading, error, saveSettings, restoreSettings } = useSettings();
     const [activeTab, setActiveTab] = useState<'general' | 'logos' | 'banners' | 'home_content' | 'legal' | 'db'>('general');
     const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -120,8 +120,8 @@ export const SettingsPage: React.FC = () => {
                             <LocalizedInput label="Site Name" value={settings.siteName} onChange={v => setSettings({ ...settings, siteName: v })} />
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-bold mb-1">{t('admin.set.email')}</label><input className="w-full border p-2 rounded" value={settings.contactEmail || ''} onChange={e => setSettings({ ...settings, contactEmail: e.target.value })} /></div>
-                                <div><label className="block text-sm font-bold mb-1">{t('admin.set.phone')}</label><input className="w-full border p-2 rounded" value={settings.contactPhone || ''} onChange={e => setSettings({ ...settings, contactPhone: e.target.value })} /></div>
+                                <div><label className="block text-sm font-bold mb-1">{t('admin.set.email')}</label><input type="email" className="w-full border p-2 rounded" value={settings.contactEmail || ''} onChange={e => setSettings({ ...settings, contactEmail: e.target.value })} /></div>
+                                <div><label className="block text-sm font-bold mb-1">{t('admin.set.phone')}</label><input type="tel" className="w-full border p-2 rounded" value={settings.contactPhone || ''} onChange={e => setSettings({ ...settings, contactPhone: e.target.value })} /></div>
                             </div>
                             <LocalizedInput label="Address" value={settings.address} onChange={v => setSettings({ ...settings, address: v })} />
 
@@ -169,34 +169,101 @@ export const SettingsPage: React.FC = () => {
                                     Enable English language option on the site
                                 </label>
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold mb-1">Tab Title</label>
-                                <input
-                                    className="w-full border p-2 rounded"
-                                    value={(settings as any).tabTitle?.ar || ''}
-                                    onChange={e => setSettings({ ...(settings as any), tabTitle: { ...((settings as any).tabTitle || { ar: '', en: '' }), ar: e.target.value } })}
-                                />
-                            </div>
+                            <LocalizedInput
+                                label="Tab Title (Browser Tab)"
+                                value={settings.tabTitle}
+                                onChange={v => setSettings({ ...settings, tabTitle: v })}
+                            />
                         </div>
                     )}
 
                     {activeTab === 'home_content' && (
                         <div className="space-y-6 animate-fade-in">
-                            <h3 className="font-bold text-lg border-b pb-3 mb-4">Home Page Content</h3>
-                            <LocalizedInput label="Hero Title" value={settings.homeSections.heroTitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, heroTitle: v } })} />
-                            <LocalizedInput label="Hero Subtitle" value={settings.homeSections.heroSubtitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, heroSubtitle: v } })} />
-                            <hr />
-                            <LocalizedInput label="Services Title" value={settings.homeSections.servicesTitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, servicesTitle: v } })} />
-                            <hr />
-                            <LocalizedInput label="Work (Case Studies) Title" value={settings.sectionTexts.workTitle} onChange={v => setSettings({ ...settings, sectionTexts: { ...settings.sectionTexts, workTitle: v } })} />
-                            <LocalizedInput label="Work Subtitle" value={settings.sectionTexts.workSubtitle} onChange={v => setSettings({ ...settings, sectionTexts: { ...settings.sectionTexts, workSubtitle: v } })} />
-                            <hr />
-                            <LocalizedInput label="Packages Title" value={settings.homeSections.packagesTitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, packagesTitle: v } })} />
-                            <hr />
-                            <LocalizedInput label="Team Title" value={settings.homeSections.teamTitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, teamTitle: v } })} />
-                            <hr />
-                            <LocalizedInput label="Contact Title" value={settings.homeSections.contactTitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, contactTitle: v } })} />
-                            <LocalizedInput label="Contact Subtitle" value={settings.homeSections.contactSubtitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, contactSubtitle: v } })} />
+                            <h3 className="font-bold text-lg border-b pb-3 mb-4">محتوى الصفحة الرئيسية (Home Page Content)</h3>
+                            <div className="bg-slate-50 p-4 rounded-lg mb-6">
+                                <p className="text-sm text-slate-600">من هنا يمكنك التحكم في النصوص الرئيسية للصفحة الرئيسية مثل شريط الهيرو، عناوين الأقسام، ووصف الفوتر.</p>
+                            </div>
+
+                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3">
+                                    <h4 className="font-bold flex items-center gap-2">شريط الهيرو العلوي (Top Banner)</h4>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    <LocalizedInput label="Hero Badge (Small text above title)" value={settings.homeSections.heroBadge} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, heroBadge: v } })} />
+                                    <LocalizedInput label="Hero Title" value={settings.homeSections.heroTitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, heroTitle: v } })} />
+                                    <LocalizedArea label="Hero Subtitle" value={settings.homeSections.heroSubtitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, heroSubtitle: v } })} />
+
+                                    <div className="border-t pt-4">
+                                        <label className="block text-sm font-bold mb-2">Hero Image</label>
+                                        <input className="w-full border p-2 rounded mb-2" placeholder="Image URL" value={settings.homeSections.heroImage?.src || ''} onChange={e => setSettings({ ...settings, homeSections: { ...settings.homeSections, heroImage: { ...(settings.homeSections.heroImage || { src: '', alt: { ar: '', en: '' } }), src: e.target.value } } })} />
+                                        <LocalizedInput label="Image Alt Text" value={settings.homeSections.heroImage?.alt || { ar: '', en: '' }} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, heroImage: { ...(settings.homeSections.heroImage || { src: '', alt: { ar: '', en: '' } }), alt: v } } })} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3">
+                                    <h4 className="font-bold flex items-center gap-2">عناوين الأقسام الرئيسية</h4>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    <LocalizedInput label="عنوان قسم الخدمات" value={settings.homeSections.servicesTitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, servicesTitle: v } })} />
+                                    <LocalizedArea label="وصف قسم الخدمات" value={settings.homeSections.servicesSubtitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, servicesSubtitle: v } })} />
+                                    <hr />
+                                    <LocalizedInput label="عنوان قسم أعمالنا" value={settings.sectionTexts.workTitle} onChange={v => setSettings({ ...settings, sectionTexts: { ...settings.sectionTexts, workTitle: v } })} />
+                                    <LocalizedInput label="عنوان قسم الفريق" value={settings.homeSections.teamTitle} onChange={v => setSettings({ ...settings, homeSections: { ...settings.homeSections, teamTitle: v } })} />
+                                </div>
+                            </div>
+
+                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-3">
+                                    <h4 className="font-bold flex items-center gap-2">التحكم في أحجام الخطوط (Font Sizes)</h4>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm">
+                                        <p className="text-blue-800 mb-1 font-bold">ملاحظة هامة:</p>
+                                        <p className="text-blue-700">هذه الحقول تقبل كلاسات Tailwind للخطوط مثل: text-xs, text-sm, text-base, text-lg, text-xl, text-2xl, text-3xl, text-4xl, text-5xl, text-6xl.</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold mb-1">حجم خط عنوان الهيرو</label>
+                                            <select className="w-full border p-2 rounded" value={settings.fontSizes.heroTitle} onChange={e => setSettings({ ...settings, fontSizes: { ...settings.fontSizes, heroTitle: e.target.value } })}>
+                                                <option value="text-2xl">كبير (text-2xl)</option>
+                                                <option value="text-3xl">أكبر (text-3xl)</option>
+                                                <option value="text-4xl">ضخم (text-4xl)</option>
+                                                <option value="text-5xl">ضخم جداً (text-5xl)</option>
+                                                <option value="text-6xl">هائل (text-6xl)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold mb-1">حجم خط عنوان الخدمات</label>
+                                            <select className="w-full border p-2 rounded" value={settings.fontSizes.servicesTitle} onChange={e => setSettings({ ...settings, fontSizes: { ...settings.fontSizes, servicesTitle: e.target.value } })}>
+                                                <option value="text-xl">Regular (text-xl)</option>
+                                                <option value="text-2xl">Large (text-2xl)</option>
+                                                <option value="text-3xl">Extra Large (text-3xl)</option>
+                                                <option value="text-4xl">Huge (text-4xl)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white p-3">
+                                    <h4 className="font-bold flex items-center gap-2">إعدادات الفوتر (Footer)</h4>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    <LocalizedArea label="وصف الفوتر" value={settings.footerDescription} onChange={v => setSettings({ ...settings, footerDescription: v })} />
+                                    <LocalizedInput label="نص حقوق النشر" value={settings.copyrightText} onChange={v => setSettings({ ...settings, copyrightText: v })} />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <LocalizedInput label="نص رابط سياسة الخصوصية" value={settings.footerLinks.privacy} onChange={v => setSettings({ ...settings, footerLinks: { ...settings.footerLinks, privacy: v } })} />
+                                        <LocalizedInput label="نص رابط شروط الاستخدام" value={settings.footerLinks.terms} onChange={v => setSettings({ ...settings, footerLinks: { ...settings.footerLinks, terms: v } })} />
+                                    </div>
+                                    <div className="bg-green-50 border border-green-200 p-3 rounded">
+                                        <p className="text-sm text-green-800 font-bold">✅ ملاحظة:</p>
+                                        <p className="text-xs text-green-600 mt-1">تغييرات الفوتر يتم حفظها مع بقية إعدادات الموقع عند الضغط على زر "حفظ التغييرات".</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -209,9 +276,9 @@ export const SettingsPage: React.FC = () => {
                                 </div>
                                 {settings.topBanner?.enabled && (
                                     <div className="bg-slate-50 p-4 rounded border space-y-3">
-                                        <LocalizedInput label="Title" value={settings.topBanner.title} onChange={v => setSettings({ ...settings, topBanner: { ...settings.topBanner, title: v } })} />
-                                        <LocalizedInput label="Button Text" value={settings.topBanner.buttonText || { ar: '', en: '' }} onChange={v => setSettings({ ...settings, topBanner: { ...settings.topBanner, buttonText: v } })} />
-                                        <div><label className="text-xs font-bold">Link</label><input className="w-full border p-2 rounded" value={settings.topBanner.link || ''} onChange={e => setSettings({ ...settings, topBanner: { ...settings.topBanner, link: e.target.value } })} /></div>
+                                        <LocalizedInput label="عنوان البانر" value={settings.topBanner.title} onChange={v => setSettings({ ...settings, topBanner: { ...settings.topBanner, title: v } })} />
+                                        <LocalizedInput label="نص الزر" value={settings.topBanner.buttonText || { ar: '', en: '' }} onChange={v => setSettings({ ...settings, topBanner: { ...settings.topBanner, buttonText: v } })} />
+                                        <div><label className="text-xs font-bold">رابط البانر (URL)</label><input className="w-full border p-2 rounded" value={settings.topBanner.link || ''} onChange={e => setSettings({ ...settings, topBanner: { ...settings.topBanner, link: e.target.value } })} /></div>
                                     </div>
                                 )}
                             </div>
@@ -223,9 +290,9 @@ export const SettingsPage: React.FC = () => {
                                 </div>
                                 {settings.bottomBanner?.enabled && (
                                     <div className="bg-slate-50 p-4 rounded border space-y-3">
-                                        <LocalizedInput label="Title" value={settings.bottomBanner.title} onChange={v => setSettings({ ...settings, bottomBanner: { ...settings.bottomBanner, title: v } })} />
-                                        <LocalizedArea label="Description" value={settings.bottomBanner.subtitle || { ar: '', en: '' }} onChange={(v: LocalizedString) => setSettings({ ...settings, bottomBanner: { ...settings.bottomBanner, subtitle: v } })} />
-                                        <div><label className="text-xs font-bold">Background Image URL</label><input className="w-full border p-2 rounded" value={settings.bottomBanner.bgImage || ''} onChange={e => setSettings({ ...settings, bottomBanner: { ...settings.bottomBanner, bgImage: e.target.value } })} /></div>
+                                        <LocalizedInput label="عنوان البانر" value={settings.bottomBanner.title} onChange={v => setSettings({ ...settings, bottomBanner: { ...settings.bottomBanner, title: v } })} />
+                                        <LocalizedArea label="وصف البانر" value={settings.bottomBanner.subtitle || { ar: '', en: '' }} onChange={(v: LocalizedString) => setSettings({ ...settings, bottomBanner: { ...settings.bottomBanner, subtitle: v } })} />
+                                        <div><label className="text-xs font-bold">رابط صورة الخلفية (URL)</label><input className="w-full border p-2 rounded" value={settings.bottomBanner.bgImage || ''} onChange={e => setSettings({ ...settings, bottomBanner: { ...settings.bottomBanner, bgImage: e.target.value } })} /></div>
                                     </div>
                                 )}
                             </div>
@@ -250,7 +317,7 @@ export const SettingsPage: React.FC = () => {
                             <button
                                 onClick={async () => {
                                     if (confirm(t('admin.seed.warning'))) {
-                                        const success = await restoreDefaultSettings();
+                                        const success = await restoreSettings();
                                         if (success) alert(t('admin.seed.success'));
                                         else alert('Error seeding DB');
                                     }
@@ -262,14 +329,12 @@ export const SettingsPage: React.FC = () => {
                         </div>
                     )}
 
-                    {activeTab !== 'db' && (
-                        <div className="pt-6 mt-6 border-t flex justify-end">
-                            <button onClick={onSave} disabled={saving} className="bg-tivro-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-tivro-primary/20">
-                                {saving && <Loader2 className="animate-spin" size={18} />}
-                                {t('admin.btn.save')}
-                            </button>
-                        </div>
-                    )}
+                    <div className="pt-6 mt-6 border-t flex justify-end">
+                        <button onClick={onSave} disabled={loading} className="bg-tivro-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-tivro-primary/20">
+                            {loading && <Loader2 className="animate-spin" size={18} />}
+                            {t('admin.btn.save')}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

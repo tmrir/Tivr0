@@ -59,6 +59,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
   contactPhone: '',
   address: { ar: '', en: '' },
   socialLinks: [],
+  enableEnglish: true,
+  tabTitle: { ar: 'تيفرو', en: 'Tivro' },
   logoUrl: '',
   footerLogoUrl: '',
   faviconUrl: '',
@@ -177,10 +179,11 @@ export function useSettings() {
 
       // إعادة الجلب من السيرفر لضمان التزامن الكامل
       await fetchSettings();
-
+      return true;
     } catch (err: any) {
       console.error('❌ [Hook] Save Settings Error:', err);
       setError(err.message || 'Unknown error');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -206,10 +209,11 @@ export function useSettings() {
 
       // إعادة الجلب من السيرفر لضمان التزامن الكامل
       await fetchSettings();
-
+      return true;
     } catch (err: any) {
       console.error('❌ [Hook] Restore Settings Error:', err);
       setError(err.message || 'Unknown error');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -226,5 +230,5 @@ export function useSettings() {
     fetchSettings();
   }, []);
 
-  return { settings, loading, error, fetchSettings, saveSettings, restoreSettings };
+  return { settings, setSettings, loading, error, fetchSettings, saveSettings, restoreSettings };
 }
