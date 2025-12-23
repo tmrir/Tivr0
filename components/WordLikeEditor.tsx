@@ -1,4 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import { Extension, Mark } from '@tiptap/core';
+import { Plugin } from 'prosemirror-state';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import UnderlineExtension from '@tiptap/extension-underline';
+import LinkExtension from '@tiptap/extension-link';
+import TextAlign from '@tiptap/extension-text-align';
+import Placeholder from '@tiptap/extension-placeholder';
 import {
   AlignCenter,
   AlignLeft,
@@ -36,6 +45,7 @@ const allowedTags = new Set([
   'u',
   's',
   'span',
+  'img',
   'ul',
   'ol',
   'li',
@@ -136,6 +146,21 @@ const sanitizeHtml = (html: string) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
+  const isSafeImageSrc = (src: string) => {
+    const s = (src || '').trim();
+    if (!s) return false;
+    if (/^data:image\/(png|jpe?g|gif|webp|bmp|svg\+xml);base64,/i.test(s)) return true;
+    if (/^https?:\/\//i.test(s)) return true;
+    return false;
+  };
+
+  const isSafeDimension = (v: string) => {
+    const n = Number(String(v || '').trim());
+    if (!Number.isFinite(n)) return false;
+    if (n <= 0 || n > 4096) return false;
+    return true;
+  };
+
   const stripNode = (node: Node) => {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
@@ -163,6 +188,31 @@ const sanitizeHtml = (html: string) => {
           el.removeAttribute(attr.name);
           continue;
         }
+
+        if (tag === 'img' && name === 'src') {
+          const src = (el.getAttribute('src') || '').trim();
+          if (isSafeImageSrc(src)) {
+            el.setAttribute('src', src);
+          } else {
+            el.remove();
+          }
+          continue;
+        }
+
+        if (tag === 'img' && (name === 'alt' || name === 'title')) {
+          const v = (el.getAttribute(attr.name) || '').slice(0, 200);
+          if (v) el.setAttribute(attr.name, v);
+          else el.removeAttribute(attr.name);
+          continue;
+        }
+
+        if (tag === 'img' && (name === 'width' || name === 'height')) {
+          const v = el.getAttribute(attr.name) || '';
+          if (isSafeDimension(v)) el.setAttribute(attr.name, String(Math.round(Number(v))));
+          else el.removeAttribute(attr.name);
+          continue;
+        }
+
         if (name === 'style') {
           const style = el.getAttribute('style') || '';
           const out: string[] = [];
@@ -210,8 +260,164 @@ const sanitizeHtml = (html: string) => {
   return doc.body.innerHTML;
 };
 
+const SanitizedTextStyle = Mark.create({
+  name: 'sanitizedTextStyle',
+  group: 'inline',
+  inclusive: true,
+  parseHTML() {
+    return [
+      {
+        tag: 'span[style]'
+      },
+      {
+        tag: 'font[color]'
+      }
+    ];
+  },
+  addAttributes() {
+    return {
+      color: {
+        default: null,
+        parseHTML: (element) => {
+          const el = element as HTMLElement;
+          const color = el.style?.color || (el.getAttribute('color') || '');
+          return color || null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.color) return {};
+          return { style: `color: ${attributes.color};` };
+        }
+      },
+      backgroundColor: {
+        default: null,
+        parseHTML: (element) => {
+          const el = element as HTMLElement;
+          const bg = el.style?.backgroundColor;
+          return bg || null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.backgroundColor) return {};
+          return { style: `background-color: ${attributes.backgroundColor};` };
+        }
+      },
+      fontSize: {
+        default: null,
+        parseHTML: (element) => {
+          const el = element as HTMLElement;
+          const size = el.style?.fontSize;
+          return size || null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.fontSize) return {};
+          return { style: `font-size: ${attributes.fontSize};` };
+        }
+      },
+      fontFamily: {
+        default: null,
+        parseHTML: (element) => {
+          const el = element as HTMLElement;
+          const family = el.style?.fontFamily;
+          return family || null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.fontFamily) return {};
+          return { style: `font-family: ${attributes.fontFamily};` };
+        }
+      }
+    };
+  },
+  renderHTML({ HTMLAttributes }) {
+    const styleParts: string[] = [];
+    const rawStyle = (HTMLAttributes as any).style as string | undefined;
+    if (rawStyle) styleParts.push(rawStyle);
+
+    const merged: Record<string, any> = { ...HTMLAttributes };
+    if (styleParts.length) merged.style = styleParts.join(' ');
+    return ['span', merged, 0];
+  }
+});
+
+const WordPasteSanitizer = Extension.create({
+  name: 'wordPasteSanitizer',
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          handlePaste: (view, event) => {
+            try {
+              const clipboard = (event as ClipboardEvent).clipboardData;
+              const html = clipboard?.getData('text/html') || '';
+              const text = clipboard?.getData('text/plain') || '';
+
+              if (!html && !text) return false;
+
+              const editor = (view as any)?.editor;
+              if (!editor) return false;
+
+              if (html) {
+                const cleaned = sanitizeHtml(html);
+                if (!cleaned) return false;
+                editor.chain().focus().insertContent(cleaned).run();
+                return true;
+              }
+
+              if (text) {
+                editor.chain().focus().insertContent(text).run();
+                return true;
+              }
+
+              return false;
+            } catch {
+              return false;
+            }
+          }
+        }
+      })
+    ];
+  }
+});
+
+const LineHeight = Extension.create({
+  name: 'lineHeight',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['paragraph', 'heading'],
+        attributes: {
+          lineHeight: {
+            default: null,
+            parseHTML: (element) => {
+              const style = (element as HTMLElement).style?.lineHeight;
+              return style || null;
+            },
+            renderHTML: (attributes) => {
+              if (!attributes.lineHeight) return {};
+              return {
+                style: `line-height: ${attributes.lineHeight} !important;`
+              };
+            }
+          }
+        }
+      }
+    ];
+  },
+  addCommands() {
+    return {
+      setLineHeight:
+        (value: string) =>
+        ({ chain }) => {
+          return chain().focus().updateAttributes('paragraph', { lineHeight: value }).updateAttributes('heading', { lineHeight: value }).run();
+        },
+      unsetLineHeight:
+        () =>
+        ({ chain }) => {
+          return chain().focus().updateAttributes('paragraph', { lineHeight: null }).updateAttributes('heading', { lineHeight: null }).run();
+        }
+    } as any;
+  }
+});
+
 export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange, placeholder, dir }) => {
-  const ref = useRef<HTMLDivElement | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [checkColor, setCheckColor] = useState('#16a34a');
   const [uncheckColor, setUncheckColor] = useState('#dc2626');
@@ -220,15 +426,77 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
   const [blockType, setBlockType] = useState<'p' | 'h1' | 'h2' | 'h3'>('p');
   const [translating, setTranslating] = useState(false);
 
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        link: false as any,
+        underline: false as any
+      }),
+      Image.configure({
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto'
+        }
+      }),
+      SanitizedTextStyle,
+      UnderlineExtension,
+      WordPasteSanitizer,
+      LineHeight,
+      LinkExtension.configure({
+        openOnClick: false,
+        autolink: true,
+        HTMLAttributes: {
+          rel: 'noreferrer',
+          target: '_blank'
+        }
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      }),
+      Placeholder.configure({
+        placeholder: placeholder || ''
+      })
+    ],
+    content: value || '',
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[120px] px-3 py-2',
+        dir: dir || 'ltr'
+      },
+      handleDOMEvents: {
+        focus: () => {
+          setIsFocused(true);
+          return false;
+        },
+        blur: () => {
+          setIsFocused(false);
+          return false;
+        }
+      }
+    },
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    }
+  });
+
   const handleAutoTranslate = async () => {
-    const el = ref.current;
-    if (!el || !el.innerText.trim()) return;
+    if (!editor) return;
+    const selectionText = (() => {
+      try {
+        const { from, to, empty } = editor.state.selection;
+        if (!empty) return editor.state.doc.textBetween(from, to, ' ');
+        return editor.getText();
+      } catch {
+        return '';
+      }
+    })();
+    if (!selectionText.trim()) return;
     setTranslating(true);
     try {
       // We assume translation is from Ar to En if the current editor is in RTL
       const from = dir === 'rtl' ? 'ar' : 'en';
       const to = dir === 'rtl' ? 'en' : 'ar';
-      const translated = await translateText(el.innerText, from, to);
+      const translated = await translateText(selectionText, from, to);
       if (translated) {
         // Replace content or just provide it? 
         // For editor, it's better to replace if they clicked the button.
@@ -243,131 +511,149 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
         // But the USER specifically asked for "Auto-fill the second language fields by taking a copy of the mother language (Arabic) and converting it to English automatically".
 
         // Let's stick to the previous pattern of having the button next to the label in PageManager.
+        const escaped = translated
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+
+        try {
+          const { empty } = editor.state.selection;
+          if (empty) {
+            editor.commands.setContent(`<p>${escaped}</p>`);
+          } else {
+            editor.chain().focus().insertContent(escaped).run();
+          }
+        } catch {
+          editor.commands.setContent(`<p>${escaped}</p>`);
+        }
       }
     } finally {
       setTranslating(false);
     }
   };
 
-  const placeholderText = useMemo(() => {
-    return placeholder || '';
-  }, [placeholder]);
-
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const current = el.innerHTML;
+    if (!editor) return;
+    const current = editor.getHTML();
     const next = value || '';
-
     if (current !== next && !isFocused) {
-      el.innerHTML = next;
+      editor.commands.setContent(next, { emitUpdate: false });
     }
-  }, [value, isFocused]);
-
-  const exec = (command: string, valueArg?: string) => {
-    try {
-      document.execCommand(command, false, valueArg);
-      const el = ref.current;
-      if (el) onChange(el.innerHTML);
-    } catch {
-      // ignore
-    }
-  };
+  }, [editor, value, isFocused]);
 
   const promptForLink = () => {
-    const url = window.prompt('URL', 'https://');
-    if (!url) return;
-    exec('createLink', url);
-  };
-
-  const wrapSelectionWithSpanStyle = (style: string) => {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const range = sel.getRangeAt(0);
-    if (!ref.current || !ref.current.contains(range.commonAncestorContainer)) return;
-
-    const extracted = range.extractContents();
-    const wrapper = document.createElement('span');
-    wrapper.setAttribute('style', style);
-    wrapper.appendChild(extracted);
-    range.insertNode(wrapper);
-
-    // Move caret after wrapper
-    sel.removeAllRanges();
-    const newRange = document.createRange();
-    newRange.setStartAfter(wrapper);
-    newRange.collapse(true);
-    sel.addRange(newRange);
-
-    const el = ref.current;
-    if (el) onChange(el.innerHTML);
+    if (!editor) return;
+    const previousUrl = editor.getAttributes('link').href as string | undefined;
+    const url = window.prompt('URL', previousUrl || 'https://');
+    if (url === null) return;
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
   const applyFontSize = (px: number) => {
+    if (!editor) return;
     const clamped = Math.max(8, Math.min(70, Math.round(px || 0)));
     setFontSizePx(clamped);
-    wrapSelectionWithSpanStyle(`font-size: ${clamped}px`);
-  };
-
-  const getClosestBlockEl = () => {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return null;
-    const range = sel.getRangeAt(0);
-    let node: Node | null = range.startContainer;
-    if (!ref.current || !ref.current.contains(node)) return null;
-
-    while (node && node !== ref.current) {
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const el = node as HTMLElement;
-        const tag = el.tagName.toLowerCase();
-        if (tag === 'p' || tag === 'div' || tag === 'li' || tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'blockquote' || tag === 'pre') {
-          return el;
-        }
-      }
-      node = node.parentNode;
-    }
-    return ref.current;
+    editor.chain().focus().setMark('sanitizedTextStyle', { fontSize: `${clamped}px` }).run();
   };
 
   const applyLineHeight = (v: string) => {
     setLineHeight(v);
-    const block = getClosestBlockEl();
-    if (!block) return;
-    if (!v) block.style.removeProperty('line-height');
-    else block.style.lineHeight = v;
-    const el = ref.current;
-    if (el) onChange(el.innerHTML);
+    if (!editor) return;
+    if (!v) (editor as any).commands.unsetLineHeight();
+    else (editor as any).commands.setLineHeight(v);
   };
 
   const applyBlockType = (v: 'p' | 'h1' | 'h2' | 'h3') => {
     setBlockType(v);
+    if (!editor) return;
     if (v === 'p') {
-      exec('formatBlock', 'p');
+      editor.chain().focus().setParagraph().run();
       return;
     }
-    exec('formatBlock', v);
+    if (v === 'h1') {
+      editor.chain().focus().setHeading({ level: 1 }).run();
+      return;
+    }
+    if (v === 'h2') {
+      editor.chain().focus().setHeading({ level: 2 }).run();
+      return;
+    }
+    editor.chain().focus().setHeading({ level: 3 }).run();
   };
 
   const insertCheck = () => {
-    exec('insertHTML', `<span style="color: ${checkColor}; font-weight: 700;">✓</span>`);
+    if (!editor) return;
+    editor
+      .chain()
+      .focus()
+      .insertContent(`<span style="color: ${checkColor}; font-weight: 700;">✓</span>`)
+      .run();
   };
 
   const insertUncheck = () => {
-    exec('insertHTML', `<span style="color: ${uncheckColor}; font-weight: 700;">✗</span>`);
+    if (!editor) return;
+    editor
+      .chain()
+      .focus()
+      .insertContent(`<span style="color: ${uncheckColor}; font-weight: 700;">✗</span>`)
+      .run();
   };
 
   const clearFormatting = () => {
-    exec('removeFormat');
-    exec('unlink');
+    if (!editor) return;
+    editor.chain().focus().clearNodes().unsetAllMarks().run();
+    editor.chain().focus().unsetLink().run();
   };
 
   const btnBase =
     'h-9 w-9 inline-flex items-center justify-center rounded-md border border-transparent text-slate-700 hover:bg-slate-100 active:scale-[0.98] transition disabled:opacity-40 disabled:hover:bg-transparent';
+  const btnActive = 'bg-white border-slate-200 shadow-sm';
 
   const preventMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
   };
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const syncToolbarFromSelection = () => {
+      try {
+        if (editor.isActive('heading', { level: 1 })) setBlockType('h1');
+        else if (editor.isActive('heading', { level: 2 })) setBlockType('h2');
+        else if (editor.isActive('heading', { level: 3 })) setBlockType('h3');
+        else setBlockType('p');
+
+        const styleAttrs = editor.getAttributes('sanitizedTextStyle') as { fontSize?: string | null };
+        const fontSize = (styleAttrs?.fontSize || '').toString();
+        const m = fontSize.match(/^(\d+)/);
+        if (m) {
+          const n = Number(m[1]);
+          if (Number.isFinite(n)) setFontSizePx(n);
+        }
+
+        const p = editor.getAttributes('paragraph') as { lineHeight?: string | null };
+        const h = editor.getAttributes('heading') as { lineHeight?: string | null };
+        const lh = (h?.lineHeight || p?.lineHeight || '') as string;
+        setLineHeight(lh || '');
+      } catch {
+      }
+    };
+
+    syncToolbarFromSelection();
+    editor.on('selectionUpdate', syncToolbarFromSelection);
+    editor.on('transaction', syncToolbarFromSelection);
+    return () => {
+      editor.off('selectionUpdate', syncToolbarFromSelection);
+      editor.off('transaction', syncToolbarFromSelection);
+    };
+  }, [editor]);
+
+  if (!editor) return null;
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
@@ -388,10 +674,24 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
             </button>
           )}
           <div className="flex items-center gap-1">
-            <button type="button" title="Undo" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('undo')}>
+            <button
+              type="button"
+              title="Undo"
+              className={btnBase}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().undo().run()}
+              disabled={!editor.can().chain().focus().undo().run()}
+            >
               <Undo2 className="w-4 h-4" />
             </button>
-            <button type="button" title="Redo" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('redo')}>
+            <button
+              type="button"
+              title="Redo"
+              className={btnBase}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().redo().run()}
+              disabled={!editor.can().chain().focus().redo().run()}
+            >
               <Redo2 className="w-4 h-4" />
             </button>
           </div>
@@ -480,13 +780,31 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
           <div className="w-px h-7 bg-slate-200 mx-1" />
 
           <div className="flex items-center gap-1">
-            <button type="button" title="Bold" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('bold')}>
+            <button
+              type="button"
+              title="Bold"
+              className={`${btnBase} ${editor.isActive('bold') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().toggleBold().run()}
+            >
               <Bold className="w-4 h-4" />
             </button>
-            <button type="button" title="Italic" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('italic')}>
+            <button
+              type="button"
+              title="Italic"
+              className={`${btnBase} ${editor.isActive('italic') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+            >
               <Italic className="w-4 h-4" />
             </button>
-            <button type="button" title="Underline" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('underline')}>
+            <button
+              type="button"
+              title="Underline"
+              className={`${btnBase} ${editor.isActive('underline') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().toggleUnderline().run()}
+            >
               <Underline className="w-4 h-4" />
             </button>
           </div>
@@ -494,10 +812,22 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
           <div className="w-px h-7 bg-slate-200 mx-1" />
 
           <div className="flex items-center gap-1">
-            <button type="button" title="Bulleted list" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('insertUnorderedList')}>
+            <button
+              type="button"
+              title="Bulleted list"
+              className={`${btnBase} ${editor.isActive('bulletList') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+            >
               <List className="w-4 h-4" />
             </button>
-            <button type="button" title="Numbered list" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('insertOrderedList')}>
+            <button
+              type="button"
+              title="Numbered list"
+              className={`${btnBase} ${editor.isActive('orderedList') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            >
               <ListOrdered className="w-4 h-4" />
             </button>
           </div>
@@ -505,13 +835,31 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
           <div className="w-px h-7 bg-slate-200 mx-1" />
 
           <div className="flex items-center gap-1">
-            <button type="button" title="Align left" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('justifyLeft')}>
+            <button
+              type="button"
+              title="Align left"
+              className={`${btnBase} ${editor.isActive({ textAlign: 'left' }) ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            >
               <AlignLeft className="w-4 h-4" />
             </button>
-            <button type="button" title="Align center" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('justifyCenter')}>
+            <button
+              type="button"
+              title="Align center"
+              className={`${btnBase} ${editor.isActive({ textAlign: 'center' }) ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            >
               <AlignCenter className="w-4 h-4" />
             </button>
-            <button type="button" title="Align right" className={btnBase} onMouseDown={preventMouseDown} onClick={() => exec('justifyRight')}>
+            <button
+              type="button"
+              title="Align right"
+              className={`${btnBase} ${editor.isActive({ textAlign: 'right' }) ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            >
               <AlignRight className="w-4 h-4" />
             </button>
           </div>
@@ -519,7 +867,13 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
           <div className="w-px h-7 bg-slate-200 mx-1" />
 
           <div className="flex items-center gap-1">
-            <button type="button" title="Link" className={btnBase} onMouseDown={preventMouseDown} onClick={promptForLink}>
+            <button
+              type="button"
+              title="Link"
+              className={`${btnBase} ${editor.isActive('link') ? btnActive : ''}`}
+              onMouseDown={preventMouseDown}
+              onClick={promptForLink}
+            >
               <LinkIcon className="w-4 h-4" />
             </button>
             <button type="button" title="Clear formatting" className={btnBase} onMouseDown={preventMouseDown} onClick={clearFormatting}>
@@ -530,58 +884,20 @@ export const WordLikeEditor: React.FC<WordLikeEditorProps> = ({ value, onChange,
         <div className="flex-1" />
       </div>
 
-      <div
-        ref={ref}
-        dir={dir || 'ltr'}
-        contentEditable
-        suppressContentEditableWarning
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => {
-          setIsFocused(false);
-          const el = ref.current;
-          if (el) onChange(el.innerHTML);
-        }}
-        onInput={() => {
-          const el = ref.current;
-          if (el) onChange(el.innerHTML);
-        }}
-        onPaste={(e) => {
-          // Default paste works better for most cases than a broken manual implementation
-          // If we want to sanitize, we still need to allow the paste to happen or handle it correctly.
-          // Let's improve the manual implementation to actually work.
-          try {
-            const html = e.clipboardData.getData('text/html');
-            const text = e.clipboardData.getData('text/plain');
-
-            e.preventDefault();
-            if (html) {
-              const cleaned = sanitizeHtml(html);
-              document.execCommand('insertHTML', false, cleaned);
-            } else if (text) {
-              // Convert plain text to simple HTML (line breaks to <br>)
-              const plainHtml = text.replace(/\n/g, '<br>');
-              document.execCommand('insertHTML', false, plainHtml);
-            }
-
-            const el = ref.current;
-            if (el) onChange(el.innerHTML);
-          } catch (err) {
-            console.error('Paste error:', err);
-          }
-        }}
-        className="prose prose-sm max-w-none focus:outline-none min-h-[120px] px-3 py-2"
-        data-placeholder={placeholderText}
-        style={{
-          outline: 'none',
-        }}
-      />
+      <EditorContent editor={editor} />
 
       <style>
         {`
-          [contenteditable][data-placeholder]:empty:before {
+          .ProseMirror {
+            outline: none;
+          }
+
+          .ProseMirror p.is-editor-empty:first-child::before {
             content: attr(data-placeholder);
+            float: left;
             color: rgb(148 163 184);
             pointer-events: none;
+            height: 0;
           }
         `}
       </style>
