@@ -5,7 +5,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, PackageRequest } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare, Layout as LayoutIcon, Eye, EyeOff, Star } from 'lucide-react';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare, Layout as LayoutIcon, Eye, EyeOff, Star, MoreHorizontal } from 'lucide-react';
 import SettingsNewPage from './SettingsNew';
 import { SortableList } from '../components/SortableList';
 import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
@@ -43,6 +43,101 @@ const AutoTranslateButton = ({ text, onTranslate }: { text: string, onTranslate:
       {translating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
       <span className="text-[10px]">ترجمة تلقائية</span>
     </button>
+  );
+};
+
+const MobileBottomNav = ({ items, activeKey, onNavigate, resolveLabel, getIcon }: any) => {
+  const { dir, lang } = useApp();
+  const [open, setOpen] = useState(false);
+
+  const visibleItems = Array.isArray(items) ? items.filter((x: any) => x?.visible !== false) : [];
+  const preferred = ['dashboard', 'services', 'messages', 'settings'];
+  const primary: any[] = [];
+
+  for (const k of preferred) {
+    const it = visibleItems.find((x: any) => x?.key === k);
+    if (it) primary.push(it);
+  }
+  for (const it of visibleItems) {
+    if (primary.length >= 4) break;
+    if (!primary.some((p: any) => p.key === it.key)) primary.push(it);
+  }
+
+  const moreItems = visibleItems.filter((it: any) => !primary.some((p: any) => p.key === it.key));
+
+  const NavButton = ({ item }: any) => {
+    const active = activeKey === item.key;
+    return (
+      <button
+        type="button"
+        onClick={() => onNavigate(item.key)}
+        className={`flex flex-col items-center justify-center flex-1 h-full px-1 transition ${active ? 'text-tivro-primary' : 'text-slate-600 hover:text-slate-900'}`}
+        aria-current={active ? 'page' : undefined}
+      >
+        <span className={`p-2 rounded-xl ${active ? 'bg-tivro-primary/10' : ''}`}>{getIcon(item.key)}</span>
+        <span className="text-[11px] font-medium leading-4 truncate max-w-[76px]">{resolveLabel(item.key, item.label)}</span>
+      </button>
+    );
+  };
+
+  return (
+    <>
+      {open && (
+        <div className="fixed inset-0 z-[80] md:hidden" dir={dir}>
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/40"
+            onClick={() => setOpen(false)}
+            aria-label={lang === 'ar' ? 'إغلاق القائمة' : 'Close menu'}
+          />
+          <div className="absolute left-0 right-0 bottom-[76px] mx-auto w-[min(520px,calc(100%-24px))] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100">
+              <div className="text-sm font-bold text-slate-800">{lang === 'ar' ? 'المزيد' : 'More'}</div>
+              <div className="text-xs text-slate-500">{lang === 'ar' ? 'اختر القسم' : 'Choose a section'}</div>
+            </div>
+            <div className="max-h-[55vh] overflow-y-auto p-2">
+              <div className="grid grid-cols-2 gap-2">
+                {moreItems.map((item: any) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      onNavigate(item.key);
+                      setOpen(false);
+                    }}
+                    className={`flex items-center gap-3 w-full px-3 py-3 rounded-xl border transition ${activeKey === item.key ? 'border-tivro-primary/30 bg-tivro-primary/10 text-tivro-primary' : 'border-slate-200 hover:bg-slate-50 text-slate-700'}`}
+                    aria-current={activeKey === item.key ? 'page' : undefined}
+                  >
+                    <span className="text-slate-700">{getIcon(item.key)}</span>
+                    <span className="text-sm font-semibold truncate">{resolveLabel(item.key, item.label)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed bottom-0 left-0 right-0 z-[70] md:hidden" dir={dir}>
+        <div className="mx-auto w-full max-w-[520px]">
+          <div className="m-3 bg-white/95 backdrop-blur border border-slate-200 shadow-lg rounded-2xl h-[64px] flex items-stretch overflow-hidden">
+            {primary.map((item: any) => (
+              <NavButton key={item.key} item={item} />
+            ))}
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className={`flex flex-col items-center justify-center flex-1 h-full px-1 transition ${open ? 'text-tivro-primary' : 'text-slate-600 hover:text-slate-900'}`}
+              aria-haspopup="dialog"
+              aria-expanded={open}
+            >
+              <span className={`p-2 rounded-xl ${open ? 'bg-tivro-primary/10' : ''}`}><MoreHorizontal size={20} /></span>
+              <span className="text-[11px] font-medium leading-4">{lang === 'ar' ? 'المزيد' : 'More'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
 
@@ -1492,7 +1587,7 @@ export const Admin = () => {
             </nav>
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-8 pb-24 md:pb-8">
           {activeTab === 'dashboard' && <DashboardOverview setActiveTab={setActiveTab} />}
           {activeTab === 'services' && <ServicesManager key={refresh} onUpdate={() => setRefresh(p => p + 1)} />}
           {activeTab === 'team' && <TeamManager key={refresh} onUpdate={() => setRefresh(p => p + 1)} />}
@@ -1509,6 +1604,14 @@ export const Admin = () => {
             </SettingsProvider>
           )}
         </main>
+
+        <MobileBottomNav
+          items={navigationItems}
+          activeKey={activeTab}
+          onNavigate={(key: any) => setActiveTab(key)}
+          resolveLabel={resolveNavLabel}
+          getIcon={getIconForItem}
+        />
       </div>
     </Layout>
   );

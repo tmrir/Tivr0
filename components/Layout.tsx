@@ -28,10 +28,28 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [packages, setPackages] = useState<Package[]>([]);
   const [navigationPages, setNavigationPages] = useState<any[]>([]);
 
+  const getRouteHash = () => {
+    try {
+      return window.location.hash || '#';
+    } catch {
+      return '#';
+    }
+  };
+
+  const [routeHash, setRouteHash] = useState(getRouteHash);
+
+  useEffect(() => {
+    const onHashChange = () => setRouteHash(getRouteHash());
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const isAdminRoute = routeHash.startsWith('#admin') || routeHash.startsWith('#login');
+
   const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   const [mobileIndicatorProgress, setMobileIndicatorProgress] = useState(0.72);
-  const [mobileIndicatorVisible, setMobileIndicatorVisible] = useState(true);
+  const [mobileIndicatorVisible, setMobileIndicatorVisible] = useState(!isAdminRoute);
   const [mobileIndicatorStyle, setMobileIndicatorStyle] = useState<React.CSSProperties>({
     left: '50%',
     bottom: 18,
@@ -466,7 +484,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
         </div>
       </header>
 
-      {isMobileViewport && mobileIndicatorVisible && (
+      {isMobileViewport && mobileIndicatorVisible && !isAdminRoute && (
         <div
           className="md:hidden fixed z-[65] pointer-events-none"
           style={mobileIndicatorStyle}
@@ -477,7 +495,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
         </div>
       )}
 
-      {isMobileViewport && (
+      {isMobileViewport && !isAdminRoute && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-[66] bg-white/85 backdrop-blur-md border-t border-slate-200">
           <div className="px-3 py-2 flex items-center justify-between gap-2 overflow-x-auto">
             <button
@@ -656,7 +674,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       )}
 
       {/* Bottom Banner */}
-      {settings?.bottomBanner?.enabled && (
+      {settings?.bottomBanner?.enabled && !isAdminRoute && (
         <div className="fixed bottom-0 w-full bg-tivro-primary text-white py-3 px-6 z-[60] shadow-lg flex justify-between items-center animate-fade-in-up" style={settings.bottomBanner.bgImage ? { backgroundImage: `url(${settings.bottomBanner.bgImage})`, backgroundSize: 'cover' } : {}}>
           <div>
             <h4 className="font-bold">{settings.bottomBanner.title?.[lang]}</h4>
