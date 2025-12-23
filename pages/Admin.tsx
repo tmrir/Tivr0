@@ -5,7 +5,7 @@ import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { Layout } from '../components/Layout';
 import { Service, TeamMember, Package, CaseStudy, LocalizedString, BlogPost, ContactMessage, PackageRequest } from '../types';
-import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare, Layout as LayoutIcon, Eye, EyeOff, Star, MoreHorizontal } from 'lucide-react';
+import { Plus, Trash2, Edit2, BarChart2, List, Settings as SettingsIcon, Users as UsersIcon, Package as PackageIcon, Briefcase, Loader2, FileText, MessageCircle, Type, CheckCircle, AlertCircle, Phone, MessageSquare, Layout as LayoutIcon, Eye, EyeOff, Star, MoreHorizontal, LogOut } from 'lucide-react';
 import SettingsNewPage from './SettingsNew';
 import { SortableList } from '../components/SortableList';
 import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlogImage } from '../components/DefaultIcons';
@@ -46,7 +46,7 @@ const AutoTranslateButton = ({ text, onTranslate }: { text: string, onTranslate:
   );
 };
 
-const MobileBottomNav = ({ items, activeKey, onNavigate, resolveLabel, getIcon }: any) => {
+const MobileBottomNav = ({ items, activeKey, onNavigate, resolveLabel, getIcon, onLogout }: any) => {
   const { dir, lang } = useApp();
   const [open, setOpen] = useState(false);
 
@@ -112,6 +112,20 @@ const MobileBottomNav = ({ items, activeKey, onNavigate, resolveLabel, getIcon }
                     <span className="text-sm font-semibold truncate">{resolveLabel(item.key, item.label)}</span>
                   </button>
                 ))}
+
+                {typeof onLogout === 'function' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onLogout();
+                    }}
+                    className="col-span-2 flex items-center justify-center gap-2 w-full px-3 py-3 rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition"
+                  >
+                    <LogOut size={18} />
+                    <span className="text-sm font-bold">{lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1517,6 +1531,12 @@ export const Admin = () => {
     setIsLoggingIn(false);
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.hash = '#';
+    window.location.reload();
+  };
+
   if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   if (!isAdmin) {
@@ -1611,6 +1631,7 @@ export const Admin = () => {
           onNavigate={(key: any) => setActiveTab(key)}
           resolveLabel={resolveNavLabel}
           getIcon={getIconForItem}
+          onLogout={handleLogout}
         />
       </div>
     </Layout>
