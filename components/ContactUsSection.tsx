@@ -19,7 +19,6 @@ const VerticalProgressBar = ({ progress }: { progress: number }) => {
   return (
     <div className="flex items-center gap-4">
       <div className="flex flex-col items-center">
-        <span className="text-white text-sm mb-2">الصورة</span>
         <div className="w-2 h-24 bg-black border border-white rounded-full relative overflow-hidden">
           <div 
             className="absolute bottom-0 left-0 right-0 bg-white transition-all duration-700 ease-out"
@@ -30,9 +29,6 @@ const VerticalProgressBar = ({ progress }: { progress: number }) => {
           {Math.round(progress * 100)}%
         </span>
       </div>
-      <span className="text-white text-sm">
-        {progress >= 0.9 ? 'اقتربت' : 'غير مكتملة'}
-      </span>
     </div>
   );
 };
