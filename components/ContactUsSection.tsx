@@ -4,7 +4,6 @@ import { db } from '../services/db';
 import { ContactUsSettings, ContactFormField } from '../types';
 import { TrendingUp, Loader2 } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { ZeigarnikRing } from './ZeigarnikRing';
 
 interface ContactUsSectionProps {
   settings?: ContactUsSettings;
@@ -14,6 +13,28 @@ interface ContactUsSectionProps {
 const IconComponent = ({ name, className }: { name: string, className?: string }) => {
   const Icon = (Icons as any)[name] || Icons.HelpCircle;
   return <Icon className={className} />;
+};
+
+const VerticalProgressBar = ({ progress }: { progress: number }) => {
+  return (
+    <div className="flex items-center gap-4">
+      <div className="flex flex-col items-center">
+        <span className="text-white text-sm mb-2">الصورة</span>
+        <div className="w-2 h-24 bg-black border border-white rounded-full relative overflow-hidden">
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-white transition-all duration-700 ease-out"
+            style={{ height: `${progress * 100}%` }}
+          />
+        </div>
+        <span className="text-white text-xs mt-1">
+          {Math.round(progress * 100)}%
+        </span>
+      </div>
+      <span className="text-white text-sm">
+        {progress >= 0.9 ? 'اقتربت' : 'غير مكتملة'}
+      </span>
+    </div>
+  );
 };
 
 const sanitizeHTML = (html: string): string => {
@@ -77,6 +98,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [progressBarFill, setProgressBarFill] = useState(0.7);
 
   const hasArabicChars = (value: string) => /[\u0600-\u06FF]/.test(value);
 
@@ -99,6 +121,8 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
       if (!error) {
         setSubmitStatus('success');
         setFormData({});
+        // Animate progress bar to 90%
+        setProgressBarFill(0.9);
       } else {
         setSubmitStatus('error');
       }
@@ -110,15 +134,6 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
     }
   };
 
-  const ringProgress = useMemo(() => {
-    if (submitStatus === 'success') return 1;
-    const base = 0.76;
-    const nameFilled = String(formData.name || '').trim().length > 0;
-    const phoneFilled = String(formData.phone || '').trim().length > 0;
-    if (phoneFilled) return 0.96;
-    if (nameFilled) return 0.88;
-    return base;
-  }, [formData.name, formData.phone, submitStatus]);
 
   if (!contactSettings) {
     return null; // Don't render if no settings available
@@ -139,9 +154,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
             <div key={cardIndex} className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
               <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
                 {cardIndex === 0 ? (
-                  <span id="cta-zeigarnik-ring-anchor" className="text-tivro-primary">
-                    <ZeigarnikRing progress={ringProgress} size={22} strokeWidth={2} />
-                  </span>
+                  <VerticalProgressBar progress={progressBarFill} />
                 ) : (card.iconType === 'svg' ? (
                   <div
                     dangerouslySetInnerHTML={{ __html: sanitizeHTML(card.iconSVG) }}
