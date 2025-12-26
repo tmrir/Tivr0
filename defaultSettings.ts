@@ -68,10 +68,10 @@ export const defaultSettings: SiteSettings = {
     subtitle: { ar: 'جاهز لنقل مشروعك للمستوى التالي؟', en: 'Ready to take your business to the next level?' },
     cards: [
       {
-        heading: { ar: 'حجز استشارة', en: 'Book Consultation' },
+        heading: { ar: 'الوصول ليس متاحًا للجميع', en: 'Access Not Available to Everyone' },
         iconType: 'svg',
         iconSVG: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up text-tivro-primary"><path d="M16 7h6v6"></path><path d="m22 7-8.5 8.5-5-5L2 17"></path></svg>',
-        contentHTML: '<div class="space-y-4"><p class="text-slate-300">دعنا نناقش أهدافك ونضع استراتيجية مخصصة لنجاحك.</p></div>'
+        contentHTML: '<div class="space-y-4"><p class="text-slate-300">سيفتح الوصول لعدد محدود ممن يدركون أن المشكلة ليست في التنفيذ.</p></div>'
       }
     ],
     socialLinks: [
@@ -100,8 +100,8 @@ export const defaultSettings: SiteSettings = {
       fields: [
         {
           name: 'name',
-          label: { ar: 'الاسم', en: 'Name' },
-          placeholder: { ar: 'الاسم', en: 'Name' },
+          label: { ar: 'اسمك الكريم', en: 'Your Name' },
+          placeholder: { ar: 'اسمك الكريم', en: 'Your Name' },
           type: 'text',
           required: true
         },
@@ -113,7 +113,7 @@ export const defaultSettings: SiteSettings = {
           required: true
         }
       ],
-      submitText: { ar: 'إرسال الطلب', en: 'Send Request' },
+      submitText: { ar: 'اطلب الوصول', en: 'Request Access' },
       submitAction: '/api/contact'
     },
     cssClasses: 'container mx-auto px-4 text-center'

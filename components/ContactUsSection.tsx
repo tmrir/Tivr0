@@ -15,19 +15,20 @@ const IconComponent = ({ name, className }: { name: string, className?: string }
   return <Icon className={className} />;
 };
 
-const VerticalProgressBar = ({ progress }: { progress: number }) => {
+const HorizontalProgressBar = ({ progress, lang }: { progress: number; lang: string }) => {
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex flex-col items-center">
-        <div className="w-2 h-24 bg-black border border-white rounded-full relative overflow-hidden">
-          <div 
-            className="absolute bottom-0 left-0 right-0 bg-white transition-all duration-700 ease-out"
-            style={{ height: `${progress * 100}%` }}
-          />
-        </div>
-        <span className="text-white text-xs mt-1">
-          {Math.round(progress * 100)}%
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-white text-sm font-medium">
+          {lang === 'ar' ? `الصورة ${progress >= 0.9 ? 'اقتربت' : 'غير مكتملة'}` : `Picture ${progress >= 0.9 ? 'Almost Complete' : 'Incomplete'}`}
         </span>
+        <span className="text-white text-xs font-medium">{Math.round(progress * 100)}%</span>
+      </div>
+      <div className="w-full h-3 bg-black border border-white rounded-full relative overflow-hidden">
+        <div 
+          className="absolute top-0 left-0 h-full bg-white transition-all duration-700 ease-out rounded-full"
+          style={{ width: `${progress * 100}%` }}
+        />
       </div>
     </div>
   );
@@ -148,9 +149,11 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
         <div className="flex flex-col md:flex-row justify-center gap-6">
           {contactSettings.cards?.map((card, cardIndex) => (
             <div key={cardIndex} className="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur text-left">
-              <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <h4 className="text-xl font-bold mb-4">
                 {cardIndex === 0 ? (
-                  <VerticalProgressBar progress={progressBarFill} />
+                  <div className="mb-4">
+                    <HorizontalProgressBar progress={progressBarFill} lang={lang} />
+                  </div>
                 ) : (card.iconType === 'svg' ? (
                   <div
                     dangerouslySetInnerHTML={{ __html: sanitizeHTML(card.iconSVG) }}
@@ -159,7 +162,7 @@ export const ContactUsSection: React.FC<ContactUsSectionProps> = ({
                 ) : (
                   <IconComponent name={card.iconSVG} className="text-tivro-primary" />
                 ))}
-                {card.heading?.[lang] || (lang === 'ar' ? 'حجز استشارة' : 'Book Consultation')}
+                {cardIndex !== 0 && (card.heading?.[lang] || (lang === 'ar' ? 'حجز استشارة' : 'Book Consultation'))}
               </h4>
 
               <div className="flex gap-4 mt-4 mb-6">
