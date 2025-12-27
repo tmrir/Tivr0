@@ -169,10 +169,47 @@ export const SettingsPage: React.FC = () => {
                                     <button onClick={() => setSettings({ ...settings, socialLinks: [...settings.socialLinks, { platform: 'Twitter', url: '' }] })} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">+ Add</button>
                                 </div>
                                 {settings.socialLinks.map((link, i) => (
-                                    <div key={i} className="flex gap-2 mb-2">
-                                        <input className="w-1/3 border p-2 rounded text-sm" value={link.platform} onChange={e => { const l = [...settings.socialLinks]; l[i].platform = e.target.value; setSettings({ ...settings, socialLinks: l }) }} />
-                                        <input className="flex-1 border p-2 rounded text-sm" value={link.url} onChange={e => { const l = [...settings.socialLinks]; l[i].url = e.target.value; setSettings({ ...settings, socialLinks: l }) }} />
-                                        <button onClick={() => { const l = settings.socialLinks.filter((_, idx) => idx !== i); setSettings({ ...settings, socialLinks: l }) }} className="text-red-500 px-2">x</button>
+                                    <div key={i} className="flex flex-col gap-2 mb-3 border border-slate-200 rounded-lg p-3 bg-white">
+                                        <div className="flex gap-2">
+                                            <input className="w-1/3 border p-2 rounded text-sm" value={link.platform} onChange={e => { const l = [...settings.socialLinks] as any[]; l[i].platform = e.target.value; setSettings({ ...settings, socialLinks: l as any }) }} />
+                                            <input className="flex-1 border p-2 rounded text-sm" value={link.url} onChange={e => { const l = [...settings.socialLinks] as any[]; l[i].url = e.target.value; setSettings({ ...settings, socialLinks: l as any }) }} />
+                                            <button onClick={() => { const l = settings.socialLinks.filter((_, idx) => idx !== i); setSettings({ ...settings, socialLinks: l }) }} className="text-red-500 px-2">x</button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            <select
+                                                className="border p-2 rounded text-sm"
+                                                value={(link as any).iconType || ''}
+                                                onChange={e => {
+                                                    const v = e.target.value;
+                                                    const l = [...settings.socialLinks] as any[];
+                                                    if (!v) {
+                                                        delete l[i].iconType;
+                                                        delete l[i].iconValue;
+                                                    } else {
+                                                        l[i].iconType = v;
+                                                        if (typeof l[i].iconValue !== 'string') l[i].iconValue = '';
+                                                    }
+                                                    setSettings({ ...settings, socialLinks: l as any });
+                                                }}
+                                            >
+                                                <option value="">Auto (from platform)</option>
+                                                <option value="lucide">Lucide Icon Name</option>
+                                                <option value="svg">SVG Code</option>
+                                            </select>
+
+                                            <input
+                                                className="border p-2 rounded text-sm md:col-span-2"
+                                                placeholder={(link as any).iconType === 'svg' ? '<svg ...>...</svg>' : 'e.g. Instagram / Linkedin / Ghost'}
+                                                value={(link as any).iconValue || ''}
+                                                onChange={e => {
+                                                    const l = [...settings.socialLinks] as any[];
+                                                    l[i].iconValue = e.target.value;
+                                                    setSettings({ ...settings, socialLinks: l as any });
+                                                }}
+                                                disabled={!(link as any).iconType}
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>

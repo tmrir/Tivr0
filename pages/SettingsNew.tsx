@@ -137,11 +137,22 @@ export const SettingsNewPage: React.FC = () => {
         bottomBanner: settings?.bottomBanner || { enabled: false, title: { ar: '', en: '' } },
         sectionTexts: settings?.sectionTexts || {
             workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
-            workSubtitle: { ar: 'أرقام ونتائج تعكس إنجازاتنا', en: 'Numbers speaking our achievements' }
+            workSubtitle: { ar: 'أرقام ونتائج تعكس إنجازاتنا', en: 'Numbers speaking our achievements' },
+            privacyLink: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
+            termsLink: { ar: 'شروط الخدمة', en: 'Terms of Service' }
         },
-        homeSections: settings?.homeSections || {
+        homeSections: (settings?.homeSections as any) || {
+            heroBadge: { ar: '', en: '' },
             heroTitle: { ar: 'نحو حضور رقمي أقوى', en: 'We Turn Your Ideas into Digital Reality' },
             heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة الخدمات', en: 'A full-service digital marketing agency' },
+            heroImageUrl: '',
+            heroImage: { src: '', alt: { ar: 'صورة', en: 'Image' } },
+            heroImagePosition: 'right',
+            heroButtonsEnabled: true,
+            heroStatsEnabled: true,
+            heroPrimaryCta: { label: { ar: '', en: '' }, href: '' },
+            heroSecondaryCta: { label: { ar: '', en: '' }, href: '' },
+            heroStats: [],
             servicesTitle: { ar: 'خدماتنا', en: 'Our Services' },
             servicesSubtitle: { ar: 'حلول رقمية متكاملة تناسب نمو عملك', en: 'Integrated digital solutions' },
             teamTitle: { ar: 'فريق العمل', en: 'Our Team' },
@@ -354,21 +365,58 @@ export const SettingsNewPage: React.FC = () => {
                                     <button onClick={() => updateField('socialLinks', [...safeSettings.socialLinks, { platform: 'Twitter', url: '' }])} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">+ Add</button>
                                 </div>
                                 {safeSettings.socialLinks.map((link, i) => (
-                                    <div key={i} className="flex gap-2 mb-2">
-                                        <input className="w-1/3 border p-2 rounded text-sm" value={link.platform} onChange={e => {
-                                            const l = [...safeSettings.socialLinks];
-                                            l[i].platform = e.target.value;
-                                            updateField('socialLinks', l);
-                                        }} />
-                                        <input className="flex-1 border p-2 rounded text-sm" value={link.url} onChange={e => {
-                                            const l = [...safeSettings.socialLinks];
-                                            l[i].url = e.target.value;
-                                            updateField('socialLinks', l);
-                                        }} />
-                                        <button onClick={() => {
-                                            const l = safeSettings.socialLinks.filter((_, idx) => idx !== i);
-                                            updateField('socialLinks', l);
-                                        }} className="text-red-500 px-2">x</button>
+                                    <div key={i} className="flex flex-col gap-2 mb-3 border border-slate-200 rounded-lg p-3 bg-white">
+                                        <div className="flex gap-2">
+                                            <input className="w-1/3 border p-2 rounded text-sm" value={link.platform} onChange={e => {
+                                                const l = [...safeSettings.socialLinks];
+                                                l[i].platform = e.target.value;
+                                                updateField('socialLinks', l);
+                                            }} />
+                                            <input className="flex-1 border p-2 rounded text-sm" value={link.url} onChange={e => {
+                                                const l = [...safeSettings.socialLinks];
+                                                l[i].url = e.target.value;
+                                                updateField('socialLinks', l);
+                                            }} />
+                                            <button onClick={() => {
+                                                const l = safeSettings.socialLinks.filter((_, idx) => idx !== i);
+                                                updateField('socialLinks', l);
+                                            }} className="text-red-500 px-2">x</button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            <select
+                                                className="border p-2 rounded text-sm"
+                                                value={(link as any).iconType || ''}
+                                                onChange={e => {
+                                                    const v = e.target.value;
+                                                    const l = [...safeSettings.socialLinks] as any[];
+                                                    if (!v) {
+                                                        delete l[i].iconType;
+                                                        delete l[i].iconValue;
+                                                    } else {
+                                                        l[i].iconType = v;
+                                                        if (typeof l[i].iconValue !== 'string') l[i].iconValue = '';
+                                                    }
+                                                    updateField('socialLinks', l);
+                                                }}
+                                            >
+                                                <option value="">Auto (from platform)</option>
+                                                <option value="lucide">Lucide Icon Name</option>
+                                                <option value="svg">SVG Code</option>
+                                            </select>
+
+                                            <input
+                                                className="border p-2 rounded text-sm md:col-span-2"
+                                                placeholder={(link as any).iconType === 'svg' ? '<svg ...>...</svg>' : 'e.g. Instagram / Linkedin / Ghost'}
+                                                value={(link as any).iconValue || ''}
+                                                onChange={e => {
+                                                    const l = [...safeSettings.socialLinks] as any[];
+                                                    l[i].iconValue = e.target.value;
+                                                    updateField('socialLinks', l);
+                                                }}
+                                                disabled={!(link as any).iconType}
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>

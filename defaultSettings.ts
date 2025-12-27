@@ -13,10 +13,10 @@ export const defaultSettings: SiteSettings = {
   
   // روابط التواصل الاجتماعي
   socialLinks: [
-    { platform: 'Twitter', url: 'https://twitter.com/tivro' },
-    { platform: 'Linkedin', url: 'https://linkedin.com/company/tivro' },
-    { platform: 'Instagram', url: 'https://instagram.com/tivro' },
-    { platform: 'Facebook', url: 'https://facebook.com/tivro' }
+    { platform: 'Twitter', url: 'https://twitter.com/tivro', iconType: 'lucide', iconValue: 'Twitter' },
+    { platform: 'Linkedin', url: 'https://linkedin.com/company/tivro', iconType: 'lucide', iconValue: 'Linkedin' },
+    { platform: 'Instagram', url: 'https://instagram.com/tivro', iconType: 'lucide', iconValue: 'Instagram' },
+    { platform: 'Facebook', url: 'https://facebook.com/tivro', iconType: 'lucide', iconValue: 'Facebook' }
   ],
   
   // الشعارات والأيقونات

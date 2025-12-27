@@ -19,6 +19,33 @@ const DEFAULT_SETTINGS: Partial<SiteSettings> = {
   socialLinks: []
 };
 
+const socialPlatformIcons: { [key: string]: any } = {
+  'facebook': Facebook,
+  'twitter': Twitter,
+  'linkedin': Linkedin,
+  'instagram': Instagram,
+};
+
+const sanitizeSVG = (svg: string): string => {
+  if (typeof window === 'undefined') return svg;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svg || '', 'text/html');
+
+  ['script', 'iframe', 'object', 'embed', 'link', 'style'].forEach((tag) => {
+    doc.querySelectorAll(tag).forEach((el) => el.remove());
+  });
+
+  Array.from(doc.body.querySelectorAll('*')).forEach((el) => {
+    Array.from(el.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on')) el.removeAttribute(attr.name);
+    });
+  });
+
+  return doc.body.innerHTML;
+};
+
 export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) => {
   const { t, lang, setLang, isAdmin } = useApp();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -410,7 +437,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
     }));
 
   const IconComponent = ({ name }: { name: string }) => {
-    const Icon = (Icons as any)[name] || Icons.Link;
+    const raw = (name || '').trim();
+    const key = raw.toLowerCase();
+    const aliases: Record<string, string> = {
+      twitter: 'Twitter',
+      x: 'Twitter',
+      instagram: 'Instagram',
+      ig: 'Instagram',
+      facebook: 'Facebook',
+      fb: 'Facebook',
+      linkedin: 'Linkedin',
+      'linked-in': 'Linkedin',
+      tiktok: 'Music2',
+      snapchat: 'Ghost'
+    };
+
+    const lucideName = aliases[key] || raw;
+    const Icon = (Icons as any)[lucideName] || Icons.Link;
     return <Icon size={18} />;
   };
 
@@ -627,7 +670,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                 <div className="flex gap-4">
                   {settings?.socialLinks?.map((link: any, i: number) => (
                     <a key={i} href={link.url} className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-tivro-primary transition">
-                      <IconComponent name={link.platform} />
+                      {link?.iconType === 'svg' && typeof link?.iconValue === 'string' && link.iconValue.trim().length > 0 ? (
+                        <span
+                          className="w-[18px] h-[18px] inline-flex"
+                          dangerouslySetInnerHTML={{ __html: sanitizeSVG(link.iconValue) }}
+                        />
+                      ) : (
+                        <IconComponent name={(link?.iconType === 'lucide' && typeof link?.iconValue === 'string' && link.iconValue.trim().length > 0) ? link.iconValue : link.platform} />
+                      )}
                     </a>
                   ))}
                 </div>

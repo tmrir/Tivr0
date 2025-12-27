@@ -67,6 +67,8 @@ export interface ContactMessage {
 export interface SocialLink {
   platform: string;
   url: string;
+  iconType?: 'lucide' | 'svg';
+  iconValue?: string;
 }
 
 export interface BannerSettings {
