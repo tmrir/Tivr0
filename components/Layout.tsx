@@ -46,6 +46,19 @@ const sanitizeSVG = (svg: string): string => {
   return doc.body.innerHTML;
 };
 
+const sanitizeFaClasses = (value: string): string => {
+  const raw = String(value || '').trim();
+  const parts = raw.split(/\s+/g).filter(Boolean);
+  const safe = parts.filter((c) => /^fa[a-z-]*$/.test(c) || /^fa-[a-z0-9-]+$/.test(c));
+
+  const hasStyle = safe.some((c) => c === 'fa-solid' || c === 'fa-regular' || c === 'fa-brands' || c === 'fa-light' || c === 'fa-thin');
+  const hasIcon = safe.some((c) => c.startsWith('fa-') && c !== 'fa-solid' && c !== 'fa-regular' && c !== 'fa-brands' && c !== 'fa-light' && c !== 'fa-thin');
+
+  if (!hasIcon) return '';
+  if (!hasStyle) safe.unshift('fa-brands');
+  return safe.join(' ');
+};
+
 export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) => {
   const { t, lang, setLang, isAdmin } = useApp();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -675,6 +688,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
                           className="w-[18px] h-[18px] inline-flex"
                           dangerouslySetInnerHTML={{ __html: sanitizeSVG(link.iconValue) }}
                         />
+                      ) : link?.iconType === 'fontawesome' && typeof link?.iconValue === 'string' && link.iconValue.trim().length > 0 ? (
+                        <i className={sanitizeFaClasses(link.iconValue) || 'fa-solid fa-link'} style={{ fontSize: 18, lineHeight: 1 }} />
                       ) : (
                         <IconComponent name={(link?.iconType === 'lucide' && typeof link?.iconValue === 'string' && link.iconValue.trim().length > 0) ? link.iconValue : link.platform} />
                       )}

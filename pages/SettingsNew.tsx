@@ -402,12 +402,13 @@ export const SettingsNewPage: React.FC = () => {
                                             >
                                                 <option value="">Auto (from platform)</option>
                                                 <option value="lucide">Lucide Icon Name</option>
+                                                <option value="fontawesome">Font Awesome (fa-*)</option>
                                                 <option value="svg">SVG Code</option>
                                             </select>
 
                                             <input
                                                 className="border p-2 rounded text-sm md:col-span-2"
-                                                placeholder={(link as any).iconType === 'svg' ? '<svg ...>...</svg>' : 'e.g. Instagram / Linkedin / Ghost'}
+                                                placeholder={(link as any).iconType === 'svg' ? '<svg ...>...</svg>' : ((link as any).iconType === 'fontawesome' ? 'e.g. fa-brands fa-snapchat (or fa-snapchat)' : 'e.g. Instagram / Linkedin / Ghost')}
                                                 value={(link as any).iconValue || ''}
                                                 onChange={e => {
                                                     const l = [...safeSettings.socialLinks] as any[];
