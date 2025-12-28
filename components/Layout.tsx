@@ -68,6 +68,20 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const [packages, setPackages] = useState<Package[]>([]);
   const [navigationPages, setNavigationPages] = useState<any[]>([]);
 
+  const applyTabTitle = (s: any) => {
+    try {
+      const titleObj = s?.tabTitle;
+      const resolved = (typeof titleObj === 'object' && titleObj)
+        ? (titleObj?.[lang] || titleObj?.ar || titleObj?.en)
+        : (typeof titleObj === 'string' ? titleObj : undefined);
+      if (resolved && String(resolved).trim().length > 0) {
+        document.title = String(resolved);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const getRouteHash = () => {
     try {
       return window.location.hash || '#';
@@ -207,6 +221,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
         const s = await db.settings.get();
         if (s) {
           setSettings(s);
+          applyTabTitle(s);
           if (s.faviconUrl) {
             const link = (document.querySelector("link[rel~='icon']") as HTMLLinkElement) || document.createElement('link');
             link.type = 'image/x-icon';
@@ -249,8 +264,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       loadSettingsAndNav();
     };
 
+    const handleSettingsUpdated = (event: any) => {
+      const next = event?.detail;
+      if (!next) return;
+      setSettings(next);
+      applyTabTitle(next);
+      if (next.faviconUrl) {
+        const link = (document.querySelector("link[rel~='icon']") as HTMLLinkElement) || document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = next.faviconUrl;
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+    };
+
     window.addEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
     window.addEventListener('storage', handleStorageNavigationUpdate);
+    window.addEventListener('settingsUpdated', handleSettingsUpdated as EventListener);
 
     loadSettingsAndNav();
     window.addEventListener('customPagesUpdated', handleCustomPagesUpdated as EventListener);
@@ -261,8 +291,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       window.removeEventListener('adminNavigationUpdated', handleAdminNavigationUpdate);
       window.removeEventListener('storage', handleStorageNavigationUpdate);
       window.removeEventListener('customPagesUpdated', handleCustomPagesUpdated as EventListener);
+      window.removeEventListener('settingsUpdated', handleSettingsUpdated as EventListener);
     };
   }, [lang]);
+
+  useEffect(() => {
+    applyTabTitle(settings);
+  }, [settings, lang]);
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 768px)');
