@@ -166,6 +166,26 @@
       margin-top: 0 !important;
     }
 
+    #root section.page-section:first-of-type {
+      justify-content: flex-start !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      height: auto !important;
+      max-height: none !important;
+      min-height: 100vh !important;
+    }
+
+    #root section.page-section:first-of-type.px-4.py-8 {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+
+    #root section.page-section:first-of-type.h-\[1122px\],
+    #root section.page-section:first-of-type.max-h-\[1122px\] {
+      height: auto !important;
+      max-height: none !important;
+    }
+
     #root .page-section:first-of-type * {
       scroll-margin-top: 0 !important;
     }
@@ -243,6 +263,23 @@
         });
       }
 
+      function removeByTextContains(root, needle) {
+        if (!root) return;
+        var n = String(needle || '').trim();
+        if (!n) return;
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
+        var toRemove = [];
+        while (walker.nextNode()) {
+          var el = walker.currentNode;
+          if (!isElement(el)) continue;
+          var t = (el.textContent || '').trim();
+          if (t && t.indexOf(n) !== -1) toRemove.push(el);
+        }
+        toRemove.forEach(function (el) {
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        });
+      }
+
       function sanitizeOnce() {
         var root = document.body;
 
@@ -259,6 +296,17 @@
             el.remove();
           });
         } catch (e) {}
+
+        try {
+          var printLike = root.querySelectorAll('[data-print], [data-download], [aria-label*="print" i], [aria-label*="pdf" i], button[title*="print" i], button[title*="pdf" i], a[title*="print" i], a[title*="pdf" i]');
+          printLike.forEach(function (el) {
+            el.remove();
+          });
+        } catch (e) {}
+
+        removeByTextContains(root, 'طباعة');
+        removeByTextContains(root, 'PDF');
+        removeByTextContains(root, 'pdf');
 
         removeByText(root, 'تعديل');
       }
