@@ -258,7 +258,7 @@ export const CustomPageStandalone: React.FC<CustomPageStandaloneProps> = ({ slug
           <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
             <iframe
               title={p?.slug ? `page-${p.slug}` : p.id}
-              sandbox="allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+              sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
               referrerPolicy="no-referrer"
               srcDoc={buildSafeSrcDoc(p?.fullHtml || '')}
               style={{ width: '100%', height: 900, border: 0, background: 'white' }}

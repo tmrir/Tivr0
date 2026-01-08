@@ -1126,7 +1126,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                 <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
                   <iframe
                     title="page-preview"
-                    sandbox="allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+                    sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
                     referrerPolicy="no-referrer"
                     srcDoc={editingPage.fullHtml || '<!doctype html><html><body></body></html>'}
                     style={{ width: '100%', height: 520, border: 0, background: 'white' }}
