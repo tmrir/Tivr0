@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الملف التعريفي - Tivro Profile 2025</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --tivro-navy: #0F2133;
+      --tivro-cyan: #06B6D4;
+      --tivro-slate: #94A3B8;
+      --tivro-ice: #F5F7FA;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--tivro-navy);
+      font-family: 'Cairo', sans-serif;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    span,
+    div {
+      line-height: 1.4;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      padding-top: 64px;
+      padding-bottom: 72px;
+      background: var(--tivro-navy);
+    }
+
+    @media (min-width: 768px) {
+      .app-shell {
+        padding-bottom: 0;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-[#0F2133] no-scrollbar">
+  <header class="no-print fixed top-0 inset-x-0 z-[300] bg-[#0F2133]/90 backdrop-blur-xl border-b border-white/10">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="/" class="text-white font-black tracking-wide">TIVRO</a>
+      <nav class="flex items-center gap-2">
+        <a href="/" class="hidden sm:inline-flex text-white/80 hover:text-white text-sm font-bold px-3 py-2 rounded-xl">الرئيسية</a>
+        <span class="inline-flex bg-cyan-500/15 text-white text-sm font-black px-4 py-2 rounded-xl border border-cyan-400/20">الملف التعريفي</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <div id="root"></div>
+  </main>
+
+  <footer class="no-print fixed bottom-0 inset-x-0 z-[300] bg-[#0F2133]/90 backdrop-blur-xl border-t border-white/10 md:hidden">
+    <div class="max-w-6xl mx-auto px-4 h-[72px] flex items-center justify-around">
+      <a href="/" class="flex flex-col items-center gap-1 text-white/70 hover:text-white text-xs font-bold">
+        <span class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">⌂</span>
+        الرئيسية
+      </a>
+      <a href="/profile.html" class="flex flex-col items-center gap-1 text-white text-xs font-black">
+        <span class="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-400/20 flex items-center justify-center">👤</span>
+        الملف التعريفي
+      </a>
+    </div>
+  </footer>
+
+  <script type="module" crossorigin src="https://profile-rho-three.vercel.app/assets/index-CIzMSglX.js"></script>
+
+  <script>
+    (function () {
+      function normalizeDigits(value) {
+        return String(value || '').replace(/[^0-9]/g, '');
+      }
+
+      function normalizeWhatsappNumber(raw) {
+        var digits = normalizeDigits(raw);
+        if (!digits) return '';
+        if (digits.startsWith('966')) return digits;
+        if (digits.length === 10 && digits.startsWith('0')) return '966' + digits.slice(1);
+        if (digits.length === 9 && digits.startsWith('5')) return '966' + digits;
+        return digits;
+      }
+
+      function ensureHttp(url) {
+        var u = String(url || '').trim();
+        if (!u) return '';
+        if (/^https?:\/\//i.test(u)) return u;
+        return 'https://' + u;
+      }
+
+      function buildClickableSocialSection() {
+        return `
+<div class="space-y-4 max-w-4xl mx-auto mb-10 w-full" data-clickable-social="1">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <a href="mailto:Tivrocare@gmail.com" class="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 block" style="animation-delay: 0s;">
+      <div class="absolute inset-0 bg-[#162a45]/80 backdrop-blur-md border border-white/10 group-hover:border-white/20 transition-colors"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+      <div class="relative p-4 md:p-5 flex items-center gap-5 md:gap-6">
+        <div class="flex-shrink-0"><div class="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></div></div>
+        <div class="flex-grow min-w-0 flex flex-col items-start text-right"><span class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">البريد الإلكتروني</span><p class="font-bold text-base md:text-lg lg:text-xl text-white group-hover:text-cyan-200 transition-colors bg-transparent border-none p-0 focus:ring-0 text-right break-all" style="white-space: nowrap; word-break: normal; overflow-wrap: normal; text-overflow: clip; overflow: auto hidden; max-width: 100%;">Tivrocare@gmail.com</p></div>
+        <div class="text-white/20 group-hover:text-white/60 transition-colors"><svg class="w-5 h-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></div>
+      </div>
+    </a>
+
+    <a href="https://wa.me/966555139750" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 block" style="animation-delay: 0.15s;">
+      <div class="absolute inset-0 bg-[#162a45]/80 backdrop-blur-md border border-white/10 group-hover:border-white/20 transition-colors"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+      <div class="relative p-4 md:p-5 flex items-center gap-5 md:gap-6">
+        <div class="flex-shrink-0"><div class="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg></div></div>
+        <div class="flex-grow min-w-0 flex flex-col items-start text-right"><span class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">رقم الهاتف (واتساب)</span><p class="font-bold text-base md:text-lg lg:text-xl text-white group-hover:text-cyan-200 transition-colors bg-transparent border-none p-0 focus:ring-0 text-right">0555139750</p></div>
+        <div class="text-white/20 group-hover:text-white/60 transition-colors"><svg class="w-5 h-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></div>
+      </div>
+    </a>
+
+    <a href="https://tivro.sa" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 block" style="animation-delay: 0.3s;">
+      <div class="absolute inset-0 bg-[#162a45]/80 backdrop-blur-md border border-white/10 group-hover:border-white/20 transition-colors"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+      <div class="relative p-4 md:p-5 flex items-center gap-5 md:gap-6">
+        <div class="flex-shrink-0"><div class="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg></div></div>
+        <div class="flex-grow min-w-0 flex flex-col items-start text-right"><span class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">الموقع الإلكتروني</span><p class="font-bold text-base md:text-lg lg:text-xl text-white group-hover:text-cyan-200 transition-colors bg-transparent border-none p-0 focus:ring-0 text-right">tivro.sa</p></div>
+        <div class="text-white/20 group-hover:text-white/60 transition-colors"><svg class="w-5 h-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></div>
+      </div>
+    </a>
+
+    <a href="https://maps.google.com/?q=Mecca,Saudi+Arabia" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 block" style="animation-delay: 0.45s;">
+      <div class="absolute inset-0 bg-[#162a45]/80 backdrop-blur-md border border-white/10 group-hover:border-white/20 transition-colors"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-emerald-500 to-cyan-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+      <div class="relative p-4 md:p-5 flex items-center gap-5 md:gap-6">
+        <div class="flex-shrink-0"><div class="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div></div>
+        <div class="flex-grow min-w-0 flex flex-col items-start text-right"><span class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">الموقع</span><p class="font-bold text-base md:text-lg lg:text-xl text-white group-hover:text-cyan-200 transition-colors bg-transparent border-none p-0 focus:ring-0 text-right">مكة المكرمة – المملكة العربية السعودية</p></div>
+        <div class="text-white/20 group-hover:text-white/60 transition-colors"><svg class="w-5 h-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></div>
+      </div>
+    </a>
+
+    <a href="#" onclick="alert('السجل التجاري: 7052586612'); return false;" class="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 block" style="animation-delay: 0.6s;">
+      <div class="absolute inset-0 bg-[#162a45]/80 backdrop-blur-md border border-white/10 group-hover:border-white/20 transition-colors"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+      <div class="relative p-4 md:p-5 flex items-center gap-5 md:gap-6">
+        <div class="flex-shrink-0"><div class="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 4v6c0 5-3 8-7 8s-7-3-7-8V7l7-4z"></path></svg></div></div>
+        <div class="flex-grow min-w-0 flex flex-col items-start text-right"><span class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">السجل التجاري</span><p class="font-bold text-base md:text-lg lg:text-xl text-white group-hover:text-cyan-200 transition-colors bg-transparent border-none p-0 focus:ring-0 text-right">7052586612</p></div>
+        <div class="text-white/20 group-hover:text-white/60 transition-colors"><svg class="w-5 h-5 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></div>
+      </div>
+    </a>
+  </div>
+
+  <div class="flex flex-wrap gap-3 justify-center">
+    <a href="https://www.tiktok.com/@Tivro.sa" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 flex-shrink-0 block" style="animation-delay: 0s;"><div class="absolute inset-0 bg-[#162a45]/80 backdrop-blur-md border border-white/10 group-hover:border-white/20 transition-colors"></div><div class="absolute inset-0 bg-gradient-to-r from-fuchsia-500 to-purple-600 opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div><div class="relative p-3 flex items-center gap-3 min-w-0"><div class="flex-shrink-0"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 7.5a6.5 6.5 0 01-3.6-1.1V15a6.8 6.8 0 11-6.9-6.8c.4 0 .8 0 1.2.1v3.7a3.2 3.2 0 10 2.3 3V2h3.4c.2 1.3.9 2.6 2 3.5.9.7 2 1.1 3.1 1.2v2.8z"></path></svg></div></div><div class="min-w-0 flex-1"><p class="font-bold text-sm text-white group-hover:text-cyan-200 transition-colors bg-transparent border-none p-0 focus:ring-0 text-right truncate">Tivro.sa</p></div></div></a>
+    <a href="https://www.snapchat.com/add/Tivrocare" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 flex-shrink-0 block" style="animation-delay: 0.1s;"><div class="absolute inset-0 bg-[#162a45]/80 backdrop-blur-md border border-white/10 group-hover:border-white/20 transition-colors"></div><div class="absolute inset-0 bg-gradient-to-r from-fuchsia-500 to-purple-600 opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div><div class="relative p-3 flex items-center gap-3 min-w-0"><div class="flex-shrink-0"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c2.8 0 5 2.2 5 5v2c0 .8.4 1.6 1.1 2.1.8.6 1.9 1 1.9 1.9 0 .7-.7 1.2-1.5 1.5-.9.3-1.4 1-1.4 1.8 0 1.1-.9 2-2 2-.8 0-1.2-.3-1.6-.6-.4-.3-.7-.5-1.5-.5s-1.1.2-1.5.5c-.4.3-.8.6-1.6.6-1.1 0-2-.9-2-2 0-.8-.5-1.5-1.4-1.8C4.7 14.7 4 14.2 4 13.5c0-.9 1.1-1.3 1.9-1.9C6.6 11.6 7 10.8 7 10V7c0-2.8 2.2-5 5-5z"></path></svg></div></div><div class="min-w-0 flex-1"><p class="font-bold text-sm text-white group-hover:text-cyan-200 transition-colors bg-transparent border-none p-0 focus:ring-0 text-right truncate">Tivrocare</p></div></div></a>
+    <a href="https://www.instagram.com/Tivrocare" target="_blank" rel="noopener noreferrer" class="group relative overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 flex-shrink-0 block" style="animation-delay: 0.2s;"><div class="absolute inset-0 bg-[#162a45]/80 backdrop-blur-md border border-white/10 group-hover:border-white/20 transition-colors"></div><div class="absolute inset-0 bg-gradient-to-r from-fuchsia-500 to-purple-600 opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div><div class="relative p-3 flex items-center gap-3 min-w-0"><div class="flex-shrink-0"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.8 2h8.4A5.8 5.8 0 0122 7.8v8.4A5.8 5.8 0 0116.2 22H7.8A5.8 5.8 0 012 16.2V7.8A5.8 5.8 0 017.8 2zm8.4 2H7.8A3.8 3.8 0 004 7.8v8.4A3.8 3.8 0 007.8 20h8.4a3.8 3.8 0 003.8-3.8V7.8A3.8 3.8 0 0016.2 4zm-4.2 3.2a4.8 4.8 0 110 9.6 4.8 4.8 0 010-9.6zm0 2a2.8 2.8 0 100 5.6 2.8 2.8 0 000-5.6zM17.8 6.1a1.1 1.1 0 110 2.2 1.1 1.1 0 010-2.2z"></path></svg></div></div><div class="min-w-0 flex-1"><p class="font-bold text-sm text-white group-hover:text-cyan-200 transition-colors bg-transparent border-none p-0 focus:ring-0 text-right truncate">Tivrocare</p></div></div></a>
+  </div>
+</div>
+        `.trim();
+      }
+
+      function findTargetContainer(rootEl) {
+        var candidates = rootEl.querySelectorAll('div.space-y-4.max-w-4xl.mx-auto.mb-10.w-full');
+        for (var i = 0; i < candidates.length; i++) {
+          var el = candidates[i];
+          if (el && el.textContent && el.textContent.indexOf('البريد الإلكتروني') !== -1) return el;
+        }
+        return null;
+      }
+
+      function replaceOnce() {
+        var root = document.getElementById('root');
+        if (!root) return false;
+        var target = findTargetContainer(root);
+        if (!target) return false;
+        if (target.getAttribute('data-clickable-social') === '1') return true;
+
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = buildClickableSocialSection();
+        var newNode = wrapper.firstElementChild;
+        if (!newNode) return false;
+        target.replaceWith(newNode);
+        return true;
+      }
+
+      function installClickFallback() {
+        document.addEventListener('click', function (e) {
+          try {
+            var root = document.getElementById('root');
+            if (!root) return;
+            var t = e.target;
+            if (!t || !root.contains(t)) return;
+
+            var wrapper = t.closest && t.closest('div.space-y-4.max-w-4xl.mx-auto.mb-10.w-full');
+            if (!wrapper) return;
+
+            var realLink = t.closest && t.closest('a[href]');
+            if (realLink) return;
+
+            var bigCard = t.closest && t.closest('div.group.relative.overflow-hidden.rounded-2xl');
+            if (bigCard) {
+              var labelEl = bigCard.querySelector('span');
+              var valueEl = bigCard.querySelector('p');
+              var label = labelEl ? labelEl.textContent.trim() : '';
+              var value = valueEl ? valueEl.textContent.trim() : '';
+
+              if (!label) return;
+              e.preventDefault();
+              e.stopPropagation();
+
+              if (label.indexOf('البريد') !== -1) {
+                window.location.href = 'mailto:' + value;
+                return;
+              }
+
+              if (label.indexOf('واتساب') !== -1 || label.indexOf('الهاتف') !== -1) {
+                var wa = normalizeWhatsappNumber(value || '0555139750');
+                if (wa) window.open('https://wa.me/' + wa, '_blank', 'noopener');
+                return;
+              }
+
+              if (label.indexOf('الموقع الإلكتروني') !== -1) {
+                var site = ensureHttp(value);
+                if (site) window.open(site, '_blank', 'noopener');
+                return;
+              }
+
+              if (label.indexOf('السجل التجاري') !== -1) {
+                alert('السجل التجاري: ' + value);
+                return;
+              }
+
+              if (label === 'الموقع' || label.indexOf('الموقع') !== -1) {
+                window.open('https://maps.google.com/?q=' + encodeURIComponent(value || ''), '_blank', 'noopener');
+              }
+            }
+          } catch (err) {}
+        }, true);
+      }
+
+      function boot() {
+        installClickFallback();
+        if (replaceOnce()) return;
+        var root = document.getElementById('root');
+        if (!root) {
+          setTimeout(boot, 200);
+          return;
+        }
+        var observer = new MutationObserver(function () {
+          replaceOnce();
+        });
+        observer.observe(root, { childList: true, subtree: true });
+        setTimeout(function () {
+          try { observer.disconnect(); } catch (e) {}
+        }, 15000);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+</body>
+
+</html>
