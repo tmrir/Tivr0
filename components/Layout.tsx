@@ -450,20 +450,27 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
 
   const NavLink = ({ href, label }: { href: string; label: string }) => (
     <a href={href} className="text-slate-600 hover:text-tivro-primary font-medium transition-colors duration-200 text-sm md:text-base" onClick={(e) => {
-      if (href.startsWith('#')) {
-        e.preventDefault();
-        if (href === '#') {
-          // Return to top of page
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          const targetId = href.substring(1);
-          const targetElement = document.getElementById(targetId);
-          if (targetElement) {
-            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }
+      if (!href.startsWith('#')) return;
+
+      // Route navigation (standalone pages)
+      if (href.startsWith('#page/')) {
         setIsMenuOpen(false);
+        return;
       }
+
+      // In-page navigation
+      e.preventDefault();
+      if (href === '#') {
+        // Return to top of page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const targetId = href.substring(1);
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+      setIsMenuOpen(false);
     }}>{label}</a>
   );
 
@@ -480,7 +487,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       return ao - bo;
     })
     .map((p: any) => ({
-      href: `#page-${p.slug}`,
+      href: `#page/${p.slug}`,
       label: resolveNavLabel(p.title, p.name || p.slug)
     }));
 

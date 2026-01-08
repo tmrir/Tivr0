@@ -5,6 +5,7 @@ import { Home } from './pages/Home';
 import { Admin } from './pages/Admin';
 import { Legal } from './pages/Legal';
 import { db } from './services/db';
+import { CustomPageStandalone } from './pages/CustomPageStandalone';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -66,6 +67,11 @@ const Router = () => {
   if (route.startsWith('#admin') || route.startsWith('#login')) return <Admin />;
   if (route === '#privacy') return <Legal type="privacy" />;
   if (route === '#terms') return <Legal type="terms" />;
+
+  if (route.startsWith('#page/')) {
+    const slug = route.replace(/^#page\//, '').split(/[?#]/)[0];
+    return <CustomPageStandalone slug={slug} />;
+  }
 
   return <Home />;
 };
