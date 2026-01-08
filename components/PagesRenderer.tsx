@@ -13,6 +13,15 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
   const { lang } = useApp();
   const [pages, setPages] = useState<CustomPage[]>([]);
 
+  const buildSafeSrcDoc = (raw: string) => {
+    const html = String(raw || '');
+    const trimmed = html.trim();
+    if (!trimmed) return '<!doctype html><html><head><meta charset="utf-8" /></head><body></body></html>';
+    // If user pasted a full document, keep it. If they pasted a fragment, wrap it.
+    if (/<html[\s>]/i.test(trimmed)) return trimmed;
+    return `<!doctype html><html><head><meta charset="utf-8" /></head><body>${trimmed}</body></html>`;
+  };
+
   const hexToRgba = (hex: string, opacity01: number) => {
     const h = (hex || '').trim();
     let full = h;
@@ -401,6 +410,168 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
     }
   };
 
+  const renderPageBody = (page: any) => {
+    if (!!page?.underConstruction) return renderUnderConstruction(page);
+
+    if (page?.renderMode === 'html') {
+      return (
+        <div className="max-w-6xl mx-auto">
+          <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
+            <iframe
+              title={page?.slug ? `page-${page.slug}` : page.id}
+              sandbox="allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+              referrerPolicy="no-referrer"
+              srcDoc={buildSafeSrcDoc(page?.fullHtml || '')}
+              style={{ width: '100%', height: 900, border: 0, background: 'white' }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    const variant = (page?.sectionVariant || 'default') as string;
+    if (variant !== 'hero') {
+      return (
+        <>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">{page?.title?.[lang] || page?.name}</h2>
+            {page?.description?.[lang] && (
+              <p className="text-slate-500 max-w-2xl mx-auto">{page?.description?.[lang]}</p>
+            )}
+          </div>
+
+          <div className="space-y-8">
+            {(page.components || [])
+              .slice()
+              .sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+              .map((component: any) => (
+                <div key={component.id} className="text-center">
+                  {renderComponent(component, { isHero: false })}
+                </div>
+              ))}
+          </div>
+        </>
+      );
+    }
+
+    return (() => {
+      const heroSettings = page.heroSettings || {};
+      const imagePosition = heroSettings.imagePosition || 'right';
+      const all = (page.components || []).slice().sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+      const images = all.filter((c: any) => c.type === 'image' && c.isVisible !== false);
+      const heroImage = images[0] as any;
+      const nonImage = all.filter((c: any) => c.type !== 'image');
+      const buttons = nonImage.filter((c: any) => c.type === 'button');
+      const contentComponents = nonImage.filter((c: any) => c.type !== 'button');
+
+      const textBoxStyle: React.CSSProperties = {
+        backgroundColor: (() => {
+          const color = heroSettings.textBoxBackgroundColor || '#0b1220';
+          const opacityPct = typeof heroSettings.textBoxBackgroundOpacity === 'number' ? heroSettings.textBoxBackgroundOpacity : 40;
+          return hexToRgba(color, opacityPct / 100);
+        })()
+      };
+
+      const ImageBlock = () => {
+        if (!heroImage) return null;
+        const src = heroImage.content?.src || heroImage.content?.url;
+        const alt = heroImage.content?.alt?.[lang] || '';
+        if (!src) return null;
+        return (
+          <div className="w-full">
+            <img src={src} alt={alt} className="w-full h-auto rounded-2xl shadow-2xl" />
+          </div>
+        );
+      };
+
+      const TextBox = () => (
+        <div className="w-full rounded-2xl border border-white/10 p-6 md:p-10 backdrop-blur" style={textBoxStyle}>
+          <div className="mb-6">
+            <h2
+              className={`${(() => {
+                const size = heroSettings.titleSize || 'md';
+                if (size === 'sm') return 'text-3xl md:text-5xl';
+                if (size === 'lg') return 'text-5xl md:text-7xl';
+                if (size === 'xl') return 'text-6xl md:text-8xl';
+                return 'text-4xl md:text-6xl';
+              })()} font-bold leading-tight`}
+            >
+              {page?.title?.[lang] || page?.name}
+            </h2>
+            {page?.description?.[lang] && (
+              <p className="mt-6 text-lg md:text-xl opacity-90 leading-relaxed max-w-2xl">
+                {page?.description?.[lang]}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            {contentComponents.map((component: any) => (
+              <div key={component.id} className="text-start">
+                {renderComponent(component, { isHero: true })}
+              </div>
+            ))}
+          </div>
+
+          {buttons.length > 0 && (
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              {buttons.map((component: any) => (
+                <div key={component.id} className="text-start">
+                  {renderComponent(component, { isHero: true })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+
+      if (imagePosition === 'top') {
+        return (
+          <div className="space-y-8">
+            <ImageBlock />
+            <TextBox />
+          </div>
+        );
+      }
+
+      if (imagePosition === 'bottom') {
+        return (
+          <div className="space-y-8">
+            <TextBox />
+            <ImageBlock />
+          </div>
+        );
+      }
+
+      if (imagePosition === 'left') {
+        const rtl = lang === 'ar';
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+            {rtl ? <TextBox /> : <ImageBlock />}
+            {rtl ? <ImageBlock /> : <TextBox />}
+          </div>
+        );
+      }
+
+      if (imagePosition === 'right') {
+        const rtl = lang === 'ar';
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+            {rtl ? <ImageBlock /> : <TextBox />}
+            {rtl ? <TextBox /> : <ImageBlock />}
+          </div>
+        );
+      }
+
+      // background
+      return (
+        <div className="max-w-5xl">
+          <TextBox />
+        </div>
+      );
+    })();
+  };
+
   return (
     <>
       {filtered.map((page) => (
@@ -428,144 +599,7 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
           )}
 
           <div className={`container mx-auto px-4 md:px-8 ${((page as any).sectionVariant || 'default') === 'hero' ? 'relative z-10' : ''}`}>
-            {!!(page as any).underConstruction ? (
-              renderUnderConstruction(page)
-            ) : (((page as any).sectionVariant || 'default') === 'hero' ? (() => {
-              const heroSettings = (page as any).heroSettings || {};
-              const imagePosition = heroSettings.imagePosition || 'right';
-              const all = (page.components || []).slice().sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
-              const images = all.filter((c: any) => c.type === 'image' && c.isVisible !== false);
-              const heroImage = images[0] as any;
-              const nonImage = all.filter((c: any) => c.type !== 'image');
-              const buttons = nonImage.filter((c: any) => c.type === 'button');
-              const contentComponents = nonImage.filter((c: any) => c.type !== 'button');
-
-              const textBoxStyle: React.CSSProperties = {
-                backgroundColor: (() => {
-                  const color = heroSettings.textBoxBackgroundColor || '#0b1220';
-                  const opacityPct = typeof heroSettings.textBoxBackgroundOpacity === 'number' ? heroSettings.textBoxBackgroundOpacity : 40;
-                  return hexToRgba(color, opacityPct / 100);
-                })()
-              };
-
-              const ImageBlock = () => {
-                if (!heroImage) return null;
-                const src = heroImage.content?.src || heroImage.content?.url;
-                const alt = heroImage.content?.alt?.[lang] || '';
-                if (!src) return null;
-                return (
-                  <div className="w-full">
-                    <img src={src} alt={alt} className="w-full h-auto rounded-2xl shadow-2xl" />
-                  </div>
-                );
-              };
-
-              const TextBox = () => (
-                <div className="w-full rounded-2xl border border-white/10 p-6 md:p-10 backdrop-blur" style={textBoxStyle}>
-                  <div className="mb-6">
-                    <h2
-                      className={`${(() => {
-                        const size = heroSettings.titleSize || 'md';
-                        if (size === 'sm') return 'text-3xl md:text-5xl';
-                        if (size === 'lg') return 'text-5xl md:text-7xl';
-                        if (size === 'xl') return 'text-6xl md:text-8xl';
-                        return 'text-4xl md:text-6xl';
-                      })()} font-bold leading-tight`}
-                    >
-                      {(page as any).title?.[lang] || page.name}
-                    </h2>
-                    {(page as any).description?.[lang] && (
-                      <p className="mt-6 text-lg md:text-xl opacity-90 leading-relaxed max-w-2xl">
-                        {(page as any).description?.[lang]}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-6">
-                    {contentComponents.map((component: any) => (
-                      <div key={component.id} className="text-start">
-                        {renderComponent(component, { isHero: true })}
-                      </div>
-                    ))}
-                  </div>
-
-                  {buttons.length > 0 && (
-                    <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                      {buttons.map((component: any) => (
-                        <div key={component.id} className="text-start">
-                          {renderComponent(component, { isHero: true })}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-
-              if (imagePosition === 'top') {
-                return (
-                  <div className="space-y-8">
-                    <ImageBlock />
-                    <TextBox />
-                  </div>
-                );
-              }
-
-              if (imagePosition === 'bottom') {
-                return (
-                  <div className="space-y-8">
-                    <TextBox />
-                    <ImageBlock />
-                  </div>
-                );
-              }
-
-              if (imagePosition === 'left') {
-                const rtl = lang === 'ar';
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                    {rtl ? <TextBox /> : <ImageBlock />}
-                    {rtl ? <ImageBlock /> : <TextBox />}
-                  </div>
-                );
-              }
-
-              if (imagePosition === 'right') {
-                const rtl = lang === 'ar';
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                    {rtl ? <ImageBlock /> : <TextBox />}
-                    {rtl ? <TextBox /> : <ImageBlock />}
-                  </div>
-                );
-              }
-
-              // background
-              return (
-                <div className="max-w-5xl">
-                  <TextBox />
-                </div>
-              );
-            })() : (
-              <>
-                <div className="text-center mb-12">
-                  <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">{(page as any).title?.[lang] || page.name}</h2>
-                  {(page as any).description?.[lang] && (
-                    <p className="text-slate-500 max-w-2xl mx-auto">{(page as any).description?.[lang]}</p>
-                  )}
-                </div>
-
-                <div className="space-y-8">
-                  {(page.components || [])
-                    .slice()
-                    .sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-                    .map((component) => (
-                      <div key={component.id} className="text-center">
-                        {renderComponent(component, { isHero: false })}
-                      </div>
-                    ))}
-                </div>
-              </>
-            ))}
+            {renderPageBody(page as any)}
           </div>
         </section>
       ))}

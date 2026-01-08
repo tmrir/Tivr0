@@ -311,6 +311,8 @@ export interface CustomPage {
   title: LocalizedString;
   description?: LocalizedString;
   components: PageComponent[];
+  renderMode?: 'components' | 'html';
+  fullHtml?: string;
   isVisible: boolean;
   placement?: 'after_header' | 'after_services' | 'before_packages' | 'after_team' | 'before_work' | 'after_work' | 'before_footer';
   sectionVariant?: 'default' | 'hero';

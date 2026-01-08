@@ -250,6 +250,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       title: { ar: '', en: '' },
       description: { ar: '', en: '' },
       components: [],
+      renderMode: 'components',
+      fullHtml: '',
       isVisible: true,
       placement: undefined,
       sectionVariant: undefined,
@@ -729,6 +731,26 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                {lang === 'ar' ? 'طريقة بناء الصفحة' : 'Page Build Mode'}
+              </label>
+              <select
+                value={editingPage.renderMode || 'components'}
+                onChange={(e) => {
+                  const mode = (e.target.value || 'components') as any;
+                  setEditingPage({
+                    ...editingPage,
+                    renderMode: mode
+                  });
+                }}
+                className="w-full border border-slate-200 rounded-lg p-2"
+              >
+                <option value="components">{lang === 'ar' ? 'مكوّنات' : 'Components'}</option>
+                <option value="html">{lang === 'ar' ? 'كود HTML كامل' : 'Full HTML'}</option>
+              </select>
+            </div>
+
             {editingPage.underConstruction && (
               <div className="space-y-2 p-3 border border-slate-200 rounded-lg bg-slate-50">
                 <div>
@@ -1044,508 +1066,323 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
               <h4 className="font-bold text-slate-900">
                 {lang === 'ar' ? 'المكونات' : 'Components'}
               </h4>
-              <div className="flex gap-2">
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      addComponentToPage(e.target.value);
-                      e.target.value = '';
-                    }
-                  }}
-                  className="border border-slate-200 rounded-lg p-2 text-sm"
-                >
-                  <option value="">{lang === 'ar' ? 'إضافة قالب جاهز' : 'Add Template'}</option>
-                  {templates.map(template => (
-                    <option key={template.id} value={template.id}>
-                      {template.displayName[lang]}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => addCustomComponent('text')}
-                  className="bg-blue-50 text-blue-600 px-3 py-1 rounded text-sm font-medium"
-                >
-                  + {lang === 'ar' ? 'نص' : 'Text'}
-                </button>
-                <button
-                  onClick={() => addCustomComponent('image')}
-                  className="bg-green-50 text-green-600 px-3 py-1 rounded text-sm font-medium"
-                >
-                  + {lang === 'ar' ? 'صورة' : 'Image'}
-                </button>
-                <button
-                  onClick={() => addCustomComponent('button')}
-                  className="bg-purple-50 text-purple-600 px-3 py-1 rounded text-sm font-medium"
-                >
-                  + {lang === 'ar' ? 'زر' : 'Button'}
-                </button>
-              </div>
-            </div>
-
-            {/* Component Editor */}
-            {selectedComponent && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h5 className="font-bold text-blue-900">
-                    {lang === 'ar' ? 'تحرير المكون' : 'Edit Component'}: {selectedComponent.type}
-                  </h5>
-                  <button
-                    onClick={() => setSelectedComponent(null)}
-                    className="text-blue-600 hover:text-blue-700"
+              {(editingPage.renderMode || 'components') !== 'html' && (
+                <div className="flex gap-2">
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        addComponentToPage(e.target.value);
+                        e.target.value = '';
+                      }
+                    }}
+                    className="border border-slate-200 rounded-lg p-2 text-sm"
                   >
-                    <X size={16} />
+                    <option value="">{lang === 'ar' ? 'إضافة قالب جاهز' : 'Add Template'}</option>
+                    {templates.map(template => (
+                      <option key={template.id} value={template.id}>
+                        {template.displayName[lang]}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => addCustomComponent('text')}
+                    className="bg-blue-50 text-blue-600 px-3 py-1 rounded text-sm font-medium"
+                  >
+                    + {lang === 'ar' ? 'نص' : 'Text'}
+                  </button>
+                  <button
+                    onClick={() => addCustomComponent('image')}
+                    className="bg-green-50 text-green-600 px-3 py-1 rounded text-sm font-medium"
+                  >
+                    + {lang === 'ar' ? 'صورة' : 'Image'}
+                  </button>
+                  <button
+                    onClick={() => addCustomComponent('button')}
+                    className="bg-purple-50 text-purple-600 px-3 py-1 rounded text-sm font-medium"
+                  >
+                    + {lang === 'ar' ? 'زر' : 'Button'}
                   </button>
                 </div>
-
-                {/* Text Component Editor */}
-                {selectedComponent.type === 'text' && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
-                        <span>{lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}</span>
-                        <TranslateButton
-                          text={selectedComponent.content.text?.ar || ''}
-                          fieldId="comp-text"
-                          onTranslate={(val) => {
-                            const updatedComponent = {
-                              ...selectedComponent,
-                              content: {
-                                ...selectedComponent.content,
-                                text: {
-                                  ...(selectedComponent.content.text || { ar: '', en: '' }),
-                                  en: val
-                                }
-                              }
-                            };
-                            setSelectedComponent(updatedComponent);
-                            updateComponentInPage(updatedComponent);
-                          }}
-                        />
-                      </label>
-                      <WordLikeEditor
-                        dir="rtl"
-                        value={selectedComponent.content.text?.ar || ''}
-                        placeholder={lang === 'ar' ? 'اكتب النص هنا...' : 'Write here...'}
-                        onChange={(html) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              text: {
-                                ...(selectedComponent.content.text || { ar: '', en: '' }),
-                                ar: html
-                              }
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1">
-                        {lang === 'ar' ? 'النص (إنجليزي)' : 'Text (English)'}
-                      </label>
-                      <WordLikeEditor
-                        dir="ltr"
-                        value={selectedComponent.content.text?.en || ''}
-                        placeholder={lang === 'ar' ? 'اكتب النص هنا...' : 'Write here...'}
-                        onChange={(html) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              text: {
-                                ...selectedComponent.content.text,
-                                en: html
-                              }
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Button Component Editor */}
-                {selectedComponent.type === 'button' && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
-                        <span>{lang === 'ar' ? 'نص الزر (عربي)' : 'Button Text (Arabic)'}</span>
-                        <TranslateButton
-                          text={selectedComponent.content.text?.ar || ''}
-                          fieldId="comp-btn-text"
-                          onTranslate={(val) => {
-                            const updatedComponent = {
-                              ...selectedComponent,
-                              content: {
-                                ...selectedComponent.content,
-                                text: {
-                                  ...(selectedComponent.content.text || { ar: '', en: '' }),
-                                  en: val
-                                }
-                              }
-                            };
-                            setSelectedComponent(updatedComponent);
-                            updateComponentInPage(updatedComponent);
-                          }}
-                        />
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedComponent.content.text?.ar || ''}
-                        onChange={(e) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              text: {
-                                ...selectedComponent.content.text,
-                                ar: e.target.value
-                              }
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1">
-                        {lang === 'ar' ? 'نص الزر (إنجليزي)' : 'Button Text (English)'}
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedComponent.content.text?.en || ''}
-                        onChange={(e) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              text: {
-                                ...selectedComponent.content.text,
-                                en: e.target.value
-                              }
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        {lang === 'ar' ? 'الرابط' : 'Link'}
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedComponent.content.href || ''}
-                        onChange={(e) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              href: e.target.value
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                        placeholder="#"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        {lang === 'ar' ? 'النمط' : 'Style'}
-                      </label>
-                      <select
-                        value={selectedComponent.content.style || 'primary'}
-                        onChange={(e) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              style: e.target.value
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                      >
-                        <option value="primary">{lang === 'ar' ? 'أساسي' : 'Primary'}</option>
-                        <option value="secondary">{lang === 'ar' ? 'ثانوي' : 'Secondary'}</option>
-                        <option value="outline">{lang === 'ar' ? 'إطار' : 'Outline'}</option>
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                          {lang === 'ar' ? 'لون خلفية الزر' : 'Button Background'}
-                        </label>
-                        <input
-                          type="color"
-                          value={selectedComponent.content.bgColor || '#10b981'}
-                          onChange={(e) => {
-                            const updatedComponent = {
-                              ...selectedComponent,
-                              content: {
-                                ...selectedComponent.content,
-                                bgColor: e.target.value
-                              }
-                            };
-                            setSelectedComponent(updatedComponent);
-                            updateComponentInPage(updatedComponent);
-                          }}
-                          className="w-full h-10 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                          {lang === 'ar' ? 'لون نص الزر' : 'Button Text Color'}
-                        </label>
-                        <input
-                          type="color"
-                          value={selectedComponent.content.textColor || '#ffffff'}
-                          onChange={(e) => {
-                            const updatedComponent = {
-                              ...selectedComponent,
-                              content: {
-                                ...selectedComponent.content,
-                                textColor: e.target.value
-                              }
-                            };
-                            setSelectedComponent(updatedComponent);
-                            updateComponentInPage(updatedComponent);
-                          }}
-                          className="w-full h-10 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                          {lang === 'ar' ? 'لون إطار الزر' : 'Button Border Color'}
-                        </label>
-                        <input
-                          type="color"
-                          value={selectedComponent.content.borderColor || '#10b981'}
-                          onChange={(e) => {
-                            const updatedComponent = {
-                              ...selectedComponent,
-                              content: {
-                                ...selectedComponent.content,
-                                borderColor: e.target.value
-                              }
-                            };
-                            setSelectedComponent(updatedComponent);
-                            updateComponentInPage(updatedComponent);
-                          }}
-                          className="w-full h-10 border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Image Component Editor */}
-                {selectedComponent.type === 'image' && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        {lang === 'ar' ? 'رابط الصورة' : 'Image URL'}
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedComponent.content.src || ''}
-                        onChange={(e) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              src: e.target.value
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                        placeholder="https://example.com/image.jpg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        {lang === 'ar' ? 'رفع ملف (صور/PDF)' : 'Upload File (Images/PDF)'}
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
-                        disabled={uploading}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          e.target.value = '';
-                          if (!file) return;
-
-                          const uploaded = await uploadMediaFile(file);
-                          if (!uploaded) return;
-
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              src: uploaded.url,
-                              mime: uploaded.mime
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                        className="w-full border border-slate-200 rounded-lg p-2 bg-white"
-                      />
-
-                      {uploading && (
-                        <div className="text-sm text-slate-600">
-                          {lang === 'ar' ? 'جاري الرفع...' : 'Uploading...'}
-                        </div>
-                      )}
-                      {uploadError && (
-                        <div className="text-sm text-red-600">{uploadError}</div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
-                        <span>{lang === 'ar' ? 'النص البديل (عربي)' : 'Alt Text (Arabic)'}</span>
-                        <TranslateButton
-                          text={selectedComponent.content.alt?.ar || ''}
-                          fieldId="comp-img-alt"
-                          onTranslate={(val) => {
-                            const updatedComponent = {
-                              ...selectedComponent,
-                              content: {
-                                ...selectedComponent.content,
-                                alt: {
-                                  ...(selectedComponent.content.alt || { ar: '', en: '' }),
-                                  en: val
-                                }
-                              }
-                            };
-                            setSelectedComponent(updatedComponent);
-                            updateComponentInPage(updatedComponent);
-                          }}
-                        />
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedComponent.content.alt?.ar || ''}
-                        onChange={(e) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              alt: {
-                                ...selectedComponent.content.alt,
-                                ar: e.target.value
-                              }
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1">
-                        {lang === 'ar' ? 'النص البديل (إنجليزي)' : 'Alt Text (English)'}
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedComponent.content.alt?.en || ''}
-                        onChange={(e) => {
-                          const updatedComponent = {
-                            ...selectedComponent,
-                            content: {
-                              ...selectedComponent.content,
-                              alt: {
-                                ...selectedComponent.content.alt,
-                                en: e.target.value
-                              }
-                            }
-                          };
-                          setSelectedComponent(updatedComponent);
-                          updateComponentInPage(updatedComponent);
-                        }}
-                        className="w-full border border-slate-200 rounded-lg p-2"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              {editingPage.components.map((component, index) => (
-                <div
-                  key={component.id}
-                  className="border border-slate-200 rounded-lg p-4 bg-slate-50"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <GripVertical className="text-slate-400" size={16} />
-                      {getComponentIcon(component.type)}
-                      <span className="font-medium text-slate-700">
-                        {component.type} - {component.display}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => moveComponent(index, 'up')}
-                        disabled={index === 0}
-                        className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-50"
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        onClick={() => moveComponent(index, 'down')}
-                        disabled={index === editingPage.components.length - 1}
-                        className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-50"
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      <button
-                        onClick={() => setSelectedComponent(component)}
-                        className="p-1 text-blue-600 hover:text-blue-700"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => deleteComponent(component.id)}
-                        className="p-1 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Component Preview */}
-                  <div className="text-sm text-slate-600">
-                    {component.type === 'text' && component.content.text?.[lang]}
-                    {component.type === 'button' && component.content.text?.[lang]}
-                    {component.type === 'image' && component.content.alt?.[lang]}
-                  </div>
-                </div>
-              ))}
+              )}
             </div>
+
+            {(editingPage.renderMode || 'components') === 'html' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
+                    {lang === 'ar' ? 'كود الصفحة (HTML)' : 'Page HTML'}
+                  </label>
+                  <textarea
+                    value={editingPage.fullHtml || ''}
+                    onChange={(e) => setEditingPage({ ...editingPage, fullHtml: e.target.value })}
+                    className="w-full border border-slate-200 rounded-lg p-3 font-mono text-xs leading-relaxed h-[420px]"
+                    dir="ltr"
+                    placeholder={lang === 'ar'
+                      ? 'الصق هنا كود HTML كامل (يمكن أن يحتوي <style> داخل <head>).'
+                      : 'Paste full HTML here (may include <style> in <head>).'}
+                  />
+                </div>
+
+                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                  <iframe
+                    title="page-preview"
+                    sandbox="allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+                    referrerPolicy="no-referrer"
+                    srcDoc={editingPage.fullHtml || '<!doctype html><html><body></body></html>'}
+                    style={{ width: '100%', height: 520, border: 0, background: 'white' }}
+                  />
+                </div>
+              </div>
+            ) : (
+
+              <>
+                {/* Component Editor */}
+                {selectedComponent && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h5 className="font-bold text-blue-900">
+                        {lang === 'ar' ? 'تحرير المكون' : 'Edit Component'}: {selectedComponent.type}
+                      </h5>
+                      <button
+                        onClick={() => setSelectedComponent(null)}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    {/* Text Component Editor */}
+                    {selectedComponent.type === 'text' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                            <span>{lang === 'ar' ? 'النص (عربي)' : 'Text (Arabic)'}</span>
+                            <TranslateButton
+                              text={selectedComponent.content.text?.ar || ''}
+                              fieldId="comp-text"
+                              onTranslate={(val) => {
+                                const updatedComponent = {
+                                  ...selectedComponent,
+                                  content: {
+                                    ...selectedComponent.content,
+                                    text: {
+                                      ...(selectedComponent.content.text || { ar: '', en: '' }),
+                                      en: val
+                                    }
+                                  }
+                                };
+                                setSelectedComponent(updatedComponent);
+                                updateComponentInPage(updatedComponent);
+                              }}
+                            />
+                          </label>
+                          <WordLikeEditor
+                            dir="rtl"
+                            value={selectedComponent.content.text?.ar || ''}
+                            placeholder={lang === 'ar' ? 'اكتب النص هنا...' : 'Write here...'}
+                            onChange={(html) => {
+                              const updatedComponent = {
+                                ...selectedComponent,
+                                content: {
+                                  ...selectedComponent.content,
+                                  text: {
+                                    ...(selectedComponent.content.text || { ar: '', en: '' }),
+                                    ar: html
+                                  }
+                                }
+                              };
+                              setSelectedComponent(updatedComponent);
+                              updateComponentInPage(updatedComponent);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-1">
+                            {lang === 'ar' ? 'النص (إنجليزي)' : 'Text (English)'}
+                          </label>
+                          <WordLikeEditor
+                            dir="ltr"
+                            value={selectedComponent.content.text?.en || ''}
+                            placeholder={lang === 'ar' ? 'اكتب النص هنا...' : 'Write here...'}
+                            onChange={(html) => {
+                              const updatedComponent = {
+                                ...selectedComponent,
+                                content: {
+                                  ...selectedComponent.content,
+                                  text: {
+                                    ...selectedComponent.content.text,
+                                    en: html
+                                  }
+                                }
+                              };
+                              setSelectedComponent(updatedComponent);
+                              updateComponentInPage(updatedComponent);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Button Component Editor */}
+                    {selectedComponent.type === 'button' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+                            <span>{lang === 'ar' ? 'نص الزر (عربي)' : 'Button Text (Arabic)'}</span>
+                            <TranslateButton
+                              text={selectedComponent.content.text?.ar || ''}
+                              fieldId="comp-btn-text"
+                              onTranslate={(val) => {
+                                const updatedComponent = {
+                                  ...selectedComponent,
+                                  content: {
+                                    ...selectedComponent.content,
+                                    text: {
+                                      ...(selectedComponent.content.text || { ar: '', en: '' }),
+                                      en: val
+                                    }
+                                  }
+                                };
+                                setSelectedComponent(updatedComponent);
+                                updateComponentInPage(updatedComponent);
+                              }}
+                            />
+                          </label>
+                          <input
+                            type="text"
+                            value={selectedComponent.content.text?.ar || ''}
+                            onChange={(e) => {
+                              const updatedComponent = {
+                                ...selectedComponent,
+                                content: {
+                                  ...selectedComponent.content,
+                                  text: {
+                                    ...selectedComponent.content.text,
+                                    ar: e.target.value
+                                  }
+                                }
+                              };
+                              setSelectedComponent(updatedComponent);
+                              updateComponentInPage(updatedComponent);
+                            }}
+                            className="w-full border border-slate-200 rounded-lg p-2"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-slate-700 mb-1">
+                            {lang === 'ar' ? 'نص الزر (إنجليزي)' : 'Button Text (English)'}
+                          </label>
+                          <input
+                            type="text"
+                            value={selectedComponent.content.text?.en || ''}
+                            onChange={(e) => {
+                              const updatedComponent = {
+                                ...selectedComponent,
+                                content: {
+                                  ...selectedComponent.content,
+                                  text: {
+                                    ...selectedComponent.content.text,
+                                    en: e.target.value
+                                  }
+                                }
+                              };
+                              setSelectedComponent(updatedComponent);
+                              updateComponentInPage(updatedComponent);
+                            }}
+                            className="w-full border border-slate-200 rounded-lg p-2"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Image Component Editor */}
+                    {selectedComponent.type === 'image' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
+                            {lang === 'ar' ? 'رابط الصورة' : 'Image URL'}
+                          </label>
+                          <input
+                            type="text"
+                            value={selectedComponent.content.src || ''}
+                            onChange={(e) => {
+                              const updatedComponent = {
+                                ...selectedComponent,
+                                content: {
+                                  ...selectedComponent.content,
+                                  src: e.target.value
+                                }
+                              };
+                              setSelectedComponent(updatedComponent);
+                              updateComponentInPage(updatedComponent);
+                            }}
+                            className="w-full border border-slate-200 rounded-lg p-2"
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {editingPage.components.map((component, index) => (
+                    <div
+                      key={component.id}
+                      className="border border-slate-200 rounded-lg p-4 bg-slate-50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <GripVertical className="text-slate-400" size={16} />
+                          {getComponentIcon(component.type)}
+                          <span className="font-medium text-slate-700">
+                            {component.type} - {component.display}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => moveComponent(index, 'up')}
+                            disabled={index === 0}
+                            className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-50"
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            onClick={() => moveComponent(index, 'down')}
+                            disabled={index === editingPage.components.length - 1}
+                            className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-50"
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                          <button
+                            onClick={() => setSelectedComponent(component)}
+                            className="p-1 text-blue-600 hover:text-blue-700"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => deleteComponent(component.id)}
+                            className="p-1 text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Component Preview */}
+                      <div className="text-sm text-slate-600">
+                        {component.type === 'text' && component.content.text?.[lang]}
+                        {component.type === 'button' && component.content.text?.[lang]}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
+
         </div>
-      </div >
+      </div>
     );
   }
 
