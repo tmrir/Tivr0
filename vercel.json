@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/profile", "destination": "/profile.html" },
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }
