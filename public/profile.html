@@ -64,6 +64,10 @@
       background: var(--tivro-navy);
     }
 
+    body.profile-page .app-shell {
+      padding-top: 0 !important;
+    }
+
     .page-section {
       width: 100%;
       min-height: 100vh;
@@ -175,6 +179,11 @@
       min-height: 100vh !important;
     }
 
+    #root section.page-section:first-of-type > div {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+
     #root section.page-section:first-of-type.px-4.py-8 {
       padding-top: 0 !important;
       padding-bottom: 0 !important;
@@ -210,6 +219,10 @@
 </head>
 
 <body class="bg-[#0F2133] no-scrollbar">
+  <script>
+    // Mark this document as the standalone profile page.
+    document.body.classList.add('profile-page');
+  </script>
   <header class="no-print fixed top-0 inset-x-0 z-[300] bg-[#0F2133]/90 backdrop-blur-xl border-b border-white/10">
     <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
       <a href="/" class="flex items-center gap-3 text-white font-black tracking-wide">
@@ -280,6 +293,38 @@
         });
       }
 
+      function removePrintControls(root) {
+        if (!root) return;
+        var candidates = [];
+        try {
+          candidates = Array.prototype.slice.call(
+            root.querySelectorAll('button, a, [role="button"], [aria-label], [title]')
+          );
+        } catch (e) {
+          candidates = [];
+        }
+
+        candidates.forEach(function (el) {
+          try {
+            if (!el || !el.textContent) return;
+            var text = (el.textContent || '').trim();
+            var aria = (el.getAttribute && el.getAttribute('aria-label')) || '';
+            var title = (el.getAttribute && el.getAttribute('title')) || '';
+            var hay = (text + ' ' + aria + ' ' + title).toLowerCase();
+            if (!hay) return;
+
+            var isPrint = hay.indexOf('طباعة') !== -1 || hay.indexOf('pdf') !== -1 || hay.indexOf('print') !== -1;
+            if (!isPrint) return;
+
+            // Never remove root containers.
+            if (el.id === 'root') return;
+            if (el.tagName && el.tagName.toLowerCase() === 'body') return;
+
+            el.remove();
+          } catch (e) {}
+        });
+      }
+
       function sanitizeOnce() {
         var root = document.body;
 
@@ -304,9 +349,7 @@
           });
         } catch (e) {}
 
-        removeByTextContains(root, 'طباعة');
-        removeByTextContains(root, 'PDF');
-        removeByTextContains(root, 'pdf');
+        removePrintControls(root);
 
         removeByText(root, 'تعديل');
       }
