@@ -161,6 +161,15 @@
       justify-content: center;
     }
 
+    #root .page-section:first-of-type {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
+
+    #root .page-section:first-of-type * {
+      scroll-margin-top: 0 !important;
+    }
+
     @media (min-width: 768px) {
       .app-shell {
         padding-bottom: 0;
@@ -251,30 +260,27 @@
           });
         } catch (e) {}
 
-        try {
-          var noPrint = root.querySelectorAll('.no-print');
-          noPrint.forEach(function (el) {
-            el.remove();
-          });
-        } catch (e) {}
-
         removeByText(root, 'تعديل');
       }
 
       function installReadOnlyGuards() {
-        function isInsideRoot(target) {
+        function getRoot() {
           try {
-            return !!(target && document.body && document.body.contains(target));
+            return document.getElementById('root');
           } catch (e) {
-            return false;
+            return null;
           }
         }
 
-        function shouldAllow(target) {
+        function isInsideRoot(target) {
+          var root = getRoot();
+          return !!(root && target && root.contains(target));
+        }
+
+        function allowClick(target) {
           try {
             if (!target || !target.closest) return false;
             if (target.closest('a[href]')) return true;
-            if (target.closest('button')) return true;
             if (target.closest('div.space-y-4.max-w-4xl.mx-auto.mb-10.w-full')) return true;
             return false;
           } catch (e) {
@@ -282,17 +288,27 @@
           }
         }
 
+        function allowEdit() {
+          return false;
+        }
+
         function blockIfInside(e) {
           var t = e.target;
           if (!isInsideRoot(t)) return;
-          if (shouldAllow(t)) return;
+
+          // Always allow navigation clicks on anchors and our clickable cards wrapper.
+          if (e.type === 'click' && allowClick(t)) return;
+
+          // Block any edit-related events inside root (freeze mode).
+          if (allowEdit(t)) return;
 
           try { e.preventDefault(); } catch (err) {}
           try { e.stopPropagation(); } catch (err) {}
           try { if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } catch (err) {}
         }
 
-        ['dblclick', 'contextmenu', 'keydown', 'keypress', 'keyup', 'beforeinput', 'input', 'change', 'paste', 'cut', 'copy', 'dragstart', 'drop'].forEach(function (type) {
+        // Allow normal single click handling, but freeze everything else that can mutate content.
+        ['dblclick', 'contextmenu', 'keydown', 'keypress', 'keyup', 'beforeinput', 'input', 'change', 'paste', 'cut', 'dragstart', 'drop'].forEach(function (type) {
           document.addEventListener(type, blockIfInside, true);
         });
       }
