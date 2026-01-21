@@ -792,11 +792,46 @@ export const SettingsNewPage: React.FC = () => {
                                     <LocalizedArea label="وصف الفوتر" value={safeSettings.footerDescription} onChange={v => updateField('footerDescription', v)} />
                                     <LocalizedInput label="نص حقوق النشر" value={safeSettings.copyrightText} onChange={v => updateField('copyrightText', v)} />
 
+                                    <LocalizedInput label="عنوان الروابط المهمة" value={safeSettings.footerImportantLinksTitle || { ar: 'روابط مهمة', en: 'Important Links' }} onChange={v => updateField('footerImportantLinksTitle', v)} />
+
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-2">روابط الفوتر</label>
                                         <div className="space-y-4">
                                             <LocalizedInput label="رابط سياسة الخصوصية" value={safeSettings.footerLinks.privacy} onChange={v => updateField('footerLinks', { ...safeSettings.footerLinks, privacy: v })} />
                                             <LocalizedInput label="رابط شروط الاستخدام" value={safeSettings.footerLinks.terms} onChange={v => updateField('footerLinks', { ...safeSettings.footerLinks, terms: v })} />
+                                        </div>
+                                    </div>
+
+                                    {/* New Business Info Section */}
+                                    <div className="border-t pt-4 mt-4 bg-slate-50 p-4 rounded">
+                                        <h5 className="font-bold text-slate-800 mb-3">بيانات السجل والضريبة (Business Info)</h5>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="block text-sm font-bold mb-1">رقم السجل التجاري (CR)</label>
+                                                <input className="w-full border p-2 rounded" value={safeSettings.footerBusinessInfo?.crNumber || ''} onChange={e => updateField('footerBusinessInfo', { ...safeSettings.footerBusinessInfo, crNumber: e.target.value })} />
+                                                <label className="flex items-center gap-2 text-sm mt-1 text-slate-600 font-medium">
+                                                    <input type="checkbox" checked={safeSettings.footerBusinessInfo?.showCr !== false} onChange={e => updateField('footerBusinessInfo', { ...safeSettings.footerBusinessInfo, showCr: e.target.checked })} />
+                                                    إظهار رقم السجل
+                                                </label>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold mb-1">الرقم الضريبي (Tax)</label>
+                                                <input className="w-full border p-2 rounded" value={safeSettings.footerBusinessInfo?.taxNumber || ''} onChange={e => updateField('footerBusinessInfo', { ...safeSettings.footerBusinessInfo, taxNumber: e.target.value })} />
+                                                <label className="flex items-center gap-2 text-sm mt-1 text-slate-600 font-medium">
+                                                    <input type="checkbox" checked={safeSettings.footerBusinessInfo?.showTax !== false} onChange={e => updateField('footerBusinessInfo', { ...safeSettings.footerBusinessInfo, showTax: e.target.checked })} />
+                                                    إظهار الرقم الضريبي
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-bold mb-1">صورة السجل/الشعار الإضافي (Image/QR)</label>
+                                            <input className="w-full border p-2 rounded" placeholder="Image URL..." value={safeSettings.footerBusinessInfo?.image || ''} onChange={e => updateField('footerBusinessInfo', { ...safeSettings.footerBusinessInfo, image: e.target.value })} />
+                                            <label className="flex items-center gap-2 text-sm mt-1 text-slate-600 font-medium">
+                                                <input type="checkbox" checked={safeSettings.footerBusinessInfo?.showImage !== false} onChange={e => updateField('footerBusinessInfo', { ...safeSettings.footerBusinessInfo, showImage: e.target.checked })} />
+                                                إظهار الصورة
+                                            </label>
+                                            {safeSettings.footerBusinessInfo?.image && <img src={safeSettings.footerBusinessInfo.image} className="h-16 mt-2 border p-1 bg-white rounded" />}
                                         </div>
                                     </div>
 

@@ -184,6 +184,11 @@
       padding-top: 0 !important;
     }
 
+    #root section.page-section:first-of-type > * {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+
     #root section.page-section:first-of-type.px-4.py-8 {
       padding-top: 0 !important;
       padding-bottom: 0 !important;
@@ -326,32 +331,46 @@
       }
 
       function sanitizeOnce() {
-        var root = document.body;
-
+        if (window.__tivroSanitizing) return;
+        window.__tivroSanitizing = true;
         try {
-          var editable = root.querySelectorAll('[contenteditable]');
-          editable.forEach(function (el) {
-            el.removeAttribute('contenteditable');
-          });
-        } catch (e) {}
+          var root = document.body;
 
-        try {
-          var toolbars = root.querySelectorAll('.toolbar');
-          toolbars.forEach(function (el) {
-            el.remove();
-          });
-        } catch (e) {}
+          try {
+            var editable = root.querySelectorAll('[contenteditable]');
+            editable.forEach(function (el) {
+              try { el.contentEditable = 'false'; } catch (e) {}
+              el.removeAttribute('contenteditable');
+            });
+          } catch (e) {}
 
-        try {
-          var printLike = root.querySelectorAll('[data-print], [data-download], [aria-label*="print" i], [aria-label*="pdf" i], button[title*="print" i], button[title*="pdf" i], a[title*="print" i], a[title*="pdf" i]');
-          printLike.forEach(function (el) {
-            el.remove();
-          });
-        } catch (e) {}
+          try {
+            var inputs = root.querySelectorAll('#root input, #root textarea');
+            inputs.forEach(function (el) {
+              try {
+                el.setAttribute('readonly', '');
+                el.readOnly = true;
+              } catch (e) {}
+            });
 
-        removePrintControls(root);
+            var selects = root.querySelectorAll('#root select');
+            selects.forEach(function (el) {
+              try {
+                el.setAttribute('disabled', '');
+                el.disabled = true;
+              } catch (e) {}
+            });
 
-        removeByText(root, 'تعديل');
+            var formControls = root.querySelectorAll('#root input, #root textarea, #root select');
+            formControls.forEach(function (el) {
+              try {
+                el.setAttribute('data-readonly', '1');
+              } catch (e) {}
+            });
+          } catch (e) {}
+        } finally {
+          window.__tivroSanitizing = false;
+        }
       }
 
       function installReadOnlyGuards() {
@@ -399,19 +418,35 @@
         }
 
         // Allow normal single click handling, but freeze everything else that can mutate content.
-        ['dblclick', 'contextmenu', 'keydown', 'keypress', 'keyup', 'beforeinput', 'input', 'change', 'paste', 'cut', 'dragstart', 'drop'].forEach(function (type) {
+        ['dblclick', 'contextmenu', 'keydown', 'keypress', 'keyup', 'beforeinput', 'input', 'change', 'paste', 'cut', 'dragstart', 'drop', 'compositionstart', 'compositionupdate', 'compositionend'].forEach(function (type) {
           document.addEventListener(type, blockIfInside, true);
         });
       }
 
       function startSanitizeObserver() {
-        var root = document.body;
+        var root = document.getElementById('root');
         if (!root || !window.MutationObserver) return;
 
+        var timeoutId = null;
         var mo = new MutationObserver(function () {
-          sanitizeOnce();
+          if (timeoutId) clearTimeout(timeoutId);
+          timeoutId = setTimeout(function () {
+            sanitizeOnce();
+          }, 150);
         });
-        mo.observe(root, { childList: true, subtree: true, attributes: true });
+        mo.observe(root, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['contenteditable']
+        });
+
+        // Run a few passes to catch late-mounted editable nodes.
+        [0, 250, 750, 1500, 3000].forEach(function (ms) {
+          setTimeout(function () {
+            sanitizeOnce();
+          }, ms);
+        });
       }
 
       function normalizeDigits(value) {

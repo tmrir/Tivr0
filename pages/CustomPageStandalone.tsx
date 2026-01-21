@@ -258,7 +258,7 @@ export const CustomPageStandalone: React.FC<CustomPageStandaloneProps> = ({ slug
           <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
             <iframe
               title={p?.slug ? `page-${p.slug}` : p.id}
-              sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
               referrerPolicy="no-referrer"
               srcDoc={buildSafeSrcDoc(p?.fullHtml || '')}
               style={{ width: '100%', height: 900, border: 0, background: 'white' }}
@@ -353,6 +353,133 @@ export const CustomPageStandalone: React.FC<CustomPageStandaloneProps> = ({ slug
           </div>
         </div>
       </Layout>
+    );
+  }
+
+  // Normalize slug for comparison
+  const normalizedSlug = String(slug || '').trim().toLowerCase();
+
+  // Special handling for profile-readonly to ensure full screen and injected fixes
+  // We check slug prop directly to catch it even if page object properties aren't perfectly synced yet
+  if (normalizedSlug === 'profile-readonly' && page?.fullHtml) {
+    const originalHtml = page.fullHtml;
+
+    // Inject Logo at the top of the body
+    // Using inline styles to ensure it renders correctly regardless of external CSS
+    const logoHtml = `
+    <div id="injected-logo-container" style="text-align: center; padding: 20px 0 10px 0; background: #0F2133; width: 100%; display: flex; justify-content: center; align-items: center;">
+      <img src="/logo.png" style="height: 48px; width: auto; max-width: 200px; object-fit: contain;" alt="Tivro" />
+    </div>`;
+
+    // Comprehensive CSS fixes
+    const styles = `
+      <style>
+        /* Global Reset for Standalone View */
+        html, body { 
+          margin: 0 !important; 
+          padding: 0 !important; 
+          background: #0F2133 !important; 
+          height: 100% !important; 
+          width: 100% !important;
+          overflow-x: hidden !important;
+        }
+
+        /* Hide all Standard App Headers/Footers/Toolbars */
+        header, nav, footer, .toolbar, .no-print, [class*="app-shell"] { 
+          display: none !important; 
+        }
+
+        /* Ensure Root is Full Width/Height */
+        #root { 
+          max-width: 100% !important; 
+          width: 100% !important; 
+          margin: 0 !important; 
+          padding: 0 !important;
+          background: #0F2133 !important; 
+        }
+        
+        /* Fix Social Cards Container */
+        /* Targeting the specific container classes used in profile.html */
+        div[class*="max-w-4xl"], [data-clickable-social] {
+          margin-left: auto !important;
+          margin-right: auto !important;
+          float: none !important;
+          width: 90% !important;
+          max-width: 900px !important;
+          display: block !important;
+        }
+
+        /* Fix Grid Alignment for Social Cards */
+        .grid {
+          display: grid !important;
+          justify-content: center !important;
+          justify-items: center !important; /* Centers items in grid cells */
+          margin: 0 auto !important;
+          gap: 1rem !important;
+        }
+        
+        /* Ensure Cards themselves are full width of their grid cell */
+        .grid > a, .grid > div {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+
+        /* Enforce Read-Only Mode Aggressively */
+        [contenteditable] { 
+          pointer-events: none !important; 
+          user-select: none !important;
+          -webkit-user-modify: read-only !important;
+          contenteditable: false !important;
+        }
+        
+        /* Hide Input Controls Completely */
+        input, textarea, select, button {
+          display: none !important; 
+        }
+
+        /* Allow Link Interaction */
+        a { 
+          pointer-events: auto !important; 
+          cursor: pointer !important; 
+        }
+
+        /* Remove top spacing from page sections */
+        .page-section {
+           padding-top: 0 !important;
+           margin-top: 0 !important;
+           min-height: auto !important;
+        }
+      </style>
+    `;
+
+    // Inject into HTML safely
+    let finalHtml = originalHtml;
+
+    // Inject Logo
+    if (finalHtml.includes('<body')) {
+      finalHtml = finalHtml.replace(/<body[^>]*>/, (match) => `${match}${logoHtml}`);
+    } else {
+      finalHtml = `<body>${logoHtml}${finalHtml}</body>`;
+    }
+
+    // Inject Styles
+    if (finalHtml.includes('</head>')) {
+      finalHtml = finalHtml.replace('</head>', `${styles}</head>`);
+    } else {
+      finalHtml = `<head>${styles}</head>${finalHtml}`;
+    }
+
+    return (
+      <div className="fixed inset-0 w-full h-full z-[9999] bg-[#0F2133] overflow-hidden">
+        <iframe
+          title="profile-readonly"
+          sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+          referrerPolicy="no-referrer"
+          srcDoc={buildSafeSrcDoc(finalHtml)}
+          className="w-full h-full border-0 block"
+          style={{ width: '100vw', height: '100vh', border: 0, background: '#0F2133' }}
+        />
+      </div>
     );
   }
 

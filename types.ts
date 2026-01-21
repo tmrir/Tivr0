@@ -72,57 +72,57 @@ export interface SocialLink {
 }
 
 export interface BannerSettings {
-    enabled: boolean;
-    title: LocalizedString;
-    subtitle?: LocalizedString;
-    link?: string;
-    buttonText?: LocalizedString;
-    bgImage?: string;
+  enabled: boolean;
+  title: LocalizedString;
+  subtitle?: LocalizedString;
+  link?: string;
+  buttonText?: LocalizedString;
+  bgImage?: string;
 }
 
 export interface FontSizeSettings {
-    heroTitle: string;
-    heroSubtitle: string;
-    servicesTitle: string;
-    servicesSubtitle: string;
-    teamTitle: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  servicesTitle: string;
+  servicesSubtitle: string;
+  teamTitle: string;
 }
 
 export interface HeroCtaButtonSettings {
-    label: LocalizedString;
-    href: string;
+  label: LocalizedString;
+  href: string;
 }
 
 export interface HeroStatItemSettings {
-    value: string;
-    label: LocalizedString;
+  value: string;
+  label: LocalizedString;
 }
 
 export interface HeroImageSettings {
-    src: string;
-    mime?: string;
-    alt: LocalizedString;
+  src: string;
+  mime?: string;
+  alt: LocalizedString;
 }
 
 export interface HomeSectionsSettings {
-    heroBadge: LocalizedString;
-    heroTitle: LocalizedString;
-    heroSubtitle: LocalizedString;
-    heroImageUrl?: string;
-    heroImage?: HeroImageSettings;
-    heroImagePosition?: 'left' | 'right' | 'top' | 'bottom' | 'background';
-    heroButtonsEnabled?: boolean;
-    heroStatsEnabled?: boolean;
-    heroPrimaryCta?: HeroCtaButtonSettings;
-    heroSecondaryCta?: HeroCtaButtonSettings;
-    heroStats?: HeroStatItemSettings[];
-    servicesTitle: LocalizedString;
-    servicesSubtitle: LocalizedString;
-    teamTitle: LocalizedString;
-    teamSubtitle: LocalizedString;
-    packagesTitle: LocalizedString;
-    contactTitle: LocalizedString;
-    contactSubtitle: LocalizedString;
+  heroBadge: LocalizedString;
+  heroTitle: LocalizedString;
+  heroSubtitle: LocalizedString;
+  heroImageUrl?: string;
+  heroImage?: HeroImageSettings;
+  heroImagePosition?: 'left' | 'right' | 'top' | 'bottom' | 'background';
+  heroButtonsEnabled?: boolean;
+  heroStatsEnabled?: boolean;
+  heroPrimaryCta?: HeroCtaButtonSettings;
+  heroSecondaryCta?: HeroCtaButtonSettings;
+  heroStats?: HeroStatItemSettings[];
+  servicesTitle: LocalizedString;
+  servicesSubtitle: LocalizedString;
+  teamTitle: LocalizedString;
+  teamSubtitle: LocalizedString;
+  packagesTitle: LocalizedString;
+  contactTitle: LocalizedString;
+  contactSubtitle: LocalizedString;
 }
 
 export interface AdminNavigationItem {
@@ -139,7 +139,7 @@ export interface SiteSettings {
   socialLinks: SocialLink[];
   enableEnglish: boolean;
   tabTitle: LocalizedString;
-  
+
   // CMS - Logos & Branding
   logoUrl: string;
   footerLogoUrl: string;
@@ -157,7 +157,7 @@ export interface SiteSettings {
     privacyLink: LocalizedString;
     termsLink: LocalizedString;
   };
-  
+
   // CMS - Home Page General Content
   homeSections: HomeSectionsSettings;
 
@@ -174,10 +174,19 @@ export interface SiteSettings {
     privacy: LocalizedString;
     terms: LocalizedString;
   };
+  footerImportantLinksTitle?: LocalizedString;
+  footerBusinessInfo?: {
+    crNumber: string;
+    taxNumber: string;
+    image?: string; // URL
+    showCr: boolean;
+    showTax: boolean;
+    showImage: boolean;
+  };
 
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
-  privacyPolicy: LocalizedString; 
-  termsOfService: LocalizedString; 
+  privacyPolicy: LocalizedString;
+  termsOfService: LocalizedString;
 
   customPages?: CustomPage[];
   adminNavigation?: AdminNavigationItem[];
@@ -286,22 +295,22 @@ export interface ComponentLayout {
 }
 
 export interface DesignElement {
-    id: string;
-    type: 'text' | 'image' | 'icon' | 'shape';
-    x: number;
-    y: number;
-    content: string; // Text content or Image URL or Icon Name
-    style: CSSProperties;
-    label?: string; // For UI identification
+  id: string;
+  type: 'text' | 'image' | 'icon' | 'shape';
+  x: number;
+  y: number;
+  content: string; // Text content or Image URL or Icon Name
+  style: CSSProperties;
+  label?: string; // For UI identification
 }
 
 export interface BrandAsset {
-    id: string;
-    name: LocalizedString;
-    type: 'logo' | 'favicon' | 'app_icon' | 'poster' | 'social_ad' | 'profile_pic' | 'stationery';
-    width: number;
-    height: number;
-    elements: DesignElement[];
+  id: string;
+  name: LocalizedString;
+  type: 'logo' | 'favicon' | 'app_icon' | 'poster' | 'social_ad' | 'profile_pic' | 'stationery';
+  width: number;
+  height: number;
+  elements: DesignElement[];
 }
 
 export interface CustomPage {
@@ -311,6 +320,7 @@ export interface CustomPage {
   title: LocalizedString;
   description?: LocalizedString;
   components: PageComponent[];
+  openInStandalone?: boolean;
   renderMode?: 'components' | 'html';
   fullHtml?: string;
   isVisible: boolean;
@@ -333,6 +343,7 @@ export interface CustomPage {
   order?: number;
   visible?: boolean;
   showInNavigation: boolean;
+  showInImportantLinks?: boolean; // New field for footer Important Links visibility
   navigationOrder: number;
   createdAt: string;
   updatedAt: string;

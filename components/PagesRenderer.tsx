@@ -142,8 +142,9 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
     return pages
       .filter((p: any) => {
         const visible = typeof p.visible === 'boolean' ? p.visible : !!p.isVisible;
+        const embedded = p?.openInStandalone === false;
         const pPlacement = (p.placement as PagesPlacement | undefined) || undefined;
-        return visible && pPlacement === placement;
+        return visible && embedded && pPlacement === placement;
       })
       .sort((a: any, b: any) => {
         const ao = typeof a.order === 'number' ? a.order : (typeof a.navigationOrder === 'number' ? a.navigationOrder : 0);
@@ -419,7 +420,7 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
           <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
             <iframe
               title={page?.slug ? `page-${page.slug}` : page.id}
-              sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
               referrerPolicy="no-referrer"
               srcDoc={buildSafeSrcDoc(page?.fullHtml || '')}
               style={{ width: '100%', height: 900, border: 0, background: 'white' }}

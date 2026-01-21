@@ -250,6 +250,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       title: { ar: '', en: '' },
       description: { ar: '', en: '' },
       components: [],
+      openInStandalone: true,
       renderMode: 'components',
       fullHtml: '',
       isVisible: true,
@@ -694,6 +695,24 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
                   className="rounded"
                 />
                 {lang === 'ar' ? 'إظهار في القائمة' : 'Show in Navigation'}
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={editingPage.showInImportantLinks ?? false}
+                  onChange={(e) => setEditingPage({ ...editingPage, showInImportantLinks: e.target.checked })}
+                  className="rounded"
+                />
+                {lang === 'ar' ? 'إظهار في روابط مهمة (الفوتر)' : 'Show in Important Links'}
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={!!editingPage.openInStandalone}
+                  onChange={(e) => setEditingPage({ ...editingPage, openInStandalone: e.target.checked })}
+                  className="rounded"
+                />
+                {lang === 'ar' ? 'عرض كصفحة مستقلة' : 'Open as Standalone Page'}
               </label>
               <label className="flex items-center gap-2">
                 <input

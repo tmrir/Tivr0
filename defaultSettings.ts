@@ -10,7 +10,7 @@ export const defaultSettings: SiteSettings = {
 
   enableEnglish: false,
   tabTitle: { ar: 'وكالة التسويق الرقمي', en: 'Digital Marketing Agency' },
-  
+
   // روابط التواصل الاجتماعي
   socialLinks: [
     { platform: 'Twitter', url: 'https://twitter.com/tivro', iconType: 'fontawesome', iconValue: 'fa-brands fa-x-twitter' },
@@ -18,13 +18,13 @@ export const defaultSettings: SiteSettings = {
     { platform: 'Instagram', url: 'https://instagram.com/tivro', iconType: 'fontawesome', iconValue: 'fa-brands fa-instagram' },
     { platform: 'Facebook', url: 'https://facebook.com/tivro', iconType: 'fontawesome', iconValue: 'fa-brands fa-facebook' }
   ],
-  
+
   // الشعارات والأيقونات
   logoUrl: '/logo.png',
   iconUrl: '/favicon.ico',
   footerLogoUrl: '/footer-logo.png',
   faviconUrl: '/favicon.ico',
-  
+
   // البanners العلوية والسفلية
   topBanner: {
     enabled: false,
@@ -42,7 +42,7 @@ export const defaultSettings: SiteSettings = {
     buttonText: { ar: 'اشترك الآن', en: 'Subscribe Now' },
     bgImage: '/newsletter-bg.jpg'
   },
-  
+
   // نصوص الأقسام
   sectionTexts: {
     workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
@@ -51,15 +51,15 @@ export const defaultSettings: SiteSettings = {
     privacyLink: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
     termsLink: { ar: 'شروط الخدمة', en: 'Terms of Service' }
   },
-  
+
   // CMS - Legal Pages (Legacy fallback, moved to Pages table ideally)
-  privacyPolicy: { 
+  privacyPolicy: {
     ar: 'سياسة الخصوصية...',
-    en: 'Privacy Policy content...' 
-  }, 
-  termsOfService: { 
+    en: 'Privacy Policy content...'
+  },
+  termsOfService: {
     ar: 'شروط الخدمة...',
-    en: 'Terms of Service content...' 
+    en: 'Terms of Service content...'
   },
 
   // CMS - Contact Us Section
@@ -75,25 +75,25 @@ export const defaultSettings: SiteSettings = {
       }
     ],
     socialLinks: [
-      { 
-        name: 'Twitter', 
-        url: 'https://twitter.com/tivro', 
-        iconSVG_or_name: 'Twitter' 
+      {
+        name: 'Twitter',
+        url: 'https://twitter.com/tivro',
+        iconSVG_or_name: 'Twitter'
       },
-      { 
-        name: 'LinkedIn', 
-        url: 'https://linkedin.com/company/tivro', 
-        iconSVG_or_name: 'Linkedin' 
+      {
+        name: 'LinkedIn',
+        url: 'https://linkedin.com/company/tivro',
+        iconSVG_or_name: 'Linkedin'
       },
-      { 
-        name: 'Instagram', 
-        url: 'https://instagram.com/tivro', 
-        iconSVG_or_name: 'Instagram' 
+      {
+        name: 'Instagram',
+        url: 'https://instagram.com/tivro',
+        iconSVG_or_name: 'Instagram'
       },
-      { 
-        name: 'Facebook', 
-        url: 'https://facebook.com/tivro', 
-        iconSVG_or_name: 'Facebook' 
+      {
+        name: 'Facebook',
+        url: 'https://facebook.com/tivro',
+        iconSVG_or_name: 'Facebook'
       }
     ],
     form: {
@@ -118,12 +118,12 @@ export const defaultSettings: SiteSettings = {
     },
     cssClasses: 'container mx-auto px-4 text-center'
   },
-  
+
   // أقسام الصفحة الرئيسية
   homeSections: {
     // Hero Badge/Tag (العنوان العلوي فوق العنوان الرئيسي)
     heroBadge: { ar: '🚀 الوكالة الرقمية الأسرع نمواً', en: '🚀 Fastest Growing Digital Agency' },
-    
+
     // Hero Section
     heroTitle: { ar: 'نحول أفكارك إلى واقع رقمي', en: 'We Turn Your Ideas into Digital Reality' },
     heroSubtitle: { ar: 'وكالة تسويق رقمي متكاملة تقدم حلولاً مبتكرة لنمو عملك', en: 'A full-service digital marketing agency offering innovative solutions for your business growth' },
@@ -145,23 +145,23 @@ export const defaultSettings: SiteSettings = {
       { value: '+50', label: { ar: 'عميل سعيد', en: 'Happy Client' } },
       { value: '24/7', label: { ar: 'دعم فني', en: 'Support' } }
     ],
-    
+
     // Services Section
     servicesTitle: { ar: 'خدماتنا', en: 'Our Services' },
     servicesSubtitle: { ar: 'نقدم حلولاً رقمية متكاملة تنمو مع عملك', en: 'We provide integrated digital solutions that grow with your business' },
-    
+
     // Team Section
     teamTitle: { ar: 'فريقنا', en: 'Our Team' },
     teamSubtitle: { ar: 'نلتقي بفريقنا من الخبراء', en: 'Meet our expert team' },
-    
+
     // Packages Section
     packagesTitle: { ar: 'باقاتنا', en: 'Our Packages' },
-    
+
     // Contact Section
     contactTitle: { ar: 'تواصل معنا', en: 'Contact Us' },
     contactSubtitle: { ar: 'جاهز لنقل مشروعك للمستوى التالي؟', en: 'Ready to take your business to the next level?' }
   },
-  
+
   // أحجام الخطوط
   fontSizes: {
     heroTitle: 'text-4xl',
@@ -178,24 +178,203 @@ export const defaultSettings: SiteSettings = {
     privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
     terms: { ar: 'شروط الخدمة', en: 'Terms of Service' }
   },
+  footerImportantLinksTitle: { ar: 'روابط مهمة', en: 'Important Links' },
+  footerBusinessInfo: {
+    crNumber: '',
+    taxNumber: '',
+    image: '',
+    showCr: true,
+    showTax: true,
+    showImage: true
+  },
 
-  customPages: [],
+  customPages: [
+    {
+      id: 'page-profile-readonly',
+      name: 'Profile (Read Only)',
+      slug: 'profile-readonly',
+      title: { ar: 'الملف التعريفي (عرض فقط)', en: 'Profile (Read-Only)' },
+      description: { ar: 'نسخة عرض فقط بدون إمكانية تعديل.', en: 'Read-only version with editing disabled.' },
+      components: [],
+      renderMode: 'html',
+      fullHtml: `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <base href="https://profile-rho-three.vercel.app/" />
+  <title>الملف التعريفي (عرض فقط)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root { --tivro-navy:#0F2133; }
+    html, body { height: 100%; background: var(--tivro-navy); font-family: 'Cairo', sans-serif; }
+    /* Disable editing & selection affordances without changing layout */
+    [contenteditable], [contenteditable="true"] { -webkit-user-modify: read-only !important; user-modify: read-only !important; }
+    input, textarea, select { caret-color: transparent; }
+    input[type="file"] { pointer-events: none !important; }
+    /* Center the social cards section wrapper (same wrapper used in profile.html) */
+    #root div.space-y-4.max-w-4xl.mx-auto.mb-10.w-full {
+      margin-left: auto !important;
+      margin-right: auto !important;
+      width: 100% !important;
+    }
+    /* Keep links clickable */
+    a[href] { pointer-events: auto; }
+  </style>
+</head>
+<body class="bg-[#0F2133]">
+  <div id="root"></div>
+
+  <!-- Original profile app bundle -->
+  <script type="module" crossorigin src="https://profile-rho-three.vercel.app/assets/index-CIzMSglX.js"></script>
+
+  <!-- Read-only enforcement (no DOM removal) -->
+  <script>
+    (function () {
+      function removeByText(root, text) {
+        try {
+          if (!root || !text) return;
+          var needle = String(text).trim();
+          if (!needle) return;
+          // Only remove explicit small action controls (avoid removing large containers)
+          var all = root.querySelectorAll('button, a, [role="button"]');
+          all.forEach(function (el) {
+            try {
+              if (!el || !el.textContent) return;
+              var t = el.textContent.trim();
+              if (!t) return;
+              // Guardrails: only match exact label, and keep it short
+              if (t.length > 24) return;
+              if (t === needle) {
+                // Don't remove root containers.
+                if (el.id === 'root') return;
+                el.remove();
+              }
+            } catch (e) {}
+          });
+        } catch (e) {}
+      }
+
+      function removePrintControls(root) {
+        if (!root) return;
+        try {
+          var candidates = root.querySelectorAll('button, a, [role="button"], [data-print], [data-download]');
+          candidates.forEach(function (el) {
+            try {
+              if (!el) return;
+              if (el.id === 'root') return;
+              var text = (el.textContent || '').trim();
+              var aria = (el.getAttribute && (el.getAttribute('aria-label') || '')) || '';
+              var title = (el.getAttribute && (el.getAttribute('title') || '')) || '';
+              var hay = (text + ' ' + aria + ' ' + title).toLowerCase();
+              if (!hay) return;
+              var isPrint = hay.indexOf('طباعة') !== -1 || hay.indexOf('pdf') !== -1 || hay.indexOf('print') !== -1;
+              if (!isPrint) return;
+              el.remove();
+            } catch (e) {}
+          });
+        } catch (e) {}
+
+        try {
+          // Known toolbar container
+          var toolbars = root.querySelectorAll('.toolbar');
+          toolbars.forEach(function (el) {
+            try { if (el && el.id !== 'root') el.remove(); } catch (e) {}
+          });
+        } catch (e) {}
+      }
+
+      function lock(root) {
+        if (!root) return;
+        try {
+          root.querySelectorAll('[contenteditable]').forEach(function (el) {
+            try { el.contentEditable = 'false'; } catch (e) {}
+            el.removeAttribute('contenteditable');
+          });
+        } catch (e) {}
+        try {
+          root.querySelectorAll('input, textarea').forEach(function (el) {
+            try { el.setAttribute('readonly', ''); el.readOnly = true; } catch (e) {}
+          });
+        } catch (e) {}
+        try {
+          root.querySelectorAll('select, input[type="file"], button').forEach(function (el) {
+            try { el.setAttribute('disabled', ''); el.disabled = true; } catch (e) {}
+          });
+        } catch (e) {}
+
+        // Remove any print/edit UI controls from DOM (not just hiding)
+        removePrintControls(root);
+        removeByText(root, 'تعديل');
+      }
+
+      function guardEvents() {
+        var root = document.getElementById('root');
+        if (!root) return;
+        function inside(t) { return !!(t && root.contains(t)); }
+        function allowClick(t) {
+          try { return !!(t && t.closest && t.closest('a[href]')); } catch { return false; }
+        }
+        function block(e) {
+          if (!inside(e.target)) return;
+          if (e.type === 'click' && allowClick(e.target)) return;
+          try { e.preventDefault(); } catch (err) {}
+          try { e.stopPropagation(); } catch (err) {}
+          try { if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } catch (err) {}
+        }
+        ['beforeinput','input','keydown','keypress','keyup','paste','cut','drop','dragstart','dblclick','contextmenu','change'].forEach(function (t) {
+          document.addEventListener(t, block, true);
+        });
+      }
+
+      function boot() {
+        var root = document.getElementById('root');
+        lock(document);
+        guardEvents();
+        if (!root || !window.MutationObserver) return;
+        var mo = new MutationObserver(function () {
+          lock(document);
+        });
+        mo.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['contenteditable', 'class', 'style'] });
+        [0, 250, 750, 1500, 3000].forEach(function (ms) { setTimeout(function () { lock(document); }, ms); });
+      }
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+      else boot();
+    })();
+  </script>
+</body>
+</html>`,
+      isVisible: true,
+      placement: undefined,
+      sectionVariant: undefined,
+      underConstruction: false,
+      underConstructionButton: { label: { ar: '', en: '' }, href: '' },
+      order: undefined,
+      showInNavigation: false,
+      showInImportantLinks: false,
+      navigationOrder: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ],
   adminNavigation: []
 };
 
 // دالة لدمج الإعدادات مع الإعدادات الافتراضية
 export function mergeWithDefaults(userSettings: Partial<SiteSettings>): SiteSettings {
   const merged = { ...defaultSettings };
-  
+
   // دمج recursively مع التأكد من وجود Arrays دائماً
   function mergeDeep(target: any, source: any): any {
     const result = { ...target };
-    
+
     for (const key in source) {
       if (source[key] === undefined || source[key] === null) {
         continue;
       }
-      
+
       if (Array.isArray(source[key])) {
         result[key] = Array.isArray(source[key]) ? source[key] : [];
       } else if (typeof source[key] === 'object' && !Array.isArray(source[key])) {
@@ -204,21 +383,40 @@ export function mergeWithDefaults(userSettings: Partial<SiteSettings>): SiteSett
         result[key] = source[key];
       }
     }
-    
+
     return result;
   }
-  
+
   return mergeDeep(merged, userSettings);
 }
 
 // دالة للتحقق من صحة الإعدادات وضمان وجود Arrays
 export function validateSettings(settings: any): SiteSettings {
   const validated = mergeWithDefaults(settings);
-  
+
   // التأكد من أن جميع Arrays موجودة
   validated.socialLinks = Array.isArray(validated.socialLinks) ? validated.socialLinks : [];
   (validated as any).customPages = Array.isArray((validated as any).customPages) ? (validated as any).customPages : [];
   (validated as any).adminNavigation = Array.isArray((validated as any).adminNavigation) ? (validated as any).adminNavigation : [];
-  
+
+  try {
+    const required = (defaultSettings as any).customPages;
+    const requiredPage = Array.isArray(required) ? required.find((p: any) => p && p.id === 'page-profile-readonly') : null;
+    if (requiredPage) {
+      const list = (validated as any).customPages as any[];
+      const exists = Array.isArray(list) && list.some((p: any) => p && (p.id === requiredPage.id || p.slug === requiredPage.slug));
+      if (!exists) {
+        const clone = JSON.parse(JSON.stringify(requiredPage));
+        try {
+          clone.createdAt = new Date().toISOString();
+          clone.updatedAt = new Date().toISOString();
+        } catch { }
+        (validated as any).customPages = Array.isArray(list) ? [...list, clone] : [clone];
+      }
+    }
+  } catch {
+    // ignore
+  }
+
   return validated;
 }

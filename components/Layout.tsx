@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter, Facebook } from 'lucide-react';
+import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter, Facebook, FileText } from 'lucide-react';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { SiteSettings, Service, Package } from '../types';
@@ -114,11 +114,33 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
   const hasArabicChars = (value: string) => /[\u0600-\u06FF]/.test(value);
   const resolveNavLabel = (label: any, fallback: string) => {
     if (!label) return fallback;
-    if (typeof label === 'object' && (label.ar || label.en)) {
-      return (label?.[lang] || label.ar || label.en || fallback) as string;
+
+    // Explicit object handling
+    if (typeof label === 'object') {
+      // 1. Try exact match for current language
+      const currentLangVal = label[lang];
+      if (currentLangVal && typeof currentLangVal === 'string' && currentLangVal.trim().length > 0) {
+        return currentLangVal;
+      }
+
+      // 2. If 'ar' is requested but missing, DO NOT fall back to English in Arabic UI
+      if (lang === 'ar') {
+        return fallback;
+      }
+
+      // 3. If 'en' is requested but missing, try 'ar'
+      if (lang === 'en') {
+        if (label.en && label.en.trim().length > 0) return label.en;
+        if (label.ar && label.ar.trim().length > 0) return label.ar;
+      }
+
+      return fallback;
     }
+
+    // String handling
     if (typeof label === 'string') {
       if (lang === 'en' && hasArabicChars(label)) return fallback;
+      if (lang === 'ar' && !hasArabicChars(label)) return fallback;
       return label;
     }
     return fallback;
@@ -487,7 +509,31 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       return ao - bo;
     })
     .map((p: any) => ({
-      href: `#page/${p.slug}`,
+      href: (p?.openInStandalone === false) ? `#page-${p.slug}` : `#page/${p.slug}`,
+      label: resolveNavLabel(p.title, p.name || p.slug)
+    }));
+
+  // Separate list for Footer Links (Important Links)
+  // We use settings?.customPages directly so we don't depend on "showInNavigation" filter (which navigationPages has)
+  const footerCustomLinks = (settings?.customPages || [])
+    .filter((p: any) => {
+      // 1. Must be visible generally
+      const visible = typeof p.visible === 'boolean' ? p.visible : (p.isVisible !== false);
+      // 2. Must have showInImportantLinks = true
+      const showInFooter = typeof p.showInImportantLinks === 'boolean' ? p.showInImportantLinks : false;
+
+      return visible && showInFooter && !!p.slug;
+    })
+    .slice()
+    .sort((a: any, b: any) => {
+      // Reuse navigationOrder or default to 0
+      const ao = typeof a.navigationOrder === 'number' ? a.navigationOrder : 0;
+      const bo = typeof b.navigationOrder === 'number' ? b.navigationOrder : 0;
+      return ao - bo;
+    })
+    .map((p: any) => ({
+      href: (p?.openInStandalone === false) ? `#page-${p.slug}` : `#page/${p.slug}`,
+      // Use p.title (Localized) first. Fallback to p.name (Page Name string) if title is missing.
       label: resolveNavLabel(p.title, p.name || p.slug)
     }));
 
@@ -741,19 +787,73 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
               </div>
 
               <div>
-                <h4 className="font-bold text-lg mb-6 text-tivro-primary">{t('nav.services')}</h4>
+                <h4 className="font-bold text-lg mb-6 text-tivro-primary">{settings?.footerImportantLinksTitle?.[lang] || (lang === 'ar' ? 'روابط مهمة' : 'Important Links')}</h4>
                 <ul className="space-y-3 text-slate-400">
-                  {footerServices.map(s => <li key={s.id}><a href="#services" className="hover:text-white transition">{s.title?.[lang]}</a></li>)}
+                  {/* Home link removed as requested */}
+
+                  {navigationState.find(item => item.key === 'services')?.visible && (
+                    <li><a href="#services" className="hover:text-white transition">{resolveNavLabel(navigationLabels.services, t('nav.services'))}</a></li>
+                  )}
+
+                  {packages.length > 0 && navigationState.find(item => item.key === 'packages')?.visible && (
+                    <li><a href="#packages" className="hover:text-white transition">{resolveNavLabel(navigationLabels.packages, t('admin.tab.packages'))}</a></li>
+                  )}
+
+                  {navigationState.find(item => item.key === 'work')?.visible && (
+                    <li><a href="#work" className="hover:text-white transition">{resolveNavLabel(navigationLabels.work, t('nav.work'))}</a></li>
+                  )}
+
+                  {navigationState.find(item => item.key === 'team')?.visible && (
+                    <li><a href="#team" className="hover:text-white transition">{resolveNavLabel(navigationLabels.team, t('nav.team'))}</a></li>
+                  )}
+
+                  {navigationState.find(item => item.key === 'blog')?.visible && (
+                    <li><a href="#blog" className="hover:text-white transition">{resolveNavLabel(navigationLabels.blog, t('nav.blog'))}</a></li>
+                  )}
+
+                  {footerCustomLinks.map((item) => (
+                    <li key={item.href}><a href={item.href} className="hover:text-white transition">{item.label}</a></li>
+                  ))}
                 </ul>
               </div>
 
               <div>
                 <h4 className="font-bold text-lg mb-6 text-tivro-primary">{t('nav.contact')}</h4>
-                <ul className="space-y-3 text-slate-400">
+                <ul className="space-y-3 text-slate-400 mb-6">
                   <li>{settings?.contactPhone}</li>
                   <li>{settings?.contactEmail}</li>
                   <li>{settings?.address?.[lang]}</li>
                 </ul>
+
+                {/* Business Info Component */}
+                {(settings?.footerBusinessInfo?.showCr !== false || settings?.footerBusinessInfo?.showTax !== false || settings?.footerBusinessInfo?.showImage !== false) && (
+                  <div className="flex flex-col gap-3 pt-6 border-t border-slate-800">
+                    {settings?.footerBusinessInfo?.showImage !== false && settings?.footerBusinessInfo?.image && (
+                      <img
+                        src={settings.footerBusinessInfo.image}
+                        alt="Business Info"
+                        className="h-auto w-24 object-contain opacity-90 hover:opacity-100 transition"
+                      />
+                    )}
+
+                    <div className="space-y-2">
+                      {settings?.footerBusinessInfo?.showCr !== false && settings?.footerBusinessInfo?.crNumber && (
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                          <span className="w-4 h-4 flex items-center justify-center opacity-70"><LayoutDashboard size={14} /></span>
+                          <span className="opacity-70 text-xs">{lang === 'ar' ? 'س.ت:' : 'CR:'}</span>
+                          <span className="font-mono text-slate-400">{settings.footerBusinessInfo.crNumber}</span>
+                        </div>
+                      )}
+                      {settings?.footerBusinessInfo?.showTax !== false && settings?.footerBusinessInfo?.taxNumber && (
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                          <span className="w-4 h-4 flex items-center justify-center opacity-70"><FileText size={14} /></span>
+                          <span className="opacity-70 text-xs">{lang === 'ar' ? 'ضريبي:' : 'VAT:'}</span>
+                          <span className="font-mono text-slate-400">{settings.footerBusinessInfo.taxNumber}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
