@@ -107,8 +107,66 @@ export const SettingsNewPage: React.FC = () => {
     const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [hasLoaded, setHasLoaded] = useState(false);
     const [testingDb, setTestingDb] = useState(false);
-    const [heroImageUploading, setHeroImageUploading] = useState(false);
-    const [heroImageUploadError, setHeroImageUploadError] = useState<string | null>(null);
+
+    const formatUrlForDisplay = (raw: string, maxLen = 28) => {
+        const v = String(raw || '').trim();
+        if (!v) return v;
+        if (v.length <= maxLen) return v;
+
+        try {
+            const hasScheme = /^https?:\/\//i.test(v);
+            const u = new URL(hasScheme ? v : `https://${v}`);
+            const host = u.hostname.replace(/^www\./i, '');
+            const path = (u.pathname || '').replace(/\/$/, '');
+
+            if (host === 'drive.google.com') {
+                return 'tivro.sa/profile';
+            }
+
+            const short = `${host}${path}`;
+            if (short.length <= maxLen) return short;
+            return `${short.slice(0, Math.max(0, maxLen - 1))}…`;
+        } catch {
+            return `${v.slice(0, Math.max(0, maxLen - 1))}…`;
+        }
+    };
+
+    const looksLikeUrl = (v: string) => {
+        const s = String(v || '').trim();
+        if (!s) return false;
+        if (/^https?:\/\//i.test(s)) return true;
+        if (/^[a-z0-9-]+(\.[a-z0-9-]+)+\//i.test(s)) return true;
+        return false;
+    };
+
+    const SmartUrlInput = ({
+        value,
+        onChange
+    }: {
+        value: string;
+        onChange: (v: string) => void;
+    }) => {
+        const [focused, setFocused] = React.useState(false);
+        const raw = String(value || '');
+        const display = (!focused && looksLikeUrl(raw)) ? formatUrlForDisplay(raw) : raw;
+        return (
+            <input
+                className="w-full border p-2 rounded"
+                value={display}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                onChange={(e) => {
+                    const next = e.target.value;
+                    if (!focused) {
+                        setFocused(true);
+                        onChange(raw);
+                        return;
+                    }
+                    onChange(next);
+                }}
+            />
+        );
+    };
 
     // إبقاء this component aware of first mount فقط لأغراض لوجية/عرضية
     useEffect(() => {
@@ -194,70 +252,6 @@ export const SettingsNewPage: React.FC = () => {
             setMsg({ type: 'error', text: 'Error saving settings' });
         } finally {
             setTimeout(() => setMsg(null), 3000);
-        }
-    };
-
-    const uploadHeroMediaFile = async (file: File): Promise<{ url: string; mime: string } | null> => {
-        setHeroImageUploadError(null);
-
-        const maxBytes = 4 * 1024 * 1024;
-        if (file.size <= 0 || file.size > maxBytes) {
-            setHeroImageUploadError(lang === 'ar' ? 'حجم الملف غير مسموح' : 'File size not allowed');
-            return null;
-        }
-
-        const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']);
-        const mime = (file.type || '').toLowerCase();
-        if (!allowed.has(mime)) {
-            setHeroImageUploadError(lang === 'ar' ? 'نوع الملف غير مسموح' : 'File type not allowed');
-            return null;
-        }
-
-        setHeroImageUploading(true);
-        try {
-            const currentSrc = (safeSettings as any)?.homeSections?.heroImage?.src as string | undefined;
-            const extractOldPath = (url?: string): string | null => {
-                if (!url) return null;
-                try {
-                    const marker = '/storage/v1/object/public/';
-                    const idx = url.indexOf(marker);
-                    if (idx === -1) return null;
-                    const rest = url.slice(idx + marker.length);
-                    const parts = rest.split('/');
-                    if (parts.length < 2) return null;
-                    parts.shift();
-                    const path = parts.join('/');
-                    return path || null;
-                } catch {
-                    return null;
-                }
-            };
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const oldPath = extractOldPath(currentSrc);
-            if (oldPath) {
-                formData.append('oldPath', oldPath);
-            }
-
-            const res = await fetch('/api/uploads/create', {
-                method: 'POST',
-                body: formData
-            });
-
-            const json = await res.json().catch(() => null);
-            if (!res.ok || !json?.ok || !json?.data?.url) {
-                setHeroImageUploadError((json?.error as string) || (lang === 'ar' ? 'فشل رفع الملف' : 'Upload failed'));
-                return null;
-            }
-
-            return { url: json.data.url as string, mime: (json.data.mime as string) || mime };
-        } catch (e: any) {
-            setHeroImageUploadError(e?.message || (lang === 'ar' ? 'فشل رفع الملف' : 'Upload failed'));
-            return null;
-        } finally {
-            setHeroImageUploading(false);
         }
     };
 
@@ -504,40 +498,6 @@ export const SettingsNewPage: React.FC = () => {
                                             )}
                                         </div>
 
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">رفع ملف (صور/PDF)</label>
-                                            <input
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
-                                                disabled={heroImageUploading}
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    e.target.value = '';
-                                                    if (!file) return;
-
-                                                    const uploaded = await uploadHeroMediaFile(file);
-                                                    if (!uploaded) return;
-
-                                                    updateNestedField('homeSections', 'heroImage', {
-                                                        ...(safeSettings.homeSections.heroImage || { src: '', alt: { ar: 'صورة', en: 'Image' } }),
-                                                        src: uploaded.url,
-                                                        mime: uploaded.mime
-                                                    });
-                                                    updateNestedField('homeSections', 'heroImageUrl', uploaded.url);
-                                                }}
-                                                className="w-full border p-2 rounded bg-white"
-                                            />
-
-                                            {heroImageUploading && (
-                                                <div className="text-sm text-slate-600">
-                                                    {lang === 'ar' ? 'جاري الرفع...' : 'Uploading...'}
-                                                </div>
-                                            )}
-                                            {heroImageUploadError && (
-                                                <div className="text-sm text-red-600">{heroImageUploadError}</div>
-                                            )}
-                                        </div>
-
                                         <LocalizedInput
                                             label={lang === 'ar' ? 'النص البديل (Alt) للصورة' : 'Image Alt Text'}
                                             value={safeSettings.homeSections.heroImage?.alt || { ar: 'صورة', en: 'Image' }}
@@ -591,23 +551,21 @@ export const SettingsNewPage: React.FC = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="block text-sm font-bold text-slate-700 mb-2">رابط الزر الأساسي</label>
-                                                    <input
-                                                        className="w-full border p-2 rounded"
+                                                    <SmartUrlInput
                                                         value={safeSettings.homeSections.heroPrimaryCta?.href || ''}
-                                                        onChange={(e) => updateNestedField('homeSections', 'heroPrimaryCta', {
+                                                        onChange={(v) => updateNestedField('homeSections', 'heroPrimaryCta', {
                                                             ...(safeSettings.homeSections.heroPrimaryCta || { label: { ar: '', en: '' }, href: '' }),
-                                                            href: e.target.value
+                                                            href: v
                                                         })}
                                                     />
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-bold text-slate-700 mb-2">رابط الزر الثانوي</label>
-                                                    <input
-                                                        className="w-full border p-2 rounded"
+                                                    <SmartUrlInput
                                                         value={safeSettings.homeSections.heroSecondaryCta?.href || ''}
-                                                        onChange={(e) => updateNestedField('homeSections', 'heroSecondaryCta', {
+                                                        onChange={(v) => updateNestedField('homeSections', 'heroSecondaryCta', {
                                                             ...(safeSettings.homeSections.heroSecondaryCta || { label: { ar: '', en: '' }, href: '' }),
-                                                            href: e.target.value
+                                                            href: v
                                                         })}
                                                     />
                                                 </div>

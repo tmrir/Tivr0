@@ -1,6 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/profile",
+      "destination": "https://drive.google.com/file/d/168opQsS0TxVIkHaKl21_l8qxBRG2Bpux/view?usp=drivesdk",
+      "permanent": false
+    }
+  ],
   "rewrites": [
-    { "source": "/profile", "destination": "/profile.html" },
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }

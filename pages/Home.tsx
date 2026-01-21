@@ -190,6 +190,74 @@ export const Home = () => {
     return <Icon className={className} />;
   };
 
+  const formatUrlForDisplay = (raw: string, maxLen = 28) => {
+    const v = String(raw || '').trim();
+    if (!v) return v;
+    if (v.length <= maxLen) return v;
+
+    try {
+      const hasScheme = /^https?:\/\//i.test(v);
+      const u = new URL(hasScheme ? v : `https://${v}`);
+      const host = u.hostname.replace(/^www\./i, '');
+      const path = (u.pathname || '').replace(/\/$/, '');
+
+      if (host === 'drive.google.com') {
+        return 'tivro.sa/profile';
+      }
+
+      const short = `${host}${path}`;
+      if (short.length <= maxLen) return short;
+      return `${short.slice(0, Math.max(0, maxLen - 1))}…`;
+    } catch {
+      return `${v.slice(0, Math.max(0, maxLen - 1))}…`;
+    }
+  };
+
+  const looksLikeUrl = (v: string) => {
+    const s = String(v || '').trim();
+    if (!s) return false;
+    if (/^https?:\/\//i.test(s)) return true;
+    if (/^[a-z0-9-]+(\.[a-z0-9-]+)+\//i.test(s)) return true;
+    return false;
+  };
+
+  const resolveHeroCtaLabel = (label: any, href: any, fallback: string) => {
+    const fromLabel = (label?.[lang] || label?.ar || label?.en || '') as string;
+    const rawLabel = String(fromLabel || '').trim();
+    const rawHref = typeof href === 'string' ? href.trim() : '';
+    const effective = rawLabel || fallback;
+    if (!effective) return effective;
+    if (looksLikeUrl(effective) || (!!rawHref && effective === rawHref)) {
+      return formatUrlForDisplay(effective);
+    }
+    return effective;
+  };
+
+  const resolveHeroCtaHref = (label: any, href: any, fallback: string) => {
+    const rawHref = typeof href === 'string' ? href.trim() : '';
+    const effectiveHref = rawHref || fallback;
+    if (!effectiveHref) return effectiveHref;
+
+    const fromLabel = (label?.[lang] || label?.ar || label?.en || '') as string;
+    const rawLabel = String(fromLabel || '').trim().toLowerCase();
+
+    try {
+      const hasScheme = /^https?:\/\//i.test(effectiveHref);
+      const u = new URL(hasScheme ? effectiveHref : `https://${effectiveHref}`);
+      const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+
+      const looksLikeProfile = rawLabel.includes('profile') || rawLabel.includes('بروفايل') || rawLabel.includes('الملف') || rawLabel.includes('تعريفي');
+
+      if (looksLikeProfile && host === 'drive.google.com') {
+        return 'https://tivro.sa/profile';
+      }
+    } catch {
+      // ignore
+    }
+
+    return effectiveHref;
+  };
+
   if (loading) {
       return (
           <Layout>
@@ -261,11 +329,11 @@ export const Home = () => {
               {heroButtonsEnabled && (
                 <div className="flex flex-col sm:flex-row gap-4">
                   <a href={heroPrimaryCta?.href || '#contact'} className="bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2">
-                    {heroPrimaryCta?.label?.[lang] || t('cta.start')}
+                    {resolveHeroCtaLabel(heroPrimaryCta?.label, heroPrimaryCta?.href, t('cta.start'))}
                     {dir === 'rtl' ? <ArrowLeft /> : <ArrowRight />}
                   </a>
-                  <a href={heroSecondaryCta?.href || '#work'} className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold text-lg transition flex items-center justify-center">
-                    {heroSecondaryCta?.label?.[lang] || t('nav.work')}
+                  <a href={resolveHeroCtaHref(heroSecondaryCta?.label, heroSecondaryCta?.href, '#work')} className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold text-lg transition flex items-center justify-center">
+                    {resolveHeroCtaLabel(heroSecondaryCta?.label, heroSecondaryCta?.href, t('nav.work'))}
                   </a>
                 </div>
               )}
