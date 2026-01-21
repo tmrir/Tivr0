@@ -201,6 +201,37 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const formatUrlForDisplay = (raw: string, maxLen = 28) => {
+    const v = String(raw || '').trim();
+    if (!v) return v;
+    if (v.length <= maxLen) return v;
+
+    try {
+      const hasScheme = /^https?:\/\//i.test(v);
+      const u = new URL(hasScheme ? v : `https://${v}`);
+      const host = u.hostname.replace(/^www\./i, '');
+      const path = (u.pathname || '').replace(/\/$/, '');
+
+      if (host === 'drive.google.com') {
+        return 'tivro.sa/profile';
+      }
+
+      const short = `${host}${path}`;
+      if (short.length <= maxLen) return short;
+      return `${short.slice(0, Math.max(0, maxLen - 1))}…`;
+    } catch {
+      return `${v.slice(0, Math.max(0, maxLen - 1))}…`;
+    }
+  };
+
+  const looksLikeUrl = (v: string) => {
+    const s = String(v || '').trim();
+    if (!s) return false;
+    if (/^https?:\/\//i.test(s)) return true;
+    if (/^[a-z0-9-]+(\.[a-z0-9-]+)+\//i.test(s)) return true;
+    return false;
+  };
+
   const renderUnderConstruction = (page: any) => {
     const label = (page?.underConstructionButton?.label?.[lang] || page?.underConstructionButton?.label?.ar || page?.underConstructionButton?.label?.en) as string | undefined;
     const href = page?.underConstructionButton?.href as string | undefined;
@@ -350,6 +381,12 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
         const borderColor = (component as any).content?.borderColor as string | undefined;
         if (!text) return null;
 
+        const rawText = String(text || '').trim();
+        const rawHref = typeof href === 'string' ? href.trim() : '';
+        const displayText = (looksLikeUrl(rawText) || (!!rawHref && rawText === rawHref))
+          ? formatUrlForDisplay(rawText)
+          : rawText;
+
         const className =
           style === 'secondary'
             ? 'bg-white/10 hover:bg-white/20 backdrop-blur text-white'
@@ -375,7 +412,7 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
               }}
               className={`px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg flex items-center justify-center gap-2 ${className} ${borderColor ? 'border' : ''}`}
             >
-              {text}
+              {displayText}
             </button>
           </div>
         );
