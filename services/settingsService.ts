@@ -151,6 +151,9 @@ export class SettingsService {
 
       // Ensure subsequent getSettings() calls will serve this latest value immediately
       this.inFlightGet = null;
+      
+      // Clear localStorage cache timestamp to force fresh fetch on next read
+      localStorage.removeItem(SettingsService.SETTINGS_CACHE_TS_KEY);
 
       // ثانياً، حاول الحفظ في Supabase
       const payload = this.mapToDB(validated);
@@ -185,10 +188,16 @@ export class SettingsService {
 
       if (error) {
         console.error('❌ [SettingsService] Supabase save error:', error);
+        // Restore cache timestamp since save failed
+        localStorage.setItem(SettingsService.SETTINGS_CACHE_TS_KEY, Date.now().toString());
         // console.log('⚠️ [SettingsService] Data saved to localStorage only (Supabase failed)');
         // نُرجع فشل لأن البيانات لم تُحفظ بشكل عام (DB)
         return false;
       }
+
+      // Save successful - ensure cache stays cleared for fresh reads
+      localStorage.removeItem(SettingsService.SETTINGS_CACHE_TS_KEY);
+      this.inFlightGet = null;
 
       // console.log('✅ [SettingsService] Settings saved to Supabase successfully:', data);
 

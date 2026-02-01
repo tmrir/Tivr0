@@ -93,15 +93,17 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       const currentOpenInStandalone = anyP?.openInStandalone;
       const embedded = currentOpenInStandalone === false || (!hasOpenInStandalone && currentOpenInStandalone === undefined);
       
-      if (embedded && !derivedPlacement && !currentPlacement) {
+      // Only migrate pages that truly need it - check if hasOpenInStandalone is false
+      // meaning the field doesn't exist at all (not even as undefined)
+      if (!hasOpenInStandalone && !currentPlacement) {
         didMigrate = true;
         return { ...anyP, openInStandalone: false, placement: 'after_header' };
       }
       
-      // Also set openInStandalone: false for legacy pages that don't have the field at all
-      if (!hasOpenInStandalone) {
+      // Only set openInStandalone if field doesn't exist AND no placement
+      if (!hasOpenInStandalone && !derivedPlacement && !currentPlacement) {
         didMigrate = true;
-        return { ...anyP, openInStandalone: false, placement: currentPlacement || 'after_header' };
+        return { ...anyP, openInStandalone: false, placement: 'after_header' };
       }
 
       return anyP;

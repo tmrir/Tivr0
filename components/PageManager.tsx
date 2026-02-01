@@ -137,11 +137,14 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
     localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
 
     try {
+      console.log('[PageManager] Saving pages:', updatedPages.length, 'pages');
       const settings = await db.settings.get();
+      console.log('[PageManager] Got settings, customPages count:', (settings as any)?.customPages?.length);
       const merged = { ...(settings as any), customPages: updatedPages };
-      await db.settings.save(merged as any);
+      const result = await db.settings.save(merged as any);
+      console.log('[PageManager] Save result:', result);
     } catch (error) {
-      console.error('Error saving pages to settings:', error);
+      console.error('[PageManager] Error saving pages to settings:', error);
     }
   };
 
