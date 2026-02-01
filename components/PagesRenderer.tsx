@@ -233,7 +233,7 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       const path = (u.pathname || '').replace(/\/$/, '');
 
       if (host === 'drive.google.com') {
-        return 'tivro.sa/profile';
+        return 'بروفايل تيفرو';
       }
 
       const short = `${host}${path}`;
