@@ -400,24 +400,10 @@ export function validateSettings(settings: any): SiteSettings {
   (validated as any).customPages = Array.isArray((validated as any).customPages) ? (validated as any).customPages : [];
   (validated as any).adminNavigation = Array.isArray((validated as any).adminNavigation) ? (validated as any).adminNavigation : [];
 
-  try {
-    const required = (defaultSettings as any).customPages;
-    const requiredPage = Array.isArray(required) ? required.find((p: any) => p && p.id === 'page-profile-readonly') : null;
-    if (requiredPage) {
-      const list = (validated as any).customPages as any[];
-      const exists = Array.isArray(list) && list.some((p: any) => p && (p.id === requiredPage.id || p.slug === requiredPage.slug));
-      if (!exists) {
-        const clone = JSON.parse(JSON.stringify(requiredPage));
-        try {
-          clone.createdAt = new Date().toISOString();
-          clone.updatedAt = new Date().toISOString();
-        } catch { }
-        (validated as any).customPages = Array.isArray(list) ? [...list, clone] : [clone];
-      }
-    }
-  } catch {
-    // ignore
-  }
+  // Note: We no longer forcibly add required pages here.
+  // validateSettings is called on every save, and adding required pages here
+  // would re-add deleted pages. Required pages should only be added during
+  // initial app setup, not during validation.
 
   return validated;
 }
