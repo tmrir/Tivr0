@@ -86,6 +86,14 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
         return { ...anyP, placement: derivedPlacement };
       }
 
+      // If this page is meant to be embedded (rendered by PagesRenderer) but has no placement,
+      // default it so it becomes visible on the frontend.
+      const embedded = anyP?.openInStandalone === false;
+      if (embedded && !derivedPlacement && !currentPlacement) {
+        didMigrate = true;
+        return { ...anyP, placement: 'after_header' };
+      }
+
       return anyP;
     });
 

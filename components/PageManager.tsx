@@ -254,7 +254,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       renderMode: 'components',
       fullHtml: '',
       isVisible: true,
-      placement: undefined,
+      placement: 'after_header',
       sectionVariant: undefined,
       underConstruction: false,
       underConstructionButton: { label: { ar: '', en: '' }, href: '' },
