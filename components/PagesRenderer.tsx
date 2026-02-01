@@ -115,14 +115,13 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       const settings = await db.settings.get();
       const fromSettings = (settings as any)?.customPages;
       if (Array.isArray(fromSettings)) {
-        const { pages: normalized, didMigrate } = normalizePages(fromSettings as any[]);
+        const { pages: normalized } = normalizePages(fromSettings as any[]);
         setPages(normalized);
         try {
           localStorage.setItem('customPages', JSON.stringify(normalized));
-          if (didMigrate) {
-            const merged = { ...(settings as any), customPages: normalized };
-            await db.settings.save(merged as any);
-          }
+          // Note: We don't save migrated pages back to db here to avoid
+          // overwriting changes made by PageManager. PageManager is the
+          // source of truth for modifications.
         } catch {
           // ignore persistence failures
         }
