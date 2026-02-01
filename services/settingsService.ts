@@ -115,7 +115,9 @@ export class SettingsService {
 
         // تحويل بيانات Supabase (snake_case) إلى SiteSettings (camelCase) ثم دمجها مع الافتراضيات والتحقق منها
         const mappedFromDB = this.mapFromDB(data);
+        console.log('[SettingsService] mappedFromDB customPages count:', (mappedFromDB as any)?.customPages?.length);
         const validated = validateSettings(mappedFromDB);
+        console.log('[SettingsService] validated customPages count:', (validated as any)?.customPages?.length);
 
         // حفظ البيانات المدمجة في localStorage (cache only)
         localStorage.setItem(SettingsService.SETTINGS_CACHE_KEY, JSON.stringify(validated));

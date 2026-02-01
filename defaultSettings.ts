@@ -365,6 +365,9 @@ export const defaultSettings: SiteSettings = {
 
 // دالة لدمج الإعدادات مع الإعدادات الافتراضية
 export function mergeWithDefaults(userSettings: Partial<SiteSettings>): SiteSettings {
+  console.log('[mergeWithDefaults] Input customPages count:', (userSettings as any)?.customPages?.length);
+  console.log('[mergeWithDefaults] Default customPages count:', (defaultSettings as any)?.customPages?.length);
+  
   const merged = { ...defaultSettings };
 
   // دمج recursively مع التأكد من وجود Arrays دائماً
@@ -388,7 +391,9 @@ export function mergeWithDefaults(userSettings: Partial<SiteSettings>): SiteSett
     return result;
   }
 
-  return mergeDeep(merged, userSettings);
+  const finalResult = mergeDeep(merged, userSettings);
+  console.log('[mergeWithDefaults] Output customPages count:', (finalResult as any)?.customPages?.length);
+  return finalResult;
 }
 
 // دالة للتحقق من صحة الإعدادات وضمان وجود Arrays
