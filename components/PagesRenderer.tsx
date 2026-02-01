@@ -86,12 +86,22 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
         return { ...anyP, placement: derivedPlacement };
       }
 
-      // If this page is meant to be embedded (rendered by PagesRenderer) but has no placement,
-      // default it so it becomes visible on the frontend.
-      const embedded = anyP?.openInStandalone === false;
+      // If this page doesn't have openInStandalone defined (legacy page), 
+      // or is meant to be embedded but has no placement, default both values
+      // so it becomes visible on the frontend.
+      const hasOpenInStandalone = 'openInStandalone' in anyP;
+      const currentOpenInStandalone = anyP?.openInStandalone;
+      const embedded = currentOpenInStandalone === false || (!hasOpenInStandalone && currentOpenInStandalone === undefined);
+      
       if (embedded && !derivedPlacement && !currentPlacement) {
         didMigrate = true;
-        return { ...anyP, placement: 'after_header' };
+        return { ...anyP, openInStandalone: false, placement: 'after_header' };
+      }
+      
+      // Also set openInStandalone: false for legacy pages that don't have the field at all
+      if (!hasOpenInStandalone) {
+        didMigrate = true;
+        return { ...anyP, openInStandalone: false, placement: currentPlacement || 'after_header' };
       }
 
       return anyP;
@@ -150,7 +160,8 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
     return pages
       .filter((p: any) => {
         const visible = typeof p.visible === 'boolean' ? p.visible : !!p.isVisible;
-        const embedded = p?.openInStandalone === false;
+        // Treat undefined as false (embedded) so legacy pages appear in frontend
+        const embedded = p?.openInStandalone === false || p?.openInStandalone === undefined;
         const pPlacement = (p.placement as PagesPlacement | undefined) || undefined;
         return visible && embedded && pPlacement === placement;
       })
