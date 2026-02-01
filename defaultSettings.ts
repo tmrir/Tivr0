@@ -196,6 +196,7 @@ export const defaultSettings: SiteSettings = {
       title: { ar: 'الملف التعريفي (عرض فقط)', en: 'Profile (Read-Only)' },
       description: { ar: 'نسخة عرض فقط بدون إمكانية تعديل.', en: 'Read-only version with editing disabled.' },
       components: [],
+      openInStandalone: false,
       renderMode: 'html',
       fullHtml: `<!doctype html>
 <html lang="ar" dir="rtl">

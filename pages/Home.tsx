@@ -227,6 +227,22 @@ export const Home = () => {
     const rawHref = typeof href === 'string' ? href.trim() : '';
     const effective = rawLabel || fallback;
     if (!effective) return effective;
+
+    try {
+      const hasScheme = /^https?:\/\//i.test(rawHref);
+      const u = new URL(hasScheme ? rawHref : `https://${rawHref}`);
+      const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+      if (host === 'drive.google.com') {
+        const effectiveLower = String(effective || '').toLowerCase();
+        const looksLikeProfile = effectiveLower.includes('profile') || effectiveLower.includes('بروفايل') || effectiveLower.includes('الملف') || effectiveLower.includes('تعريفي');
+        if (looksLikeProfile || looksLikeUrl(effective) || (!!rawHref && effective === rawHref)) {
+          return 'tivro.sa/profile';
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     if (looksLikeUrl(effective) || (!!rawHref && effective === rawHref)) {
       return formatUrlForDisplay(effective);
     }

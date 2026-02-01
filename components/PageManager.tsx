@@ -250,7 +250,7 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       title: { ar: '', en: '' },
       description: { ar: '', en: '' },
       components: [],
-      openInStandalone: true,
+      openInStandalone: false,
       renderMode: 'components',
       fullHtml: '',
       isVisible: true,
