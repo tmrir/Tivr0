@@ -403,9 +403,8 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
 
         const rawText = String(text || '').trim();
         const rawHref = typeof href === 'string' ? href.trim() : '';
-        const displayText = (looksLikeUrl(rawText) || (!!rawHref && rawText === rawHref))
-          ? formatUrlForDisplay(rawText)
-          : rawText;
+        // Only format as URL if text itself looks like a URL, not when it equals href
+        const displayText = looksLikeUrl(rawText) ? formatUrlForDisplay(rawText) : rawText;
 
         const className =
           style === 'secondary'
