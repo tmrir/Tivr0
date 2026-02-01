@@ -253,7 +253,10 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
   };
 
   const renderUnderConstruction = (page: any) => {
+    console.log('[PagesRenderer] underConstructionButton:', page?.underConstructionButton);
+    console.log('[PagesRenderer] lang:', lang);
     const label = (page?.underConstructionButton?.label?.[lang] || page?.underConstructionButton?.label?.ar || page?.underConstructionButton?.label?.en) as string | undefined;
+    console.log('[PagesRenderer] button label:', label);
     const href = page?.underConstructionButton?.href as string | undefined;
     const buttonLabel = label || (lang === 'ar' ? 'قريباً' : 'Coming Soon');
     const title = (page as any).title?.[lang] || page.name;
