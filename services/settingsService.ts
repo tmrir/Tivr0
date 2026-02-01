@@ -218,8 +218,12 @@ export class SettingsService {
 
         const expectedAdminNav = Array.isArray(validated.adminNavigation) ? validated.adminNavigation : [];
         const expectedCustomPages = Array.isArray(validated.customPages) ? validated.customPages : [];
+        
+        console.log('[SettingsService] Verification - Expected customPages:', expectedCustomPages.length);
 
         const sectionTexts = this.coerceJsonObject((verifyRow as any)?.section_texts);
+        
+        console.log('[SettingsService] Verification - section_texts keys:', Object.keys(sectionTexts));
 
         const dbAdminNav = Array.isArray(sectionTexts[SettingsService.EXTENSION_KEYS.adminNavigation])
           ? sectionTexts[SettingsService.EXTENSION_KEYS.adminNavigation]
@@ -227,19 +231,18 @@ export class SettingsService {
         const dbCustomPages = Array.isArray(sectionTexts[SettingsService.EXTENSION_KEYS.customPages])
           ? sectionTexts[SettingsService.EXTENSION_KEYS.customPages]
           : [];
+          
+        console.log('[SettingsService] Verification - DB customPages:', dbCustomPages.length);
 
         const sameAdminNav = this.stableStringify(dbAdminNav) === this.stableStringify(expectedAdminNav);
         const sameCustomPages = this.stableStringify(dbCustomPages) === this.stableStringify(expectedCustomPages);
+        
+        console.log('[SettingsService] Verification - sameCustomPages:', sameCustomPages);
 
         if (!sameAdminNav || !sameCustomPages) {
           console.error('❌ [SettingsService] Save verification failed: DB does not reflect saved values.');
-          /*
-          console.log('   expected.adminNavigation.length:', expectedAdminNav.length);
-          console.log('   db.__tivro_admin_navigation.length:', dbAdminNav.length);
           console.log('   expected.customPages.length:', expectedCustomPages.length);
           console.log('   db.__tivro_custom_pages.length:', dbCustomPages.length);
-          console.log('   db.updated_at:', (verifyRow as any)?.updated_at);
-          */
           return false;
         }
       } catch (e) {
