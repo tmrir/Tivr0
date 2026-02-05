@@ -273,6 +273,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const savePage = async () => {
     if (!editingPage) return;
 
+    console.log('[PageManager] Saving page with underConstructionButton:', editingPage.underConstructionButton);
+
     setSaving(true);
     try {
       // Generate slug from name if empty
@@ -289,6 +291,8 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       } else {
         updatedPages = [...pages, editingPage];
       }
+
+      console.log('[PageManager] updatedPages[0].underConstructionButton:', updatedPages[0]?.underConstructionButton);
 
       setPages(updatedPages);
 

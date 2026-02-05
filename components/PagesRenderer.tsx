@@ -398,6 +398,9 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       case 'button': {
         const text = (component as any).content?.text?.[lang];
         const href = (component as any).content?.href;
+        console.log('[PagesRenderer] Button text:', text);
+        console.log('[PagesRenderer] Button href:', href);
+        console.log('[PagesRenderer] Button content:', (component as any).content);
         const style = (component as any).content?.style || 'primary';
         const bgColor = (component as any).content?.bgColor as string | undefined;
         const textColor = (component as any).content?.textColor as string | undefined;
@@ -405,9 +408,8 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
         if (!text) return null;
 
         const rawText = String(text || '').trim();
-        const rawHref = typeof href === 'string' ? href.trim() : '';
-        // Only format as URL if text itself looks like a URL, not when it equals href
-        const displayText = looksLikeUrl(rawText) ? formatUrlForDisplay(rawText) : rawText;
+        // Always display the exact text provided by user, don't format as URL
+        const displayText = rawText;
 
         const className =
           style === 'secondary'
