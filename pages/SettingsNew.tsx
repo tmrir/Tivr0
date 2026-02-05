@@ -119,10 +119,6 @@ export const SettingsNewPage: React.FC = () => {
             const host = u.hostname.replace(/^www\./i, '');
             const path = (u.pathname || '').replace(/\/$/, '');
 
-            if (host === 'drive.google.com') {
-                return 'tivro.sa/profile';
-            }
-
             const short = `${host}${path}`;
             if (short.length <= maxLen) return short;
             return `${short.slice(0, Math.max(0, maxLen - 1))}…`;
@@ -157,11 +153,7 @@ export const SettingsNewPage: React.FC = () => {
                 onBlur={() => setFocused(false)}
                 onChange={(e) => {
                     const next = e.target.value;
-                    if (!focused) {
-                        setFocused(true);
-                        onChange(raw);
-                        return;
-                    }
+                    if (!focused) setFocused(true);
                     onChange(next);
                 }}
             />

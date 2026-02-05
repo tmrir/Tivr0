@@ -201,10 +201,6 @@ export const Home = () => {
       const host = u.hostname.replace(/^www\./i, '');
       const path = (u.pathname || '').replace(/\/$/, '');
 
-      if (host === 'drive.google.com') {
-        return 'tivro.sa/profile';
-      }
-
       const short = `${host}${path}`;
       if (short.length <= maxLen) return short;
       return `${short.slice(0, Math.max(0, maxLen - 1))}…`;
@@ -224,53 +220,14 @@ export const Home = () => {
   const resolveHeroCtaLabel = (label: any, href: any, fallback: string) => {
     const fromLabel = (label?.[lang] || label?.ar || label?.en || '') as string;
     const rawLabel = String(fromLabel || '').trim();
-    const rawHref = typeof href === 'string' ? href.trim() : '';
-    const effective = rawLabel || fallback;
-    if (!effective) return effective;
-
-    try {
-      const hasScheme = /^https?:\/\//i.test(rawHref);
-      const u = new URL(hasScheme ? rawHref : `https://${rawHref}`);
-      const host = u.hostname.replace(/^www\./i, '').toLowerCase();
-      if (host === 'drive.google.com') {
-        const effectiveLower = String(effective || '').toLowerCase();
-        const looksLikeProfile = effectiveLower.includes('profile') || effectiveLower.includes('بروفايل') || effectiveLower.includes('الملف') || effectiveLower.includes('تعريفي');
-        if (looksLikeProfile || looksLikeUrl(effective) || (!!rawHref && effective === rawHref)) {
-          return 'tivro.sa/profile';
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    if (looksLikeUrl(effective) || (!!rawHref && effective === rawHref)) {
-      return formatUrlForDisplay(effective);
-    }
-    return effective;
+    if (rawLabel) return rawLabel;
+    return fallback;
   };
 
   const resolveHeroCtaHref = (label: any, href: any, fallback: string) => {
     const rawHref = typeof href === 'string' ? href.trim() : '';
     const effectiveHref = rawHref || fallback;
     if (!effectiveHref) return effectiveHref;
-
-    const fromLabel = (label?.[lang] || label?.ar || label?.en || '') as string;
-    const rawLabel = String(fromLabel || '').trim().toLowerCase();
-
-    try {
-      const hasScheme = /^https?:\/\//i.test(effectiveHref);
-      const u = new URL(hasScheme ? effectiveHref : `https://${effectiveHref}`);
-      const host = u.hostname.replace(/^www\./i, '').toLowerCase();
-
-      const looksLikeProfile = rawLabel.includes('profile') || rawLabel.includes('بروفايل') || rawLabel.includes('الملف') || rawLabel.includes('تعريفي');
-
-      if (looksLikeProfile && host === 'drive.google.com') {
-        return 'https://tivro.sa/profile';
-      }
-    } catch {
-      // ignore
-    }
-
     return effectiveHref;
   };
 
