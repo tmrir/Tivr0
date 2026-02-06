@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter, Facebook, FileText } from 'lucide-react';
+import { Menu, X, Globe, LayoutDashboard, LogOut, Instagram, Linkedin, Twitter, Facebook, FileText, Mail } from 'lucide-react';
 import { db } from '../services/db';
 import { supabase } from '../services/supabase';
 import { SiteSettings, Service, Package } from '../types';
@@ -880,6 +880,38 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
         </footer>
       )}
 
+      {!isAdminRoute && (
+        <div
+          className={`fixed z-[70] flex items-center gap-3 ${lang === 'ar' ? 'left-4 md:left-6' : 'right-4 md:right-6'} bottom-24 md:bottom-6`}
+        >
+          <a
+            href="https://wa.me/966555139750?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D8%AA%D9%8A%D9%81%D8%B1%D9%88%D8%8C%20%D8%A3%D8%B1%D8%BA%D8%A8%20%D9%81%D9%8A%20%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%B2%D9%8A%D8%AF"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="WhatsApp"
+            className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-[1.06] hover:shadow-xl"
+            style={{ backgroundColor: '#25D366' }}
+          >
+            <svg viewBox="0 0 32 32" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M16.01 3C9.37 3 4 8.29 4 14.82c0 2.6.86 5.01 2.33 6.97L5 29l7.4-1.3a12.3 12.3 0 0 0 3.6.53C22.63 28.23 28 22.94 28 16.41 28 9.88 22.64 3 16.01 3Zm0 2.17c5.41 0 9.81 4.3 9.81 9.24 0 5.73-4.4 11.65-9.81 11.65-1.22 0-2.4-.21-3.5-.62l-.4-.15-4.4.77.9-3.98-.28-.4c-1.27-1.78-1.98-3.9-1.98-6.16 0-4.94 4.4-9.24 9.81-9.24Zm-4.3 5.8c-.26 0-.68.1-1.03.48-.35.38-1.36 1.32-1.36 3.23 0 1.9 1.39 3.74 1.58 4 .2.25 2.72 4.2 6.7 5.72 3.3 1.26 3.98 1 4.7.94.72-.06 2.33-.93 2.66-1.83.33-.9.33-1.67.23-1.83-.1-.16-.36-.25-.75-.44-.4-.2-2.33-1.14-2.69-1.27-.36-.12-.62-.19-.88.2-.26.38-1 1.27-1.23 1.53-.23.25-.46.28-.85.1-.4-.2-1.67-.6-3.18-1.92-1.18-1.03-1.98-2.3-2.2-2.68-.23-.38-.03-.58.17-.77.18-.17.4-.44.59-.66.2-.22.26-.38.4-.63.13-.25.07-.48-.03-.66-.1-.19-.88-2.13-1.2-2.91-.3-.75-.61-.64-.84-.65h-.7Z"
+                fill="#fff"
+              />
+            </svg>
+          </a>
+
+          <a
+            href="mailto:tivrocare@gmail.com?subject=%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D8%AE%D8%AF%D9%85%D8%A7%D8%AA%20%D8%AA%D9%8A%D9%81%D8%B1%D9%88&body=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%20%D9%81%D8%B1%D9%8A%D9%82%20%D8%AA%D9%8A%D9%81%D8%B1%D9%88%D8%8C%0A%0A%D8%A3%D8%B1%D8%BA%D8%A8%20%D9%81%D9%8A%20%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%B2%D9%8A%D8%AF%20%D8%B9%D9%86..."
+            aria-label="Email"
+            className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center bg-tivro-dark text-white shadow-lg transition-transform hover:scale-[1.06] hover:shadow-xl"
+          >
+            <Mail size={22} />
+          </a>
+        </div>
+      )}
+
       {/* Bottom Banner */}
       {settings?.bottomBanner?.enabled && !isAdminRoute && (
         <div className="fixed bottom-0 w-full bg-tivro-primary text-white py-3 px-6 z-[60] shadow-lg flex justify-between items-center animate-fade-in-up" style={settings.bottomBanner.bgImage ? { backgroundImage: `url(${settings.bottomBanner.bgImage})`, backgroundSize: 'cover' } : {}}>
@@ -887,7 +919,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <h4 className="font-bold">{settings.bottomBanner.title?.[lang]}</h4>
             <p className="text-sm opacity-90">{settings.bottomBanner.subtitle?.[lang]}</p>
           </div>
-          <button onClick={(e) => e.currentTarget.parentElement?.remove()} className="bg-white/20 hover:bg-white/30 p-1 rounded-full"><X size={16} /></button>
+            <button onClick={(e) => e.currentTarget.parentElement?.remove()} className="bg-white/20 hover:bg-white/30 p-1 rounded-full"><X size={16} /></button>
         </div>
       )}
     </div>
