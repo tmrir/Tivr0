@@ -380,3 +380,45 @@ export interface PackageRequest {
   status: 'pending' | 'contacted' | 'completed' | 'cancelled';
   notes?: string;
 }
+
+export type UserRole = 'admin' | 'manager' | 'developer' | 'sales';
+
+export interface DashboardUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  name?: string;
+  createdAt: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company?: string;
+  createdAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  clientId: string;
+  clientName: string;
+  amount: number;
+  currency: string;
+  status: 'draft' | 'sent' | 'paid' | 'overdue';
+  dueDate: string;
+  items: { description: string; quantity: number; price: number }[];
+  createdAt: string;
+}
+
+export interface Quote {
+  id: string;
+  clientId: string;
+  clientName: string;
+  total: number;
+  status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  validUntil: string;
+  items: { description: string; quantity: number; price: number }[];
+  createdAt: string;
+}

@@ -1,581 +1,1248 @@
 import React, { useState, useEffect, useRef } from 'react';
+
 import { useApp } from '../context/AppContext';
+
 import { Layout } from '../components/Layout';
+
 import { db } from '../services/db';
+
 import { ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Loader2, User } from 'lucide-react';
+
 import * as Icons from 'lucide-react';
+
 import { Service, CaseStudy, TeamMember, Package, SiteSettings } from '../types';
+
 import { ContactUsSection } from '../components/ContactUsSection';
+
 import { PackageRequestModal } from '../components/PackageRequestModal';
+
 import { defaultSettings } from '../defaultSettings';
+
 import { PagesRenderer } from '../components/PagesRenderer';
 
+
+
 export const Home = () => {
+
   const { t, lang, dir } = useApp();
+
   const [loading, setLoading] = useState(true);
+
   const [services, setServices] = useState<Service[]>([]);
+
   const [cases, setCases] = useState<CaseStudy[]>([]);
+
   const [team, setTeam] = useState<TeamMember[]>([]);
+
   const [packages, setPackages] = useState<Package[]>([]);
+
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
+
+
   const heroButtonsEnabled = settings?.homeSections?.heroButtonsEnabled !== false;
+
   const heroStatsEnabled = settings?.homeSections?.heroStatsEnabled !== false;
 
+
+
   const heroPrimaryCta = settings?.homeSections?.heroPrimaryCta;
+
   const heroSecondaryCta = settings?.homeSections?.heroSecondaryCta;
+
   const heroStats = settings?.homeSections?.heroStats;
 
+
+
   const heroImageUrl = settings?.homeSections?.heroImage?.src || settings?.homeSections?.heroImageUrl || '';
+
   const heroImageMime = settings?.homeSections?.heroImage?.mime || '';
+
   const heroImageAlt = settings?.homeSections?.heroImage?.alt?.[lang] || '';
+
   const heroImagePosition = settings?.homeSections?.heroImagePosition || 'right';
+
   
+
   // State for navigation visibility and labels
+
   const [navigationState, setNavigationState] = useState<any[]>([
+
     { key: 'services', visible: true },
+
     { key: 'team', visible: true },
+
     { key: 'packages', visible: true },
+
     { key: 'work', visible: true },
+
     { key: 'blog', visible: true },
+
     { key: 'contact', visible: true },
+
     { key: 'pages', visible: true }
+
   ]);
+
   
+
   const [navigationLabels, setNavigationLabels] = useState<any>({
+
     services: t('section.services'),
+
     team: t('section.team'),
+
     packages: t('admin.tab.packages'),
+
     work: t('section.work'),
+
     blog: t('admin.tab.blog'),
+
     contact: lang === 'ar' ? 'تواصل معنا' : 'Contact Us',
+
     pages: lang === 'ar' ? 'مدير الصفحات' : 'Page Manager'
+
   });
+
   
+
   const [contactName, setContactName] = useState('');
+
   const [contactPhone, setContactPhone] = useState('');
+
   const [contactSending, setContactSending] = useState(false);
+
   
+
   // State for package request modal
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
 
+
+
   // Debouncing and caching state
+
   const [lastSettingsUpdate, setLastSettingsUpdate] = useState(0);
+
   const settingsCacheTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+
+
   const openPackageModal = (pkg: Package) => {
+
     setSelectedPackage(pkg);
+
     setIsModalOpen(true);
+
   };
+
+
 
   const closePackageModal = () => {
+
     setIsModalOpen(false);
+
     setSelectedPackage(null);
+
   };
+
+
 
   useEffect(() => {
+
     const applyAdminNavigation = (items: any[]) => {
+
       const visibilityState = items.map((item: any) => ({
+
         key: item.key,
+
         visible: item.visible
+
       }));
+
       setNavigationState(visibilityState);
 
+
+
       const labelsState: any = {};
+
       items.forEach((item: any) => {
+
         labelsState[item.key] = item.label;
+
       });
+
       setNavigationLabels(labelsState);
+
     };
+
+
 
     const loadData = async () => {
+
         try {
+
             const [s, c, tData, p, set] = await Promise.all([
+
                 db.services.getAll(),
+
                 db.caseStudies.getAll(),
+
                 db.team.getAll(),
+
                 db.packages.getAll(),
+
                 db.settings.get()
+
             ]);
+
             setServices(s);
+
             setCases(c);
+
             
+
             // تطبيق ترتيب الفريق المحفوظ في LocalStorage
+
             const savedOrder = localStorage.getItem('tivro_team_order');
+
             if (savedOrder) {
+
                 try {
+
                     const orderedIds = JSON.parse(savedOrder);
+
                     // ترتيب الفريق حسب الترتيب المحفوظ
+
                     const orderedTeam = orderedIds.map((id: string) => 
+
                         tData.find(member => member.id === id)
+
                     ).filter(Boolean);
+
                     // إضافة الأعضاء الجديد غير المرتبين في النهاية
+
                     const newMembers = tData.filter(member => !orderedIds.includes(member.id));
+
                     setTeam([...orderedTeam, ...newMembers]);
+
                 } catch (error) {
+
                     console.error('Failed to load saved team order in Home:', error);
+
                     setTeam(tData);
+
                 }
+
             } else {
+
                 setTeam(tData);
+
             }
+
             
+
             setPackages(p);
+
             setSettings(set);
 
+
+
             const fromDbNav = (set as any)?.adminNavigation;
+
             if (Array.isArray(fromDbNav) && fromDbNav.length > 0) {
+
               applyAdminNavigation(fromDbNav);
+
               try {
+
                 localStorage.setItem('adminNavigation', JSON.stringify(fromDbNav));
+
               } catch {
+
                 // ignore cache errors
+
               }
+
             }
+
             console.log('✅ [Home] Data loaded successfully:', { settings: set });
+
         } catch (e) {
+
             console.error("Home Data Load Error", e);
+
         } finally {
+
             setLoading(false);
+
         }
+
     };
+
     loadData();
 
+
+
     const handleHashScroll = () => {
+
         const hash = window.location.hash.substring(1);
+
         if (hash) {
+
             // انتظر قليلاً حتى يتم تحميل البيانات
+
             setTimeout(() => {
+
                 const targetElement = document.getElementById(hash);
+
                 if (targetElement) {
+
                     targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
                 }
+
             }, 100);
+
         }
+
     };
+
+
 
     // تحقق من الهاش عند التحميل الأولي
+
     handleHashScroll();
 
+
+
     // الاستماع لتغييرات الهاش
+
     window.addEventListener('hashchange', handleHashScroll);
 
+
+
     return () => {
+
         window.removeEventListener('hashchange', handleHashScroll);
+
     };
+
   }, []);
 
+
+
   const handleContactSubmit = async (e: React.FormEvent) => {
+
       e.preventDefault();
+
       setContactSending(true);
+
       try {
+
           const { error } = await db.messages.send(contactName, contactPhone);
+
           if (!error) {
+
               alert(lang === 'ar' ? 'شكراً لك! سيتم التواصل معك قريباً.' : 'Thank you! We will contact you shortly.');
+
               setContactName('');
+
               setContactPhone('');
+
           } else {
+
               alert('Error sending message. Please try again.');
+
           }
+
       } catch (error) {
+
           console.error('Contact error', error);
+
       } finally {
+
           setContactSending(false);
+
       }
+
   };
+
+
 
   const IconComponent = ({ name, className }: { name: string, className?: string }) => {
+
     const Icon = (Icons as any)[name] ? (Icons as any)[name] : Icons.HelpCircle;
+
     return <Icon className={className} />;
+
   };
+
+
 
   const formatUrlForDisplay = (raw: string, maxLen = 28) => {
+
     const v = String(raw || '').trim();
+
     if (!v) return v;
+
     if (v.length <= maxLen) return v;
 
+
+
     try {
+
       const hasScheme = /^https?:\/\//i.test(v);
+
       const u = new URL(hasScheme ? v : `https://${v}`);
+
       const host = u.hostname.replace(/^www\./i, '');
+
       const path = (u.pathname || '').replace(/\/$/, '');
 
+
+
+      if (host === 'drive.google.com') {
+
+        return 'tivro.sa/profile';
+
+      }
+
+
+
       const short = `${host}${path}`;
+
       if (short.length <= maxLen) return short;
+
       return `${short.slice(0, Math.max(0, maxLen - 1))}…`;
+
     } catch {
+
       return `${v.slice(0, Math.max(0, maxLen - 1))}…`;
+
     }
+
   };
+
+
 
   const looksLikeUrl = (v: string) => {
+
     const s = String(v || '').trim();
+
     if (!s) return false;
+
     if (/^https?:\/\//i.test(s)) return true;
+
     if (/^[a-z0-9-]+(\.[a-z0-9-]+)+\//i.test(s)) return true;
+
     return false;
+
   };
+
+
 
   const resolveHeroCtaLabel = (label: any, href: any, fallback: string) => {
+
     const fromLabel = (label?.[lang] || label?.ar || label?.en || '') as string;
+
     const rawLabel = String(fromLabel || '').trim();
-    if (rawLabel) return rawLabel;
-    return fallback;
+
+    const rawHref = typeof href === 'string' ? href.trim() : '';
+
+    const effective = rawLabel || fallback;
+
+    if (!effective) return effective;
+
+
+
+    try {
+
+      const hasScheme = /^https?:\/\//i.test(rawHref);
+
+      const u = new URL(hasScheme ? rawHref : `https://${rawHref}`);
+
+      const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+
+      if (host === 'drive.google.com') {
+
+        const effectiveLower = String(effective || '').toLowerCase();
+
+        const looksLikeProfile = effectiveLower.includes('profile') || effectiveLower.includes('بروفايل') || effectiveLower.includes('الملف') || effectiveLower.includes('تعريفي');
+
+        if (looksLikeProfile || looksLikeUrl(effective) || (!!rawHref && effective === rawHref)) {
+
+          return 'tivro.sa/profile';
+
+        }
+
+      }
+
+    } catch {
+
+      // ignore
+
+    }
+
+
+
+    if (looksLikeUrl(effective) || (!!rawHref && effective === rawHref)) {
+
+      return formatUrlForDisplay(effective);
+
+    }
+
+    return effective;
+
   };
+
+
 
   const resolveHeroCtaHref = (label: any, href: any, fallback: string) => {
+
     const rawHref = typeof href === 'string' ? href.trim() : '';
+
     const effectiveHref = rawHref || fallback;
+
     if (!effectiveHref) return effectiveHref;
+
+
+
+    const fromLabel = (label?.[lang] || label?.ar || label?.en || '') as string;
+
+    const rawLabel = String(fromLabel || '').trim().toLowerCase();
+
+
+
+    try {
+
+      const hasScheme = /^https?:\/\//i.test(effectiveHref);
+
+      const u = new URL(hasScheme ? effectiveHref : `https://${effectiveHref}`);
+
+      const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+
+
+
+      const looksLikeProfile = rawLabel.includes('profile') || rawLabel.includes('بروفايل') || rawLabel.includes('الملف') || rawLabel.includes('تعريفي');
+
+
+
+      if (looksLikeProfile && host === 'drive.google.com') {
+
+        return 'https://tivro.sa/profile';
+
+      }
+
+    } catch {
+
+      // ignore
+
+    }
+
+
+
     return effectiveHref;
+
   };
 
+
+
   if (loading) {
+
       return (
+
           <Layout>
+
              <div className="min-h-[60vh] flex flex-col items-center justify-center text-slate-400">
+
                  <Loader2 className="animate-spin mb-4" size={40} />
+
                  <p>{lang === 'ar' ? 'جاري تحميل المحتوى...' : 'Loading content...'}</p>
+
              </div>
+
           </Layout>
+
       )
+
   }
 
+
+
   return (
+
     <Layout>
+
       {/* Hero Section */}
+
       <section className="relative bg-tivro-dark text-white overflow-hidden pt-20 pb-32">
+
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-tivro-primary/20 to-transparent pointer-events-none" />
+
         {heroImageUrl && heroImagePosition === 'background' && (
+
           <>
+
             <div
+
               className="absolute inset-0 pointer-events-none"
+
               style={{
+
                 backgroundImage: `url(${heroImageUrl})`,
+
                 backgroundSize: 'cover',
+
                 backgroundPosition: 'center'
+
               }}
+
             />
+
             <div className="absolute inset-0 bg-tivro-dark/70 pointer-events-none" />
+
           </>
+
         )}
+
         <div className="container mx-auto px-4 md:px-8 relative z-10">
+
           <div
+
             className={
+
               heroImageUrl && (heroImagePosition === 'left' || heroImagePosition === 'right')
+
                 ? 'grid grid-cols-1 lg:grid-cols-2 gap-10 items-center'
+
                 : 'block'
+
             }
+
           >
+
             {heroImageUrl && (heroImagePosition === 'left' || heroImagePosition === 'top') && (
+
               <div className={heroImagePosition === 'top' ? 'mb-10' : ''}>
+
                 {((heroImageMime && heroImageMime.toLowerCase() === 'application/pdf') || /\.pdf(\?|#|$)/i.test(String(heroImageUrl))) ? (
+
                   <a
+
                     href={heroImageUrl}
+
                     target="_blank"
+
                     rel="noopener noreferrer"
+
                     className="inline-flex items-center justify-center w-full max-w-xl mx-auto px-6 py-4 rounded-2xl font-bold bg-white/10 hover:bg-white/20 backdrop-blur border border-white/10"
+
                   >
+
                     {heroImageAlt || (lang === 'ar' ? 'فتح ملف PDF' : 'Open PDF')}
+
                   </a>
+
                 ) : (
+
                   <img
+
                     src={heroImageUrl}
+
                     alt={heroImageAlt}
+
                     className="w-full max-w-xl mx-auto rounded-2xl shadow-xl border border-white/10"
+
                   />
+
                 )}
+
               </div>
+
             )}
+
+
 
             <div className="max-w-3xl">
+
               <div className="inline-block px-4 py-1 bg-tivro-primary/20 text-tivro-primary rounded-full text-sm font-bold mb-6 border border-tivro-primary/30">
+
                 {settings?.homeSections?.heroBadge?.[lang] || (lang === 'ar' ? '🚀 الوكالة الرقمية الأسرع نمواً' : '🚀 Fastest Growing Digital Agency')}
+
               </div>
+
               <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
+
                 {settings?.homeSections?.heroTitle?.[lang] || t('hero.title')}
+
               </h1>
+
               <p className="text-xl text-slate-300 mb-10 leading-relaxed max-w-2xl">
+
                 {settings?.homeSections?.heroSubtitle?.[lang] || t('hero.subtitle')}
+
               </p>
+
               {heroButtonsEnabled && (
+
                 <div className="flex flex-col sm:flex-row gap-4">
+
                   <a href={heroPrimaryCta?.href || '#contact'} className="bg-tivro-primary hover:bg-emerald-500 text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:-translate-y-1 shadow-lg shadow-tivro-primary/30 flex items-center justify-center gap-2">
+
                     {resolveHeroCtaLabel(heroPrimaryCta?.label, heroPrimaryCta?.href, t('cta.start'))}
+
                     {dir === 'rtl' ? <ArrowLeft /> : <ArrowRight />}
+
                   </a>
+
                   <a href={resolveHeroCtaHref(heroSecondaryCta?.label, heroSecondaryCta?.href, '#work')} className="bg-white/10 hover:bg-white/20 backdrop-blur text-white px-8 py-4 rounded-full font-bold text-lg transition flex items-center justify-center">
+
                     {resolveHeroCtaLabel(heroSecondaryCta?.label, heroSecondaryCta?.href, t('nav.work'))}
+
                   </a>
+
                 </div>
+
               )}
+
             </div>
+
+
 
             {heroImageUrl && (heroImagePosition === 'right' || heroImagePosition === 'bottom') && (
+
               <div className={heroImagePosition === 'bottom' ? 'mt-10' : ''}>
+
                 {((heroImageMime && heroImageMime.toLowerCase() === 'application/pdf') || /\.pdf(\?|#|$)/i.test(String(heroImageUrl))) ? (
+
                   <a
+
                     href={heroImageUrl}
+
                     target="_blank"
+
                     rel="noopener noreferrer"
+
                     className="inline-flex items-center justify-center w-full max-w-xl mx-auto px-6 py-4 rounded-2xl font-bold bg-white/10 hover:bg-white/20 backdrop-blur border border-white/10"
+
                   >
+
                     {heroImageAlt || (lang === 'ar' ? 'فتح ملف PDF' : 'Open PDF')}
+
                   </a>
+
                 ) : (
+
                   <img
+
                     src={heroImageUrl}
+
                     alt={heroImageAlt}
+
                     className="w-full max-w-xl mx-auto rounded-2xl shadow-xl border border-white/10"
+
                   />
+
                 )}
+
               </div>
+
             )}
+
           </div>
+
         </div>
+
         {heroStatsEnabled && (
+
           <div className="absolute bottom-0 w-full border-t border-white/10 bg-white/5 backdrop-blur-sm py-6">
+
             <div className="container mx-auto px-4 flex justify-around text-center">
+
               {Array.isArray(heroStats) && heroStats.length > 0 ? (
+
                 heroStats.slice(0, 3).map((stat, idx) => (
+
                   <div key={idx}>
+
                     <div className="text-2xl font-bold text-tivro-primary">{stat.value}</div>
+
                     <div className="text-sm text-slate-400">{stat.label?.[lang] || ''}</div>
+
                   </div>
+
                 ))
+
               ) : (
+
                 <>
+
                   <div><div className="text-2xl font-bold text-tivro-primary">+150%</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'متوسط نمو العملاء' : 'Avg Client Growth'}</div></div>
+
                   <div><div className="text-2xl font-bold text-tivro-primary">+50</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'عميل سعيد' : 'Happy Client'}</div></div>
+
                   <div><div className="text-2xl font-bold text-tivro-primary">24/7</div><div className="text-sm text-slate-400">{lang === 'ar' ? 'دعم فني' : 'Support'}</div></div>
+
                 </>
+
               )}
+
             </div>
+
           </div>
+
         )}
+
       </section>
+
+
 
       {/* Custom Pages - After Header */}
+
       <PagesRenderer placement="after_header" />
 
+
+
       {/* Services Section */}
+
       {navigationState.find(item => item.key === 'services')?.visible && (
+
       <section id="services" className="py-24 bg-slate-50">
+
         <div className="container mx-auto px-4 md:px-8">
+
           <div className="text-center mb-16">
+
             <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-4">
+
                 {settings?.homeSections?.servicesTitle?.[lang] || navigationLabels.services || t('section.services')}
+
             </h2>
+
             <p className="text-slate-500 max-w-2xl mx-auto">{settings?.homeSections?.servicesSubtitle?.[lang]}</p>
+
             <div className="w-20 h-1 bg-tivro-primary mx-auto rounded-full mt-4"></div>
+
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
             {services.map(s => (
+
               <div key={s.id} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition duration-300 group border border-slate-100">
+
                 <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+
                   <IconComponent name={s.iconName} className="w-7 h-7" />
+
                 </div>
+
                 <h3 className="text-xl font-bold text-slate-900 mb-3">{s.title[lang]}</h3>
+
                 <p className="text-slate-600 mb-6 text-sm leading-relaxed">{s.description[lang]}</p>
+
                 <ul className="space-y-2">
+
                   {s.features.map((f, idx) => (
+
                     <li key={idx} className="flex items-center gap-2 text-sm text-slate-500">
+
                       <CheckCircle size={14} className="text-tivro-primary" />
+
                       {f[lang]}
+
                     </li>
+
                   ))}
+
                 </ul>
+
               </div>
+
             ))}
+
           </div>
+
         </div>
+
       </section>
+
       )}
+
+
 
       <PagesRenderer placement="after_services" />
 
+
+
       {/* Custom Pages - Before Packages */}
+
       <PagesRenderer placement="before_packages" />
 
+
+
       {/* Packages */}
+
       {navigationState.find(item => item.key === 'packages')?.visible && (
+
       <section id="packages" className="py-24 bg-slate-50">
+
         <div className="container mx-auto px-4 md:px-8">
+
           <div className="text-center mb-16">
+
              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark">
+
                  {settings?.homeSections?.packagesTitle?.[lang] || navigationLabels.packages || (lang === 'ar' ? 'باقات تناسب الجميع' : 'Packages for Everyone')}
+
              </h2>
+
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+
             {packages.map(pkg => (
+
               <div key={pkg.id} className={`relative bg-white rounded-2xl p-8 ${pkg.isPopular ? 'border-2 border-tivro-primary shadow-xl scale-105 z-10' : 'border border-slate-100 shadow-sm'}`}>
+
                 {pkg.isPopular && (
+
                   <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-tivro-primary text-white px-4 py-1 rounded-full text-sm font-bold">
+
                     {lang === 'ar' ? 'الأكثر طلباً' : 'Most Popular'}
+
                   </div>
+
                 )}
+
                 <h3 className="text-xl font-bold text-slate-900 mb-2">{pkg.name[lang]}</h3>
+
                 <div className="text-4xl font-bold text-tivro-dark mb-6">{pkg.price}</div>
+
                 <ul className="space-y-4 mb-8">
+
                   {pkg.features.map((f, i) => (
+
                     <li key={i} className="flex items-center gap-3 text-slate-600">
+
                       <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs flex-shrink-0">✓</div>
+
                       {f[lang]}
+
                     </li>
+
                   ))}
+
                 </ul>
+
                 <button 
+
                   onClick={() => openPackageModal(pkg)}
+
                   className={`w-full py-3 rounded-xl font-bold transition ${pkg.isPopular ? 'bg-tivro-dark text-white hover:bg-slate-800' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}
+
                 >
+
                   {lang === 'ar' ? 'اطلب الباقة' : 'Request Package'}
+
                 </button>
+
               </div>
+
             ))}
+
           </div>
+
         </div>
+
       </section>
+
       )}
+
+
 
       {/* Custom Pages - After Packages */}
 
+
+
       {/* Custom Pages - Before Work */}
+
       <PagesRenderer placement="before_work" />
 
+
+
       {/* Case Studies - EXACT DESIGN MATCH */}
+
       {navigationState.find(item => item.key === 'work')?.visible && (
+
       <section id="work" className="py-24 bg-white">
+
         <div className="container mx-auto px-4 md:px-8">
+
           <div className="flex justify-between items-end mb-12">
+
             <div>
+
               <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">
+
                 {settings?.sectionTexts?.workTitle?.[lang] || navigationLabels.work || t('section.work')}
+
               </h2>
+
               <p className="text-slate-500">
+
                 {settings?.sectionTexts?.workSubtitle?.[lang] || (lang === 'ar' ? 'أرقام تتحدث عن إنجازاتنا' : 'Numbers speaking our achievements')}
+
               </p>
+
             </div>
+
             <a href="#" className="text-tivro-primary font-bold hover:underline hidden md:block">{lang === 'ar' ? 'مشاهدة الكل' : 'View All'}</a>
+
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+
             {cases.map(c => (
+
               <div key={c.id} className="group relative rounded-2xl overflow-hidden shadow-lg">
+
                 <div className="aspect-video overflow-hidden bg-slate-200">
+
                    <img src={c.image} alt={c.title[lang]} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
+
                 </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent flex flex-col justify-end p-8">
+
                   <span className="text-tivro-primary font-bold text-sm mb-2 bg-black/20 backdrop-blur-sm px-2 py-1 rounded w-fit">{c.category[lang]}</span>
+
                   <h3 className="text-white text-2xl font-bold mb-2">{c.title[lang]}</h3>
+
                   <p className="text-slate-200 text-sm mb-4">{c.result[lang]}</p>
+
                   <div className="flex gap-4 flex-wrap">
+
                     {(c.stats || []).map((stat, idx) => {
+
                       const link = stat.label?.en && stat.label.en.trim().startsWith('http')
+
                         ? stat.label.en.trim()
+
                         : undefined;
+
                       const isClickable = !!link;
 
+
+
                       const labelEn = stat.label?.en || '';
+
                       const labelAr = stat.label?.ar || '';
+
                       const isEnUrl = labelEn.trim().startsWith('http');
+
                       const displayLabel = lang === 'en'
+
                         ? ((labelEn && !isEnUrl) ? labelEn : t('common.open_link'))
+
                         : (stat.label?.[lang] || labelAr || labelEn);
 
+
+
                       return (
+
                         <div
+
                           key={idx}
+
                           className={`bg-white/10 backdrop-blur rounded px-3 py-1 border border-white/10 ${isClickable ? 'cursor-pointer' : ''}`}
+
                           onClick={() => {
+
                             if (link) {
+
                               window.open(link, '_blank');
+
                             }
+
                           }}
+
                         >
+
                           <span className="block text-white font-bold">{stat.value}</span>
+
                           <span className="text-xs text-slate-300">{displayLabel}</span>
+
                         </div>
+
                       );
+
                     })}
+
                   </div>
+
                 </div>
+
               </div>
+
             ))}
+
           </div>
+
         </div>
+
       </section>
+
       )}
 
+
+
       {/* Team Section */}
+
       {navigationState.find(item => item.key === 'team')?.visible && (
+
       <section id="team" className="py-24 bg-white border-t border-slate-100">
+
         <div className="container mx-auto px-4 md:px-8">
+
           <div className="text-center mb-16">
+
              <h2 className="text-3xl md:text-4xl font-bold text-tivro-dark mb-2">
+
                  {settings?.homeSections?.teamTitle?.[lang] || navigationLabels.team || t('section.team')}
+
              </h2>
+
              <p className="text-slate-500">{settings?.homeSections?.teamSubtitle?.[lang]}</p>
+
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+
              {team.map(t => (
+
                <div key={t.id} className="text-center group">
+
                  <div className="w-40 h-40 mx-auto mb-6 rounded-full overflow-hidden border-4 border-slate-50 shadow-lg bg-slate-100 flex items-center justify-center">
+
                    {t.image ? (
+
                      <img src={t.image} alt={t.name[lang]} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+
                    ) : (
+
                      <User className="w-16 h-16 text-slate-400" />
+
                    )}
+
                  </div>
+
                  <h3 className="text-xl font-bold text-slate-900">{t.name[lang]}</h3>
+
                  <p className="text-tivro-primary font-medium text-sm mb-2">{t.role[lang]}</p>
+
                </div>
+
              ))}
+
           </div>
+
         </div>
+
       </section>
+
       )}
+
+
 
       <PagesRenderer placement="after_team" />
 
+
+
       {/* Custom Pages - After Work */}
+
       <PagesRenderer placement="after_work" />
 
+
+
       {/* Custom Pages - Before Footer */}
+
       <PagesRenderer placement="before_footer" />
 
+
+
       {/* CTA / Contact */}
+
       {navigationState.find(item => item.key === 'contact')?.visible && (
+
       <section id="contact" className="py-24 bg-tivro-dark text-white">
+
          <ContactUsSection settings={settings?.contactUs} fallbackSettings={defaultSettings.contactUs} />
+
       </section>
+
       )}
 
+
+
       {/* Package Request Modal */}
+
       <PackageRequestModal
+
         isOpen={isModalOpen}
+
         onClose={closePackageModal}
+
         package={selectedPackage}
+
         lang={lang}
+
       />
 
+
+
       {/* Legal Sections - Hidden anchor targets for smooth scrolling */}
+
       <section id="privacy" className="sr-only">
+
         <div className="container mx-auto px-4 py-16">
+
           <h1 className="text-4xl font-bold text-slate-900 mb-8">{settings?.sectionTexts?.privacyLink?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}</h1>
+
           <div className="prose prose-lg max-w-none text-slate-700 whitespace-pre-wrap">
+
             {settings?.privacyPolicy?.[lang] || (lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy')}
+
           </div>
+
         </div>
+
       </section>
 
+
+
       <section id="terms" className="sr-only">
+
         <div className="container mx-auto px-4 py-16">
+
           <h1 className="text-4xl font-bold text-slate-900 mb-8">{settings?.sectionTexts?.termsLink?.[lang] || (lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service')}</h1>
+
           <div className="prose prose-lg max-w-none text-slate-700 whitespace-pre-wrap">
+
             {settings?.termsOfService?.[lang] || (lang === 'ar' ? 'لا يوجد محتوى حالياً.' : 'No content available.')}
+
           </div>
+
         </div>
+
       </section>
+
     </Layout>
+
   );
+
 };
+

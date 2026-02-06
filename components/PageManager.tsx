@@ -137,14 +137,11 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
     localStorage.setItem('navigationPages', JSON.stringify(updatedPages.filter(p => p.showInNavigation)));
 
     try {
-      console.log('[PageManager] Saving pages:', updatedPages.length, 'pages');
       const settings = await db.settings.get();
-      console.log('[PageManager] Got settings, customPages count:', (settings as any)?.customPages?.length);
       const merged = { ...(settings as any), customPages: updatedPages };
-      const result = await db.settings.save(merged as any);
-      console.log('[PageManager] Save result:', result);
+      await db.settings.save(merged as any);
     } catch (error) {
-      console.error('[PageManager] Error saving pages to settings:', error);
+      console.error('Error saving pages to settings:', error);
     }
   };
 
@@ -273,8 +270,6 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
   const savePage = async () => {
     if (!editingPage) return;
 
-    console.log('[PageManager] Saving page with underConstructionButton:', editingPage.underConstructionButton);
-
     setSaving(true);
     try {
       // Generate slug from name if empty
@@ -291,8 +286,6 @@ export const PageManager: React.FC<PageManagerProps> = ({ onUpdate }) => {
       } else {
         updatedPages = [...pages, editingPage];
       }
-
-      console.log('[PageManager] updatedPages[0].underConstructionButton:', updatedPages[0]?.underConstructionButton);
 
       setPages(updatedPages);
 

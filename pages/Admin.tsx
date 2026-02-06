@@ -12,7 +12,9 @@ import { ImageWithFallback, DefaultTeamAvatar, DefaultCaseStudyImage, DefaultBlo
 import ContactUsManager from '../components/ContactUsManager';
 import { PageManager } from '../components/PageManager';
 import { translateText } from '../services/translationService';
-import { Wand2 } from 'lucide-react';
+import { Wand2, UserCog, DollarSign } from 'lucide-react';
+import { UsersManager } from '../components/UsersManager';
+import { SalesManager } from '../components/SalesManager';
 
 interface ManagerProps {
   onUpdate: () => void;
@@ -406,6 +408,12 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
   const { t, lang } = useApp();
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [editing, setEditing] = useState<TeamMember | null>(null);
+
+  // Dashboard Access State
+  const [enableAccess, setEnableAccess] = useState(false);
+  const [accessEmail, setAccessEmail] = useState('');
+  const [accessRole, setAccessRole] = useState<'admin' | 'manager' | 'developer' | 'sales'>('sales');
+
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -435,40 +443,147 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
     loadTeam();
   }, []);
 
-  const handleSave = async (e: React.FormEvent) => { e.preventDefault(); if (!editing) return; setSaving(true); await db.team.save(editing); setSaving(false); setEditing(null); onUpdate(); setTeam(await db.team.getAll()); };
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editing) return;
+    setSaving(true);
+
+    try {
+      // 1. Save Team Member (Visual)
+      const savedTeamRes = await db.team.save(editing);
+
+      // 2. If access enabled, save Dashboard User (Access)
+      if (enableAccess && accessEmail) {
+        // We try to find if a user already exists with this email often, or just upsert.
+        // However, db.users.save uses upsert on email/id.
+        // Ideally we link them, but for now we just create the user as requested.
+        // Use the name from the team member (English or Arabic)
+        const userName = editing.name.en || editing.name.ar || accessEmail.split('@')[0];
+        await db.users.save({
+          id: 'new', // Always upsert by email if possible or new
+          email: accessEmail,
+          role: accessRole,
+          name: userName
+        });
+      }
+    } catch (err) {
+      console.error("Error saving team/user:", err);
+      alert(lang === 'ar' ? 'حدث خطأ أثناء الحفظ' : 'Error saving data');
+    }
+
+    setSaving(false);
+    setEditing(null);
+    setEnableAccess(false);
+    setAccessEmail('');
+    onUpdate();
+    setTeam(await db.team.getAll());
+  };
+
   const handleDelete = async (id: string) => { if (confirm(t('admin.confirm'))) { await db.team.delete(id); onUpdate(); setTeam(team.filter(x => x.id !== id)); } };
 
   const handleReorder = async (newItems: TeamMember[]) => {
     setTeam(newItems);
-    // حفظ الترتيب الجديد في LocalStorage فوراً
     const newOrder = newItems.map(item => item.id);
     localStorage.setItem('tivro_team_order', JSON.stringify(newOrder));
-
-    // حفظ الترتيب الجديد في قاعدة البيانات أيضاً
     try {
       await db.reorder('team_members', newItems);
-      console.log('✅ Team order saved successfully to both LocalStorage and Database');
     } catch (error) {
       console.error('❌ Failed to save team order to database:', error);
-      // الترتيب محفوظ في LocalStorage على الأقل
     }
+  };
+
+  const startEditing = (member: TeamMember) => {
+    setEditing(member);
+    setEnableAccess(false); // Reset access form on edit
+    setAccessEmail('');
+  };
+
+  const handleAddNew = () => {
+    setEditing({ id: 'new', name: { ar: '', en: '' }, role: { ar: '', en: '' }, image: '' });
+    setEnableAccess(false);
+    setAccessEmail('');
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">{t('admin.tab.team')}</h2>
-        <button onClick={() => setEditing({ id: 'new', name: { ar: '', en: '' }, role: { ar: '', en: '' }, image: '' })} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 shadow-sm hover:bg-emerald-700 transition"><Plus size={18} />{t('admin.btn.add')}</button>
+        <button onClick={handleAddNew} className="bg-tivro-primary text-white px-4 py-2 rounded-lg font-bold flex gap-2 shadow-sm hover:bg-emerald-700 transition"><Plus size={18} />{t('admin.btn.add')}</button>
       </div>
       {editing ? (
         <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto animate-fade-in">
           <h3 className="font-bold text-xl text-slate-800 mb-6 pb-4 border-b">{editing.id === 'new' ? t('admin.btn.add') : t('admin.btn.edit')}</h3>
-          <LocalizedInput label={t('admin.form.name_ar')} value={editing.name} onChange={v => setEditing({ ...editing, name: v })} />
-          <LocalizedInput label={t('admin.form.role_ar')} value={editing.role} onChange={v => setEditing({ ...editing, role: v })} />
-          <div className="mb-6">
-            <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label>
-            <input className="w-full border p-3 rounded-lg outline-none" placeholder="Image URL" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="md:col-span-2">
+              <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><UserCog size={18} /> {lang === 'ar' ? 'البيانات الظاهرة في الموقع (Team Profile)' : 'Public Profile'}</h4>
+            </div>
+            <LocalizedInput label={t('admin.form.name_ar')} value={editing.name} onChange={v => setEditing({ ...editing, name: v })} />
+            <LocalizedInput label={t('admin.form.role_ar')} value={editing.role} onChange={v => setEditing({ ...editing, role: v })} />
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.form.image')}</label>
+              <input className="w-full border p-3 rounded-lg outline-none" placeholder="Image URL" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
+            </div>
           </div>
+
+          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-bold text-slate-700 flex items-center gap-2">
+                <SettingsIcon size={18} />
+                {lang === 'ar' ? 'صلاحيات الدخول للوحة التحكم' : 'Dashboard Access & Permissions'}
+              </h4>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="enableAccess"
+                  checked={enableAccess}
+                  onChange={e => setEnableAccess(e.target.checked)}
+                  className="w-5 h-5 accent-tivro-primary cursor-pointer"
+                />
+                <label htmlFor="enableAccess" className="text-sm font-medium cursor-pointer select-none">
+                  {lang === 'ar' ? 'تفعيل حساب دخول' : 'Enable Dashboard Access'}
+                </label>
+              </div>
+            </div>
+
+            {enableAccess && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t('admin.login.email')}</label>
+                  <input
+                    type="email"
+                    required={enableAccess}
+                    className="w-full border p-3 rounded-lg outline-none focus:ring-2 focus:ring-tivro-primary"
+                    value={accessEmail}
+                    onChange={e => setAccessEmail(e.target.value)}
+                    placeholder="member@tivro.sa"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{lang === 'ar' ? 'الصلاحية (Role)' : 'Role'}</label>
+                  <select
+                    className="w-full border p-3 rounded-lg outline-none bg-white focus:ring-2 focus:ring-tivro-primary"
+                    value={accessRole}
+                    onChange={(e) => setAccessRole(e.target.value as any)}
+                  >
+                    <option value="admin">Admin (Full Access)</option>
+                    <option value="manager">Manager (All except dangerous delete)</option>
+                    <option value="developer">Developer</option>
+                    <option value="sales">Sales Representative</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2 text-xs text-slate-500 bg-blue-50 p-3 rounded-lg flex gap-2">
+                  <AlertCircle size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                  <p>
+                    {lang === 'ar'
+                      ? 'عند الحفظ، سيتم إنشاء حساب مستخدم في لوحة التحكم لهذا العضو. يمكنه تسجيل الدخول باستخدام البريد الإلكتروني (سيتم إرسال رابط الدخول via Magic Link من Supabase في البيئة الحقيقية).'
+                      : 'Saving will create a dashboard user account. They can login via email (Magic Link sent by Supabase in production).'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3 justify-end pt-4 border-t">
             <button type="button" onClick={() => setEditing(null)} className="px-6 py-2 text-slate-600 font-bold">{t('admin.btn.cancel')}</button>
             <button type="submit" disabled={saving} className="bg-tivro-dark text-white px-8 py-2 rounded-lg font-bold flex items-center gap-2">{saving && <Loader2 size={16} className="animate-spin" />} {t('admin.btn.save')}</button>
@@ -493,7 +608,7 @@ const TeamManager: React.FC<ManagerProps> = ({ onUpdate }) => {
               <h3 className="font-bold text-lg text-slate-900">{m.name[lang]}</h3>
               <p className="text-tivro-primary text-sm font-medium">{m.role[lang]}</p>
               <div className="absolute top-3 right-3 hidden group-hover:flex bg-white/90 backdrop-blur shadow-sm rounded-lg border border-slate-100 p-1 z-10 gap-1">
-                <button onClick={() => setEditing(m)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16} /></button>
+                <button onClick={() => startEditing(m)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16} /></button>
                 <button onClick={() => handleDelete(m.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
               </div>
             </div>
@@ -1330,10 +1445,10 @@ const MessagesManager: React.FC<ManagerProps> = ({ onUpdate }) => {
 };
 
 export const Admin = () => {
-  const { isAdmin, t, loading, dir, lang } = useApp();
+  const { isAdmin, t, loading, dir, lang, userRole } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'contact' | 'messages' | 'packageRequests' | 'settings' | 'pages'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'services' | 'team' | 'packages' | 'work' | 'blog' | 'contact' | 'messages' | 'packageRequests' | 'settings' | 'pages' | 'users' | 'sales'>('dashboard');
   const [refresh, setRefresh] = useState(0);
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -1387,6 +1502,8 @@ export const Admin = () => {
     { key: 'messages', label: t('admin.tab.messages'), visible: true },
     { key: 'packageRequests', label: lang === 'ar' ? 'طلبات الباقات' : 'Package Requests', visible: true },
     { key: 'pages', label: lang === 'ar' ? 'مدير الصفحات' : 'Page Manager', visible: true },
+    { key: 'users', label: lang === 'ar' ? 'المستخدمين' : 'Users', visible: ['admin', 'manager'].includes(userRole || '') },
+    { key: 'sales', label: lang === 'ar' ? 'المبيعات' : 'Sales', visible: ['admin', 'manager', 'sales'].includes(userRole || '') },
     { key: 'settings', label: t('admin.tab.settings'), visible: true }
   ]);
 
@@ -1459,15 +1576,32 @@ export const Admin = () => {
       try {
         const rawItems = JSON.parse(savedNavigation);
         const normalized = normalizeNavigationItems(rawItems);
-        setNavigationItems(normalized);
+
+        // Merge with current defaults (navigationItems) to ensure new features (users, sales) appear
+        // We use navigationItems (defaults) as the base for order and existence, 
+        // but override visibility/label from saved config.
+        const merged = navigationItems.map(def => {
+          const saved = normalized.find((n: any) => n.key === def.key);
+          if (saved) {
+            return {
+              ...def,
+              label: saved.label,
+              visible: saved.visible
+            };
+          }
+          return def;
+        });
+
+        setNavigationItems(merged);
 
         // migrate to DB (one-time) if DB does not have it yet
         try {
           const settings = await db.settings.get();
           const current = (settings as any)?.adminNavigation;
           if (!Array.isArray(current) || current.length === 0) {
-            const merged = { ...(settings as any), adminNavigation: normalized };
-            await db.settings.save(merged as any);
+            // Save the MERGED list, not just the raw normalized one
+            const payload = { ...(settings as any), adminNavigation: merged };
+            await db.settings.save(payload as any);
           }
         } catch {
           // ignore migration failures
@@ -1578,6 +1712,8 @@ export const Admin = () => {
       case 'contact':
       case 'messages': return <MessageCircle size={20} />;
       case 'packageRequests': return <Star size={20} />;
+      case 'users': return <UserCog size={20} />;
+      case 'sales': return <DollarSign size={20} />;
       case 'settings': return <SettingsIcon size={20} />;
       case 'pages': return <LayoutIcon size={20} />;
       default: return <List size={20} />;
@@ -1618,6 +1754,8 @@ export const Admin = () => {
           {activeTab === 'messages' && <MessagesManager key={refresh} onUpdate={() => setRefresh(p => p + 1)} />}
           {activeTab === 'packageRequests' && <PackageRequestsManager key={refresh} onUpdate={() => setRefresh(p => p + 1)} />}
           {activeTab === 'pages' && <PageManager key={refresh} onUpdate={() => setRefresh(p => p + 1)} />}
+          {activeTab === 'users' && <UsersManager onUpdate={() => setRefresh(p => p + 1)} />}
+          {activeTab === 'sales' && <SalesManager />}
           {activeTab === 'settings' && (
             <SettingsProvider>
               <SettingsNewPage />

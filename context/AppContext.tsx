@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { Language, Translations } from '../types';
+import { Language, Translations, UserRole } from '../types';
 import { supabase } from '../services/supabase';
 import { db } from '../services/db';
 
@@ -9,6 +9,7 @@ interface AppContextProps {
   t: (key: string) => string;
   dir: 'rtl' | 'ltr';
   isAdmin: boolean;
+  userRole: UserRole | null;
   loading: boolean;
 }
 
@@ -29,7 +30,7 @@ const TRANSLATIONS: Translations = {
   'section.work': { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
   'section.team': { ar: 'عقول تيفرو', en: 'Tivro Minds' },
   'footer.rights': { ar: 'جميع الحقوق محفوظة لشركة تيفرو © 2024', en: 'All rights reserved Tivro © 2024' },
-  
+
   // Admin Auth
   'admin.login': { ar: 'دخول المشرفين', en: 'Admin Login' },
   'admin.dashboard': { ar: 'لوحة التحكم', en: 'Dashboard' },
@@ -125,6 +126,7 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<Language>('ar');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [enableEnglish, setEnableEnglish] = useState<boolean>(false);
 
@@ -160,8 +162,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       applyEnglishSetting(enabled);
 
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().thenAttribute(async ({ data: { session } }) => {
         setIsAdmin(!!session);
+        if (session?.user?.email) {
+          const user = await db.users.getByEmail(session.user.email);
+          setUserRole(user?.role || 'admin');
+        } else {
+          setUserRole(null);
+        }
         setLoading(false);
       });
     };
@@ -170,8 +178,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setIsAdmin(!!session);
+      if (session?.user?.email) {
+        const user = await db.users.getByEmail(session.user.email);
+        setUserRole(user?.role || 'admin');
+      } else {
+        setUserRole(null);
+      }
+      setLoading(false);
     });
 
     const handleSettingsUpdated = (event: any) => {
@@ -218,7 +233,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <AppContext.Provider value={{ lang, setLang, t, dir, isAdmin, loading }}>
+    <AppContext.Provider value={{ lang, setLang, t, dir, isAdmin, userRole, loading }}>
       {children}
     </AppContext.Provider>
   );

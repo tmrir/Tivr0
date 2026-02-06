@@ -93,17 +93,15 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       const currentOpenInStandalone = anyP?.openInStandalone;
       const embedded = currentOpenInStandalone === false || (!hasOpenInStandalone && currentOpenInStandalone === undefined);
       
-      // Only migrate pages that truly need it - check if hasOpenInStandalone is false
-      // meaning the field doesn't exist at all (not even as undefined)
-      if (!hasOpenInStandalone && !currentPlacement) {
+      if (embedded && !derivedPlacement && !currentPlacement) {
         didMigrate = true;
         return { ...anyP, openInStandalone: false, placement: 'after_header' };
       }
       
-      // Only set openInStandalone if field doesn't exist AND no placement
-      if (!hasOpenInStandalone && !derivedPlacement && !currentPlacement) {
+      // Also set openInStandalone: false for legacy pages that don't have the field at all
+      if (!hasOpenInStandalone) {
         didMigrate = true;
-        return { ...anyP, openInStandalone: false, placement: 'after_header' };
+        return { ...anyP, openInStandalone: false, placement: currentPlacement || 'after_header' };
       }
 
       return anyP;
@@ -233,7 +231,7 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       const path = (u.pathname || '').replace(/\/$/, '');
 
       if (host === 'drive.google.com') {
-        return 'بروفايل تيفرو';
+        return 'tivro.sa/profile';
       }
 
       const short = `${host}${path}`;
@@ -253,10 +251,7 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
   };
 
   const renderUnderConstruction = (page: any) => {
-    console.log('[PagesRenderer] underConstructionButton:', page?.underConstructionButton);
-    console.log('[PagesRenderer] lang:', lang);
     const label = (page?.underConstructionButton?.label?.[lang] || page?.underConstructionButton?.label?.ar || page?.underConstructionButton?.label?.en) as string | undefined;
-    console.log('[PagesRenderer] button label:', label);
     const href = page?.underConstructionButton?.href as string | undefined;
     const buttonLabel = label || (lang === 'ar' ? 'قريباً' : 'Coming Soon');
     const title = (page as any).title?.[lang] || page.name;
@@ -398,9 +393,6 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
       case 'button': {
         const text = (component as any).content?.text?.[lang];
         const href = (component as any).content?.href;
-        console.log('[PagesRenderer] Button text:', text);
-        console.log('[PagesRenderer] Button href:', href);
-        console.log('[PagesRenderer] Button content:', (component as any).content);
         const style = (component as any).content?.style || 'primary';
         const bgColor = (component as any).content?.bgColor as string | undefined;
         const textColor = (component as any).content?.textColor as string | undefined;
@@ -408,8 +400,10 @@ export const PagesRenderer: React.FC<PagesRendererProps> = ({ placement }) => {
         if (!text) return null;
 
         const rawText = String(text || '').trim();
-        // Always display the exact text provided by user, don't format as URL
-        const displayText = rawText;
+        const rawHref = typeof href === 'string' ? href.trim() : '';
+        const displayText = (looksLikeUrl(rawText) || (!!rawHref && rawText === rawHref))
+          ? formatUrlForDisplay(rawText)
+          : rawText;
 
         const className =
           style === 'secondary'

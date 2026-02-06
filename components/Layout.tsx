@@ -509,7 +509,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       return ao - bo;
     })
     .map((p: any) => ({
-      href: (p?.openInStandalone === false || p?.openInStandalone === undefined) ? `#page-${p.slug}` : `#page/${p.slug}`,
+      href: (p?.openInStandalone === false) ? `#page-${p.slug}` : `#page/${p.slug}`,
       label: resolveNavLabel(p.title, p.name || p.slug)
     }));
 
@@ -532,7 +532,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
       return ao - bo;
     })
     .map((p: any) => ({
-      href: (p?.openInStandalone === false || p?.openInStandalone === undefined) ? `#page-${p.slug}` : `#page/${p.slug}`,
+      href: (p?.openInStandalone === false) ? `#page-${p.slug}` : `#page/${p.slug}`,
       // Use p.title (Localized) first. Fallback to p.name (Page Name string) if title is missing.
       label: resolveNavLabel(p.title, p.name || p.slug)
     }));
@@ -919,7 +919,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hideFooter = false }) 
             <h4 className="font-bold">{settings.bottomBanner.title?.[lang]}</h4>
             <p className="text-sm opacity-90">{settings.bottomBanner.subtitle?.[lang]}</p>
           </div>
-            <button onClick={(e) => e.currentTarget.parentElement?.remove()} className="bg-white/20 hover:bg-white/30 p-1 rounded-full"><X size={16} /></button>
+          <button onClick={(e) => e.currentTarget.parentElement?.remove()} className="bg-white/20 hover:bg-white/30 p-1 rounded-full"><X size={16} /></button>
         </div>
       )}
     </div>

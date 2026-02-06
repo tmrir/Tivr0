@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page, PackageRequest } from '../types';
+import { Service, CaseStudy, Package, TeamMember, SiteSettings, BlogPost, ContactMessage, SocialLink, Page, PackageRequest, DashboardUser, Client, Invoice, Quote } from '../types';
 import { settingsService } from './settingsService';
 
 /* --- DATA MAPPERS --- */
@@ -105,6 +105,7 @@ const mapPackageRequestToDB = (item: Omit<PackageRequest, 'id' | 'createdAt'>) =
   notes: item.notes
 });
 
+
 const mapMessageFromDB = (row: any): ContactMessage => ({
   id: row.id,
   name: row.name || '',
@@ -112,97 +113,44 @@ const mapMessageFromDB = (row: any): ContactMessage => ({
   createdAt: row.created_at
 });
 
-const mapSettingsFromDB = (row: any): SiteSettings => {
-  let socialLinks: SocialLink[] = [];
-  if (Array.isArray(row.social_links)) {
-    socialLinks = row.social_links;
-  } else if (typeof row.social_links === 'object' && row.social_links !== null) {
-    Object.keys(row.social_links).forEach(key => {
-      socialLinks.push({ platform: key, url: row.social_links[key] });
-    });
-  }
+const mapUserFromDB = (row: any): DashboardUser => ({
+  id: row.id,
+  email: row.email,
+  role: row.role,
+  name: row.name,
+  createdAt: row.created_at
+});
 
-  return {
-    siteName: row.site_name || { ar: 'Tivro', en: 'Tivro' },
-    contactEmail: row.contact_email || '',
-    contactPhone: row.contact_phone || '',
-    address: typeof row.address === 'string' ? { ar: row.address, en: row.address } : (row.address || { ar: '', en: '' }),
-    socialLinks: socialLinks,
-    enableEnglish: row.enable_english ?? true,
-    tabTitle: row.tab_title || { ar: 'تيفرو - وكالة تسويق رقمي', en: 'Tivro - Digital Marketing Agency' },
+const mapClientFromDB = (row: any): Client => ({
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  phone: row.phone,
+  company: row.company,
+  createdAt: row.created_at
+});
 
-    logoUrl: row.logo_url || '',
-    iconUrl: row.icon_url || '',
-    footerLogoUrl: row.footer_logo_url || row.logo_url || '',
-    faviconUrl: row.favicon_url || '',
+const mapInvoiceFromDB = (row: any): Invoice => ({
+  id: row.id,
+  clientId: row.client_id,
+  clientName: row.client_name,
+  amount: row.amount,
+  currency: row.currency,
+  status: row.status,
+  dueDate: row.due_date,
+  items: row.items || [],
+  createdAt: row.created_at
+});
 
-    topBanner: row.top_banner || { enabled: false, title: { ar: '', en: '' } },
-    bottomBanner: row.bottom_banner || { enabled: false, title: { ar: '', en: '' } },
-
-    sectionTexts: row.section_texts || {
-      workTitle: { ar: 'قصص نجاح نفخر بها', en: 'Success Stories We Are Proud Of' },
-      workSubtitle: { ar: 'أرقام تتحدث عن إنجازاتنا', en: 'Numbers speaking our achievements' },
-      privacyLink: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
-      termsLink: { ar: 'شروط الاستخدام', en: 'Terms of Service' }
-    },
-    homeSections: row.home_sections || {
-      heroTitle: { ar: '', en: '' }, heroSubtitle: { ar: '', en: '' },
-      servicesTitle: { ar: '', en: '' }, servicesSubtitle: { ar: '', en: '' },
-      teamTitle: { ar: '', en: '' }, teamSubtitle: { ar: '', en: '' },
-      packagesTitle: { ar: '', en: '' },
-      contactTitle: { ar: '', en: '' }, contactSubtitle: { ar: '', en: '' }
-    },
-
-    fontSizes: row.font_sizes || {
-      heroTitle: 'text-5xl md:text-7xl',
-      heroSubtitle: 'text-xl',
-      servicesTitle: 'text-3xl md:text-4xl',
-      servicesSubtitle: 'text-slate-500',
-      teamTitle: 'text-3xl md:text-4xl'
-    },
-
-    contactUs: row.contact_us || {
-      title: { ar: 'تواصل معنا', en: 'Contact Us' },
-      subtitle: { ar: 'نحن هنا لمساعدتك', en: 'We are here to help you' },
-      cards: [],
-      socialLinks: [],
-      form: {
-        fields: [],
-        submitText: { ar: 'إرسال', en: 'Send' }
-      }
-    },
-
-    footerDescription: (row.section_texts && row.section_texts.footerDescription) || { ar: 'وكالة تسويق رقمي سعودية متكاملة.', en: 'A full-service Saudi digital marketing agency.' },
-    copyrightText: (row.section_texts && row.section_texts.copyrightText) || { ar: 'جميع الحقوق محفوظة', en: 'All rights reserved' },
-    footerLinks: (row.section_texts && row.section_texts.footerLinks) || {
-      privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
-      terms: { ar: 'شروط الاستخدام', en: 'Terms of Service' }
-    },
-
-    privacyPolicy: row.privacy_policy || { ar: '', en: '' },
-    termsOfService: row.terms_of_service || { ar: '', en: '' }
-  };
-};
-
-const mapSettingsToDB = (item: SiteSettings) => ({
-  site_name: item.siteName,
-  contact_email: item.contactEmail,
-  contact_phone: item.contactPhone,
-  address: item.address,
-  social_links: item.socialLinks,
-  enable_english: item.enableEnglish,
-  tab_title: item.tabTitle,
-  logo_url: item.logoUrl,
-  icon_url: item.iconUrl,
-  footer_logo_url: item.footerLogoUrl,
-  favicon_url: item.faviconUrl,
-  top_banner: item.topBanner,
-  bottom_banner: item.bottomBanner,
-  section_texts: item.sectionTexts,
-  home_sections: item.homeSections,
-  contact_us: item.contactUs,
-  privacy_policy: item.privacyPolicy,
-  terms_of_service: item.termsOfService
+const mapQuoteFromDB = (row: any): Quote => ({
+  id: row.id,
+  clientId: row.client_id,
+  clientName: row.client_name,
+  total: row.total,
+  status: row.status,
+  validUntil: row.valid_until,
+  items: row.items || [],
+  createdAt: row.created_at
 });
 
 /* --- SERVER SEED TRIGGER --- */
@@ -349,13 +297,9 @@ export const db = {
 
   settings: {
     get: async (): Promise<SiteSettings> => {
-      // console.log('🔧 [db.settings] Getting unified settings from settingsService...');
-      // استخدام نفس المصدر الموحد الذي تستخدمه لوحة التحكم
       return await settingsService.getSettings();
     },
     save: async (newSettings: SiteSettings) => {
-      // console.log('🔧 [db.settings] Saving through settingsService...');
-      // استخدام نفس الحفظ الموحد
       return await settingsService.saveSettings(newSettings);
     }
   },
@@ -428,5 +372,87 @@ export const db = {
 
       if (error) throw error;
     }
+  },
+
+  users: {
+    getAll: async (): Promise<DashboardUser[]> => {
+      const { data, error } = await supabase.from('dashboard_users').select('*').order('created_at', { ascending: false });
+      if (error) return [];
+      return data.map(mapUserFromDB);
+    },
+    getByEmail: async (email: string): Promise<DashboardUser | null> => {
+      const { data, error } = await supabase.from('dashboard_users').select('*').eq('email', email).single();
+      if (error || !data) return null;
+      return mapUserFromDB(data);
+    },
+    save: async (user: Partial<DashboardUser>) => {
+      const payload = {
+        email: user.email,
+        role: user.role,
+        name: user.name
+      };
+      if (user.id && user.id !== 'new') (payload as any).id = user.id;
+      return await supabase.from('dashboard_users').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('dashboard_users').delete().eq('id', id)
+  },
+
+  clients: {
+    getAll: async () => {
+      const { data } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
+      return data?.map(mapClientFromDB) || [];
+    },
+    save: async (item: Partial<Client>) => {
+      const payload = {
+        name: item.name,
+        email: item.email,
+        phone: item.phone,
+        company: item.company
+      };
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('clients').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('clients').delete().eq('id', id)
+  },
+
+  invoices: {
+    getAll: async () => {
+      const { data } = await supabase.from('invoices').select('*').order('created_at', { ascending: false });
+      return data?.map(mapInvoiceFromDB) || [];
+    },
+    save: async (item: Partial<Invoice>) => {
+      const payload = {
+        client_id: item.clientId,
+        client_name: item.clientName,
+        amount: item.amount,
+        currency: item.currency,
+        status: item.status,
+        due_date: item.dueDate,
+        items: item.items
+      };
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('invoices').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('invoices').delete().eq('id', id)
+  },
+
+  quotes: {
+    getAll: async () => {
+      const { data } = await supabase.from('quotes').select('*').order('created_at', { ascending: false });
+      return data?.map(mapQuoteFromDB) || [];
+    },
+    save: async (item: Partial<Quote>) => {
+      const payload = {
+        client_id: item.clientId,
+        client_name: item.clientName,
+        total: item.total,
+        status: item.status,
+        valid_until: item.validUntil,
+        items: item.items
+      };
+      if (item.id && item.id !== 'new') (payload as any).id = item.id;
+      return await supabase.from('quotes').upsert([payload]);
+    },
+    delete: async (id: string) => await supabase.from('quotes').delete().eq('id', id)
   }
 };
