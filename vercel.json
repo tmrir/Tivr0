@@ -1,30 +1,12 @@
 {
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    }
-  ],
   "redirects": [
     {
       "source": "/profile",
-      "destination": "/",
-      "permanent": true
+      "destination": "https://drive.google.com/file/d/168opQsS0TxVIkHaKl21_l8qxBRG2Bpux/view?usp=drivesdk",
+      "permanent": false
     }
   ],
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }
