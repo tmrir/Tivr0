@@ -73,6 +73,10 @@ export class SettingsService {
         if (cacheFresh) {
           try {
             const parsed = JSON.parse(cachedRaw as string);
+            // Strip profile page from cached settings to ensure it never re-appears
+            if (Array.isArray(parsed?.customPages)) {
+              parsed.customPages = parsed.customPages.filter((p: any) => p.id !== 'page-profile-readonly');
+            }
             const validated = validateSettings(parsed);
             // console.log('✅ [SettingsService] Using cached settings (<24h)');
             return validated;
@@ -281,7 +285,7 @@ export class SettingsService {
         : (row.address || { ar: 'الرياض', en: 'Riyadh' }),
       socialLinks: Array.isArray(row.social_links) ? row.social_links : [],
       enableEnglish: row.enable_english ?? true,
-      tabTitle: row.tab_title || { ar: 'تيفرو - وكالة تسويق رقمي', en: 'Tivro - Digital Marketing Agency' },
+      tabTitle: row.tab_title || { ar: 'تيفرو لخدمات الأعمال', en: 'Tivro Business Services' },
       logoUrl: row.logo_url || '',
       iconUrl: row.icon_url || '',
       footerLogoUrl: row.footer_logo_url || '',
@@ -320,9 +324,9 @@ export class SettingsService {
       footerLinks: (row.section_texts && row.section_texts.footerLinks) || defaultSettings.footerLinks,
       privacyPolicy: row.privacy_policy || { ar: '', en: '' },
       termsOfService: row.terms_of_service || { ar: '', en: '' },
-      customPages: Array.isArray(extCustomPages)
+      customPages: (Array.isArray(extCustomPages)
         ? extCustomPages
-        : (Array.isArray(row.custom_pages) ? row.custom_pages : []),
+        : (Array.isArray(row.custom_pages) ? row.custom_pages : [])).filter((p: any) => p.id !== 'page-profile-readonly'),
       adminNavigation: Array.isArray(extAdminNav)
         ? extAdminNav
         : (Array.isArray(row.admin_navigation) ? row.admin_navigation : [])
@@ -388,7 +392,7 @@ export class SettingsService {
         { platform: 'Instagram', url: '#' }
       ],
       enableEnglish: true,
-      tabTitle: { ar: 'تيفرو - وكالة تسويق رقمي', en: 'Tivro - Digital Marketing Agency' },
+      tabTitle: { ar: 'تيفرو لخدمات الأعمال', en: 'Tivro Business Services' },
       logoUrl: '',
       iconUrl: '',
       footerLogoUrl: '',
